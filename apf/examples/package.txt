@@ -1,0 +1,2 @@
+NAME=simpleprocessor~
+SRCS=flext_simpleprocessor.cpp

@@ -1,0 +1,18 @@
+#!/bin/sh
+
+VERSION=$(git describe)
+
+cd apf || exit
+
+rm -r html/
+
+( cat Doxyfile \
+; echo PROJECT_NUMBER = \"version $VERSION\"\
+; echo OUTPUT_DIRECTORY = \
+; echo QUIET = YES \
+; echo WARNINGS = NO \
+; echo GENERATE_LATEX = NO \
+; echo GENERATE_RTF = NO \
+; echo GENERATE_MAN = NO \
+; echo GENERATE_XML = NO \
+) | doxygen - > /dev/null

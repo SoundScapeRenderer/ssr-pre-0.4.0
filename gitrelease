@@ -1,0 +1,19 @@
+#!/bin/sh
+
+APFNAME=apf-$(git describe)
+
+TEMPDIR=$(mktemp -d apf.XXXXX --tmpdir)
+
+TEMPFILE=$TEMPDIR/temp.tar
+
+APFDIR=$TEMPDIR/$APFNAME
+
+tar cvf $TEMPFILE *
+
+mkdir $APFDIR
+
+tar xv -C $APFDIR -f $TEMPFILE --exclude=gitmakedoc --exclude=gitrelease --exclude=apf/html
+
+tar cvz -C $TEMPDIR -f $APFNAME.tar.gz $APFNAME
+
+rm -r $TEMPDIR

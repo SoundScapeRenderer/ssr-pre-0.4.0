@@ -15,4 +15,5 @@ rm -r html/
 ; echo GENERATE_RTF = NO \
 ; echo GENERATE_MAN = NO \
 ; echo GENERATE_XML = NO \
+; echo SEARCHENGINE = NO \
 ) | doxygen - > /dev/null

@@ -1,0 +1,9 @@
+The Audio Processing Framework (APF)
+
+prerequisites: git subtree (included in git >= 1.7.11, but only in "contrib")
+
+git remote add -f apf https://username@dev.qu.tu-berlin.de/git/apf-internal
+git subtree add --prefix=apf --squash apf/master
+
+TODO: pulling changes
+TODO: pushing changes

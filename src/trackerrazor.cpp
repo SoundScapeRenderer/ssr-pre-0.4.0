@@ -1,0 +1,96 @@
+/******************************************************************************
+ * Copyright (c) 2006-2012 Quality & Usability Lab                            *
+ *                         Deutsche Telekom Laboratories, TU Berlin           *
+ *                         Ernst-Reuter-Platz 7, 10587 Berlin, Germany        *
+ *                                                                            *
+ * This file is part of the SoundScape Renderer (SSR).                        *
+ *                                                                            *
+ * The SSR is free software:  you can redistribute it and/or modify it  under *
+ * the terms of the  GNU  General  Public  License  as published by the  Free *
+ * Software Foundation, either version 3 of the License,  or (at your option) *
+ * any later version.                                                         *
+ *                                                                            *
+ * The SSR is distributed in the hope that it will be useful, but WITHOUT ANY *
+ * WARRANTY;  without even the implied warranty of MERCHANTABILITY or FITNESS *
+ * FOR A PARTICULAR PURPOSE.                                                  *
+ * See the GNU General Public License for more details.                       *
+ *                                                                            *
+ * You should  have received a copy  of the GNU General Public License  along *
+ * with this program.  If not, see <http://www.gnu.org/licenses/>.            *
+ *                                                                            *
+ * The SSR is a tool  for  real-time  spatial audio reproduction  providing a *
+ * variety of rendering algorithms.                                           *
+ *                                                                            *
+ * http://tu-berlin.de/?id=ssr                  SoundScapeRenderer@telekom.de *
+ ******************************************************************************/
+
+/** @file
+ * Razor AHRS tracker (implementation).
+ * See http://dev.qu.tu-berlin.de/projects/sf-razor-9dof-ahrs/wiki
+ *
+ * $LastChangedDate: 2011-11-30 11:52:04 +0100 (Wed, 30 Nov 2011) $
+ * $LastChangedRevision: 1566 $
+ * $LastChangedBy: geier.matthias $
+ **/
+
+#include "trackerrazor.h"
+
+ssr::TrackerRazor::TrackerRazor(Publisher& controller, const std::string& ports)
+  : Tracker()
+  , _controller(controller)
+  , _current_azimuth(0.0f)
+  , _az_corr(90.0f)
+  , _init_az_corr(true)
+  , _tracker(NULL)
+{
+  if (ports == "")
+  {
+    throw std::runtime_error("No serial port(s) specified!");
+  }
+  VERBOSE("Initializing Razor AHRS ...");
+  
+  std::istringstream iss(ports);
+  std::string port;
+  while (iss >> port)
+  {
+    if (port != "")
+    {
+      VERBOSE_NOLF("Trying port " << port << " ... ");
+      try {
+        _tracker = new RazorAHRS(port,
+            std::tr1::bind(&TrackerRazor::on_data, this, placeholders::_1),
+            std::tr1::bind(&TrackerRazor::on_error, this, placeholders::_1));
+      }
+      catch(std::runtime_error& e)
+      {
+        VERBOSE("failure! (" << std::string(e.what()) + ")");
+        continue;
+      }
+      
+      VERBOSE("success!");
+      break; // stop trying
+    }
+  }
+  if (_tracker == NULL)
+  {
+    throw std::runtime_error("Could not open serial port!");
+  }
+}
+
+ssr::TrackerRazor::ptr_t
+ssr::TrackerRazor::create(Publisher& controller, const std::string& ports)
+{
+  ptr_t temp; // temp = NULL
+  try
+  {
+    temp.reset(new TrackerRazor(controller, ports));
+  }
+  catch(std::runtime_error& e)
+  {
+    ERROR(e.what());
+  }
+  return temp;
+}
+
+// Settings for Vim (http://www.vim.org/), please do not remove:
+// vim:softtabstop=2:shiftwidth=2:expandtab:textwidth=80:cindent

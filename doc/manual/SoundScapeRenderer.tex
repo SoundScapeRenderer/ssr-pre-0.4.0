@@ -1,0 +1,65 @@
+\documentclass[a4paper]{scrartcl}
+
+\usepackage[sumlimits,intlimits]{amsmath}
+%\usepackage{array}
+\usepackage{wasysym}
+\usepackage{graphicx}
+\graphicspath{{images/}}
+\usepackage{subfigure}
+\usepackage{psfrag}
+\usepackage{nicefrac}
+\usepackage{comment}
+\usepackage[colorlinks,urlcolor=black,linkcolor=black,citecolor=black]{hyperref}
+
+\newcommand{\contactadress}{\emph{SoundScapeRenderer@telekom.de}}
+
+\begin{document}
+
+\sloppy
+
+\title{\Huge Introduction to the\\SoundScape Renderer (SSR)}
+\author{Jens Ahrens, Matthias Geier and Sascha Spors\\[2ex]
+\contactadress}
+
+\date{\today}
+
+\maketitle
+
+\centerline{\includegraphics[width=.4\linewidth]{ssr_logo.mps}}
+
+\begin{abstract}
+\noindent\textsc{\Large
+The SoundScape Renderer (SSR) comes with \mbox{ABSOLUTELY} NO WARRANTY.
+The SSR is free software and released under the GNU
+General Public License, either version 3 of the License, or (at your option)
+any later version. For details, see the enclosed file COPYING.
+}
+\vspace{\baselineskip}
+
+\begin{tabular}{ll}
+Copyright \textcopyright\ 2006--2012 & Quality \& Usability Lab\\
+ & Deutsche Telekom Laboratories\\
+ & Technische Universit\"at Berlin\\
+ & Ernst-Reuter-Platz 7, 10587 Berlin, Germany\\
+% & \url{http://qu.tu-berlin.de}
+\end{tabular}
+\end{abstract}
+
+\thispagestyle{empty} % no page number on first page
+
+% include your stuff here
+
+\newpage
+\tableofcontents
+
+\include{general}
+\include{operation}
+\include{renderers}
+\include{gui}
+\include{network}
+%\include{todo}
+
+\bibliographystyle{unsrt}
+\bibliography{references}
+
+\end{document}

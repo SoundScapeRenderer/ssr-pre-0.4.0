@@ -3,7 +3,7 @@
 \subsection{Introduction}
 
 The SoundScape Renderer (SSR) is a software framework for real-time spatial
-audio reproduction running under GNU/Linux, Mac OSX and possibly some other UNIX
+audio reproduction running under GNU/Linux, Mac OS X and possibly some other UNIX
 variants.
 The current implementation provides Wave Field Synthesis (WFS),
 binaural (HRTF-based) reproduction, binaural room (re-)synthesis (BRTF-based
@@ -11,10 +11,10 @@ reproduction), head-tracked binaural playback, Ambisonics Amplitude Panning
 (AAP), and Vector Base Amplitude Panning (VBAP).
 There are also some more exotic options like the Binaural Playback Renderer
 (BPB) and the Generic Renderer.
-The rendering algorithm is chosen upon execution of the software.
+For each rendering algorithm there is a separate executable file.
 For more details see section~\ref{sec:renderers}.
 
-The SSR is intended as versatile framework for the state of the art
+The SSR is intended as versatile framework for the state-of-the-art
 implementation of various spatial audio reproduction techniques. You may use it
 for your own academic research, teaching or demonstration activities or whatever
 else you like.
@@ -43,10 +43,10 @@ ssr my_audio_file.wav
 \end{verbatim}
 
 You have to replace \texttt{x.x.x} with the current version number, e.g.\
-\texttt{0.3.1}.
+\texttt{0.4.0}.
 With above commands you are performing the following steps:
 \begin{itemize}
-  \item Unpack the downloaded tarball containing the source-code
+  \item Unpack the downloaded tarball containing the source-code.
   \item Go to the extracted directory%
     \footnote{Note that most relative paths which are
     mentioned in this document are relative to this folder,
@@ -54,8 +54,8 @@ With above commands you are performing the following steps:
     e.g.\ the \texttt{src/} directory could be something like
     \texttt{\$HOME/ssr-x.x.x/src/} where ``x'' stands for the 
     version numbers.}.
-  \item Configure the SSR
-  \item Install the SSR
+  \item Configure the SSR.
+  \item Install the SSR.
   \item Open the graphical user interface for JACK (\verb+qjackctl+).
     Please click ``Start'' to start the server.
     As alternative you can start JACK with
@@ -65,7 +65,7 @@ With above commands you are performing the following steps:
     See section~\ref{sec:running_ssr} and
     \texttt{man jackd} for further options.
   \item Open the SSR with an audio file of your choice. This can be a
-    multichannel file
+    multichannel file.
 \end{itemize}
 %
 This will load the audio file \texttt{my\_audio\_file.wav} and create a virtual

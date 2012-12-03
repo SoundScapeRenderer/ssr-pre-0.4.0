@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# default executable
+SSR_EXECUTABLE=ssr_binaural
+
+# add all except -psn* to $OPTIONS:
+while [[ $1 ]]; do
+  case "$1" in
+    --binaural)
+      SSR_EXECUTABLE=ssr_binaural
+      ;;
+    --brs)
+      SSR_EXECUTABLE=ssr_brs
+      ;;
+    --bpb)
+      SSR_EXECUTABLE=ssr_bpb
+      ;;
+    --wfs)
+      SSR_EXECUTABLE=ssr_wfs
+      ;;
+    --aap)
+      SSR_EXECUTABLE=ssr_aap
+      ;;
+    --vbap)
+      SSR_EXECUTABLE=ssr_vbap
+      ;;
+    --generic)
+      SSR_EXECUTABLE=ssr_generic
+      ;;
+    --nfc-hoa)
+      SSR_EXECUTABLE=ssr_nfc_hoa
+      ;;
+    *)
+      OPTIONS+=("$1")
+      ;;
+  esac
+  shift
+done
+
+if [ ! -x $SSR_EXECUTABLE ]
+then
+  echo "'$SSR_EXECUTABLE' isn't available. Did you compile and install it?"
+  exit 1
+fi
+
+$SSR_EXECUTABLE "${OPTIONS[@]}"

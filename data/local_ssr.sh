@@ -3,8 +3,6 @@
 # Shell-Script for starting the SSR locally in the tarball directory.
 # This is not needed for the installed version!
 
-# $Id: start_ssr.sh 1963 2012-11-12 09:16:00Z geier.matthias $
-
 # find the directory where the script is located
 # (in case it was started from somewhere else)
 DATA_DIR="$(dirname "$0")"
@@ -12,7 +10,7 @@ SCRIPTNAME="$(basename "$0")"
 
 DEFAULT_EXECUTABLE=ssr_binaural
 
-if [ "$SCRIPTNAME" = start_ssr.sh ]
+if [ "$SCRIPTNAME" = local_ssr.sh ]
 then
   echo -n "Which SSR binary do you want to start? [$DEFAULT_EXECUTABLE] "
   read SCRIPTNAME

@@ -92,7 +92,7 @@ dist_doc_DATA = ssr.conf.example
 dist_noinst_DATA = \
 	ssr.conf.local
 
-dist_noinst_SCRIPTS = start_ssr.sh
+dist_noinst_SCRIPTS = local_ssr.sh
 
 ## this is done after "make dist" is finished, use $(srcdir) and $(distdir)
 ##dist-hook:

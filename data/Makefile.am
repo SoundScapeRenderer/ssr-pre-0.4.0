@@ -7,7 +7,7 @@
 ## comments starting with a single # are copied to Makefile.in (and afterwards
 ## to Makefile), comments with ## are dropped.
 
-bin_SCRIPTS = ssr
+dist_bin_SCRIPTS = ssr
 
 if ENABLE_APP_BUNDLE
 SUBDIRS = MacOSX

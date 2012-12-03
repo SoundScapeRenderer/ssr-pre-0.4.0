@@ -1,0 +1,14 @@
+#!/bin/sh
+
+if [ $(git symbolic-ref --short HEAD) != master ]
+then
+  echo
+  echo "WARNING: not on 'master' branch!"
+  echo
+fi
+
+APFNAME=apf-$(git describe)
+
+git archive --prefix=$APFNAME/ --format=tar HEAD | gzip > $APFNAME.tar.gz
+git archive --prefix=$APFNAME/ --format=tar HEAD | bzip2 > $APFNAME.tar.bz2
+git archive --prefix=$APFNAME/ --format=zip HEAD > $APFNAME.zip

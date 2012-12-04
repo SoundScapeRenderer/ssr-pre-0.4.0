@@ -673,6 +673,10 @@ int ssr::load_config_file(const char *filename, conf_struct& conf){
       conf.audio_recorder_file_name
         = make_path_relative_to_current_dir(value, filename);
     }
+    else if (!strcmp(key, "RENDERER_TYPE"))
+    {
+      WARNING("\"RENDERER_TYPE\" is deprecated, don't use it anymore!");
+    }
     else if (!strcmp(key, "WFS_PREFILTER"))
     {
       conf.renderer_params.set("prefilter_file"

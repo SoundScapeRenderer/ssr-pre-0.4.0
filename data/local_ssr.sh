@@ -8,7 +8,7 @@
 DATA_DIR="$(dirname "$0")"
 SCRIPTNAME="$(basename "$0")"
 
-DEFAULT_EXECUTABLE=ssr_binaural
+DEFAULT_EXECUTABLE=ssr-binaural
 
 if [ "$SCRIPTNAME" = local_ssr.sh ]
 then

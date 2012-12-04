@@ -8,10 +8,10 @@
 ## to Makefile), comments with ## are dropped.
 
 ## TODO: make optional
-bin_PROGRAMS = ssr_binaural ssr_wfs
+bin_PROGRAMS = ssr-binaural ssr-wfs
 
 ## All possible optional programs must be listed here
-EXTRA_PROGRAMS = ssr_binaural ssr_wfs
+EXTRA_PROGRAMS = ssr-binaural ssr-wfs
 
 ## CPPFLAGS: preprocessor flags, e.g. -I and -D
 ## -I., -I$(srcdir), and a -I pointing to the directory holding config.h
@@ -234,7 +234,7 @@ doc:
 ## these links won't work on VPATH builds, but we don't care
 all-local:
 	cd ../data && for prog in $(bin_PROGRAMS) ; do \
-	  $(RM) $$prog ; $(LN_S) start_ssr.sh $$prog ; done
+	  $(RM) $$prog ; $(LN_S) local_ssr.sh $$prog ; done
 
 clean-local:
 	$(RM) gui/*_moc.cpp

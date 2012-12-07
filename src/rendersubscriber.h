@@ -1,7 +1,7 @@
 /******************************************************************************
- * Copyright (c) 2006-2012 Quality & Usability Lab                            *
- *                         Deutsche Telekom Laboratories, TU Berlin           *
- *                         Ernst-Reuter-Platz 7, 10587 Berlin, Germany        *
+ * Copyright © 2012      Institut für Nachrichtentechnik, Universität Rostock *
+ * Copyright © 2006-2012 Quality & Usability Lab,                             *
+ *                       Telekom Innovation Laboratories, TU Berlin           *
  *                                                                            *
  * This file is part of the SoundScape Renderer (SSR).                        *
  *                                                                            *
@@ -21,24 +21,19 @@
  * The SSR is a tool  for  real-time  spatial audio reproduction  providing a *
  * variety of rendering algorithms.                                           *
  *                                                                            *
- * http://tu-berlin.de/?id=ssr                  SoundScapeRenderer@telekom.de *
+ * http://SoundScapeRenderer.github.com                  ssr@spatialaudio.net *
  ******************************************************************************/
 
-/** @file
- * %RenderSubscriber (definition).
- *
- * $LastChangedDate: 2012-11-27 19:23:02 +0100 (Die, 27. Nov 2012) $
- * $LastChangedRevision: 2009 $
- * $LastChangedBy: geier.matthias $
- **/
+/// @file
+/// %RenderSubscriber (definition).
 
 // TODO: the whole publish/subscribe-thing should be redesigned, so maybe the
 // RenderSubscriber will be replaced by something else ...
 // Also, the actual renderer supports only a subset of the current (r1509)
 // Subscriber interface (no audio port names, no file names, ...).
 
-#ifndef RENDERSUBSCRIBER_H
-#define RENDERSUBSCRIBER_H
+#ifndef SSR_RENDERSUBSCRIBER_H
+#define SSR_RENDERSUBSCRIBER_H
 
 #include "subscriber.h"
 #include <map>
@@ -261,4 +256,4 @@ RenderSubscriber<Renderer>::set_loudspeakers(
 
 // Settings for Vim (http://www.vim.org/), please do not remove:
 // vim:softtabstop=2:shiftwidth=2:expandtab:textwidth=80:cindent
-
+// vim:fdm=expr:foldexpr=getline(v\:lnum)=~'/\\*\\*'&&getline(v\:lnum)!~'\\*\\*/'?'a1'\:getline(v\:lnum)=~'\\*\\*/'&&getline(v\:lnum)!~'/\\*\\*'?'s1'\:'='

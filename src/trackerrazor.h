@@ -1,7 +1,7 @@
 /******************************************************************************
- * Copyright (c) 2006-2012 Quality & Usability Lab                            *
- *                         Deutsche Telekom Laboratories, TU Berlin           *
- *                         Ernst-Reuter-Platz 7, 10587 Berlin, Germany        *
+ * Copyright © 2012      Institut für Nachrichtentechnik, Universität Rostock *
+ * Copyright © 2006-2012 Quality & Usability Lab,                             *
+ *                       Telekom Innovation Laboratories, TU Berlin           *
  *                                                                            *
  * This file is part of the SoundScape Renderer (SSR).                        *
  *                                                                            *
@@ -21,20 +21,15 @@
  * The SSR is a tool  for  real-time  spatial audio reproduction  providing a *
  * variety of rendering algorithms.                                           *
  *                                                                            *
- * http://tu-berlin.de/?id=ssr                  SoundScapeRenderer@telekom.de *
+ * http://SoundScapeRenderer.github.com                  ssr@spatialaudio.net *
  ******************************************************************************/
 
-/** @file
- * Razor AHRS tracker (definition).
- * See http://dev.qu.tu-berlin.de/projects/sf-razor-9dof-ahrs/wiki
- *
- * $LastChangedDate: 2011-11-30 11:52:04 +0100 (Wed, 30 Nov 2011) $
- * $LastChangedRevision: 1566 $
- * $LastChangedBy: geier.matthias $
- **/
+/// @file
+/// Razor AHRS tracker (definition).
+/// See http://dev.qu.tu-berlin.de/projects/sf-razor-9dof-ahrs/wiki
 
-#ifndef TRACKERRAZOR_H
-#define TRACKERRAZOR_H
+#ifndef SSR_TRACKERRAZOR_H
+#define SSR_TRACKERRAZOR_H
 
 #include "tracker.h"  // base class
 #include "razor-ahrs/RazorAHRS.h"
@@ -91,3 +86,4 @@ class TrackerRazor : public Tracker
 
 // Settings for Vim (http://www.vim.org/), please do not remove:
 // vim:softtabstop=2:shiftwidth=2:expandtab:textwidth=80:cindent
+// vim:fdm=expr:foldexpr=getline(v\:lnum)=~'/\\*\\*'&&getline(v\:lnum)!~'\\*\\*/'?'a1'\:getline(v\:lnum)=~'\\*\\*/'&&getline(v\:lnum)!~'/\\*\\*'?'s1'\:'='

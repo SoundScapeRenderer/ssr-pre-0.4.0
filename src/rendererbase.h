@@ -1,7 +1,7 @@
 /******************************************************************************
- * Copyright (c) 2006-2012 Quality & Usability Lab                            *
- *                         Deutsche Telekom Laboratories, TU Berlin           *
- *                         Ernst-Reuter-Platz 7, 10587 Berlin, Germany        *
+ * Copyright © 2012      Institut für Nachrichtentechnik, Universität Rostock *
+ * Copyright © 2006-2012 Quality & Usability Lab,                             *
+ *                       Telekom Innovation Laboratories, TU Berlin           *
  *                                                                            *
  * This file is part of the SoundScape Renderer (SSR).                        *
  *                                                                            *
@@ -21,16 +21,11 @@
  * The SSR is a tool  for  real-time  spatial audio reproduction  providing a *
  * variety of rendering algorithms.                                           *
  *                                                                            *
- * http://tu-berlin.de/?id=ssr                  SoundScapeRenderer@telekom.de *
+ * http://SoundScapeRenderer.github.com                  ssr@spatialaudio.net *
  ******************************************************************************/
 
-/** @file
- * Renderer base class.
- *
- * $LastChangedDate: 2012-11-27 19:23:02 +0100 (Die, 27. Nov 2012) $
- * $LastChangedRevision: 2009 $
- * $LastChangedBy: geier.matthias $
- **/
+/// @file
+/// Renderer base class.
 
 #ifndef SSR_RENDERERBASE_H
 #define SSR_RENDERERBASE_H

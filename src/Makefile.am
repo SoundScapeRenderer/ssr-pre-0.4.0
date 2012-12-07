@@ -2,8 +2,6 @@
 ## generate Makefile.in, which in turn will be processed by configure to
 ## generate Makefile.
 
-## $Id: Makefile.am 1999 2012-11-20 16:30:59Z geier.matthias $
-
 ## comments starting with a single # are copied to Makefile.in (and afterwards
 ## to Makefile), comments with ## are dropped.
 
@@ -204,21 +202,6 @@ SUFFIXES = _moc.cpp
 	@test -d gui || mkdir gui
 	@QTMOC@ @MOCFLAGS@ -I$(srcdir)/gui -o $@ $<
 endif
-
-check_PROGRAMS = unit_tests/main
-TESTS = $(check_PROGRAMS)
-
-unit_tests_main_CPPFLAGS = $(AM_CPPFLAGS) -D_GLIBCXX_DEBUG
-
-unit_tests_main_CXXFLAGS = $(AM_CXXFLAGS) \
-	-Wold-style-cast \
-	-Wshadow \
-	-Wlong-long \
-	-Wconversion
-
-unit_tests_main_SOURCES = \
-	unit_tests/catch/catch.hpp \
-	unit_tests/main.cpp
 
 doc:
 	@echo "Running doxygen..." 

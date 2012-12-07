@@ -1,7 +1,7 @@
 /******************************************************************************
- * Copyright (c) 2006-2012 Quality & Usability Lab                            *
- *                         Deutsche Telekom Laboratories, TU Berlin           *
- *                         Ernst-Reuter-Platz 7, 10587 Berlin, Germany        *
+ * Copyright © 2012      Institut für Nachrichtentechnik, Universität Rostock *
+ * Copyright © 2006-2012 Quality & Usability Lab,                             *
+ *                       Telekom Innovation Laboratories, TU Berlin           *
  *                                                                            *
  * This file is part of the SoundScape Renderer (SSR).                        *
  *                                                                            *
@@ -21,19 +21,14 @@
  * The SSR is a tool  for  real-time  spatial audio reproduction  providing a *
  * variety of rendering algorithms.                                           *
  *                                                                            *
- * http://tu-berlin.de/?id=ssr                  SoundScapeRenderer@telekom.de *
+ * http://SoundScapeRenderer.github.com                  ssr@spatialaudio.net *
  ******************************************************************************/
 
-/** @file
- * Helper functions for UNIX-style filename and path manipulation.
- *
- * $LastChangedDate: 2012-07-03 11:29:17 +0200 (Die, 03. Jul 2012) $
- * $LastChangedRevision: 1879 $
- * $LastChangedBy: geier.matthias $
- **/
+/// @file
+/// Helper functions for UNIX-style filename and path manipulation.
 
-#ifndef POSIXPATHTOOLS_H
-#define POSIXPATHTOOLS_H
+#ifndef SSR_POSIXPATHTOOLS_H
+#define SSR_POSIXPATHTOOLS_H
 
 #include <string>
 #include <list>
@@ -482,3 +477,4 @@ inline std::string get_escaped_filename(const std::string& filename)
 
 // Settings for Vim (http://www.vim.org/), please do not remove:
 // vim:softtabstop=2:shiftwidth=2:expandtab:textwidth=80:cindent
+// vim:fdm=expr:foldexpr=getline(v\:lnum)=~'/\\*\\*'&&getline(v\:lnum)!~'\\*\\*/'?'a1'\:getline(v\:lnum)=~'\\*\\*/'&&getline(v\:lnum)!~'/\\*\\*'?'s1'\:'='

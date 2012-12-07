@@ -1,7 +1,0 @@
-
-Andre:
-Program Editor: gvim
-Flowcharts: dia (gnome)
-Graphics: gimp
-
-

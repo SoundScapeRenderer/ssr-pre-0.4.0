@@ -14,7 +14,6 @@
 %
 % Author of this script: Jens Ahrens, 21.01.2008
 % This script is Copyright (c) 2008 Deutsche Telekom Laboratories
-% Contact: SoundScapeRenderer@telekom.de
 
 clear all;
 

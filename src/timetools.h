@@ -1,7 +1,7 @@
 /******************************************************************************
- * Copyright (c) 2006-2012 Quality & Usability Lab                            *
- *                         Deutsche Telekom Laboratories, TU Berlin           *
- *                         Ernst-Reuter-Platz 7, 10587 Berlin, Germany        *
+ * Copyright © 2012      Institut für Nachrichtentechnik, Universität Rostock *
+ * Copyright © 2006-2012 Quality & Usability Lab,                             *
+ *                       Telekom Innovation Laboratories, TU Berlin           *
  *                                                                            *
  * This file is part of the SoundScape Renderer (SSR).                        *
  *                                                                            *
@@ -21,19 +21,14 @@
  * The SSR is a tool  for  real-time  spatial audio reproduction  providing a *
  * variety of rendering algorithms.                                           *
  *                                                                            *
- * http://tu-berlin.de/?id=ssr                  SoundScapeRenderer@telekom.de *
+ * http://SoundScapeRenderer.github.com                  ssr@spatialaudio.net *
  ******************************************************************************/
 
-/** @file
- * Provides helper functions for calculations concerning time.
- *
- * $LastChangedDate: 2012-02-15 10:26:03 +0100 (Mit, 15. Feb 2012) $
- * $LastChangedRevision: 1693 $
- * $LastChangedBy: geier.matthias $
- **/
+/// @file
+/// Provides helper functions for calculations concerning time.
 
-#ifndef TIMETOOLS_H
-#define TIMETOOLS_H
+#ifndef SSR_TIMETOOLS_H
+#define SSR_TIMETOOLS_H
 
 
 /// Provides helper functions for calculations concerning time.
@@ -63,3 +58,4 @@ inline bool is_time_stamp_valid(struct timeval time_stamp)
 
 // Settings for Vim (http://www.vim.org/), please do not remove:
 // vim:softtabstop=2:shiftwidth=2:expandtab:textwidth=80:cindent
+// vim:fdm=expr:foldexpr=getline(v\:lnum)=~'/\\*\\*'&&getline(v\:lnum)!~'\\*\\*/'?'a1'\:getline(v\:lnum)=~'\\*\\*/'&&getline(v\:lnum)!~'/\\*\\*'?'s1'\:'='

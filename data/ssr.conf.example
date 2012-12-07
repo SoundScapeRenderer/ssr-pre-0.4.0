@@ -19,7 +19,7 @@
 #SCENE_FILE_NAME = my_scene.asd
 
 # GUI scene shortcuts
-#SCENE_MENU = ./scene_menu.conf
+#SCENE_MENU = scene_menu.conf
 
 # Default playback setup file
 #PLAYBACK_SETUP_FILE_NAME = default_setup.asd

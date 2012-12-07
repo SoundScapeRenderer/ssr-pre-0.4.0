@@ -1,5 +1,4 @@
 // CODING STYLE
-// $Id: coding_style.txt 1675 2012-02-05 19:24:15Z geier.matthias $
 
 // following rules should be obeyed when writing new SSR code and overhauling
 // old code.

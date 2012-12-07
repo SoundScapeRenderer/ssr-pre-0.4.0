@@ -2,8 +2,6 @@
 ## generate Makefile.in, which in turn will be processed by configure to
 ## generate Makefile.
 
-## $Id: Makefile.am 1951 2012-11-01 21:12:11Z geier.matthias $
-
 ## comments starting with a single # are copied to Makefile.in (and afterwards
 ## to Makefile), comments with ## are dropped.
 

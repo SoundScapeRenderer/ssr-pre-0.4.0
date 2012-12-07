@@ -1,7 +1,7 @@
 % This script generates a sqrt(j k) pre-equalization filter 
 % for Wave Field Synthesis
 %
-% S.Spors (SoundScapeRenderer@telekom.de)
+% S.Spors
 % Deutsche Telekom Laboratories
 % 9th Mai 2008
 

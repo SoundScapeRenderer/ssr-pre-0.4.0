@@ -128,8 +128,8 @@ class pointer_policy<T*>::Input
 
     void fetch_buffer()
     {
-      _begin = _parent._in[_id];
-      _end   = _begin + _parent.block_size();
+      this->buffer._begin = _parent._in[_id];
+      this->buffer._end   = this->buffer._begin + _parent.block_size();
     }
 
   protected:
@@ -140,14 +140,16 @@ class pointer_policy<T*>::Input
 
     ~Input() {}
 
-    iterator _begin;
-    iterator _end;
-
   private:
+    struct buffer_type : has_begin_and_end<iterator> { friend class Input; };
+
     Input(const Input&); Input& operator=(const Input&);  // deactivated
 
     pointer_policy& _parent;
     const int _id;
+
+  public:
+    buffer_type buffer;
 };
 
 template<typename T>
@@ -158,8 +160,8 @@ class pointer_policy<T*>::Output
 
     void fetch_buffer()
     {
-      _begin = _parent._out[_id];
-      _end   = _begin + _parent.block_size();
+      this->buffer._begin = _parent._out[_id];
+      this->buffer._end   = this->buffer._begin + _parent.block_size();
     }
 
   protected:
@@ -170,14 +172,16 @@ class pointer_policy<T*>::Output
 
     ~Output() {}
 
-    iterator _begin;
-    iterator _end;
-
   private:
+    struct buffer_type : has_begin_and_end<iterator> { friend class Output; };
+
     Output(const Output&); Output& operator=(const Output&);  // deactivated
 
     pointer_policy& _parent;
     const int _id;
+
+  public:
+    buffer_type buffer;
 };
 
 }  // namespace apf

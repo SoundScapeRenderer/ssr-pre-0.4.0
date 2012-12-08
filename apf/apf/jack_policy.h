@@ -36,6 +36,7 @@
 #include "apf/jackclient.h"
 #include "apf/parameter_map.h"
 #include "apf/stringtools.h"
+#include "apf/iterator.h"  // for has_begin_and_end
 
 #ifndef APF_MIMOPROCESSOR_INTERFACE_POLICY
 #define APF_MIMOPROCESSOR_INTERFACE_POLICY apf::jack_policy
@@ -95,7 +96,7 @@ class jack_policy : public JackClient
       (void)nframes;
       assert(nframes == this->block_size());
 
-      // call member function which is implemented in derived class
+      // call virtual member function which is implemented in derived class
       // (template method design pattern)
       this->process();
 
@@ -149,9 +150,9 @@ class jack_policy::Xput
 
     void fetch_buffer()
     {
-      _begin = static_cast<sample_type*>(
+      this->buffer._begin = static_cast<sample_type*>(
           jack_port_get_buffer(_port, _parent.block_size()));
-      _end   = _begin + _parent.block_size();
+      this->buffer._end   = this->buffer._begin + _parent.block_size();
     }
 
     std::string port_name() const { return _port_name; }
@@ -161,10 +162,9 @@ class jack_policy::Xput
 
     ~Xput() { _parent.unregister_port(_port); }
 
-    iterator _begin;
-    iterator _end;
-
   private:
+    struct buffer_type : has_begin_and_end<iterator> { friend class Xput; };
+
     Xput(const Xput&); Xput& operator=(const Xput&);  // deactivated
 
     jack_policy& _parent;
@@ -173,6 +173,9 @@ class jack_policy::Xput
     JackClient::port_t* _init_port(const parameter_map& p, jack_policy& parent);
 
     const std::string _port_name;  // actual JACK port name
+
+  public:
+    buffer_type buffer;
 };
 
 template<typename X>

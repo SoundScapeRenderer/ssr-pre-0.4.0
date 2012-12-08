@@ -35,28 +35,24 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
     class Output;
 
     MyProcessor();
-
-    void process()
-    {
-      _process_list(_output_list);
-    }
-
-  private:
-    rtlist_t _input_list, _output_list;
 };
 
-class MyProcessor::Output : public MimoProcessorBase::Output
+class MyProcessor::Output : public MimoProcessorBase::DefaultOutput
 {
   public:
     explicit Output(const Params& p)
-      : MimoProcessorBase::Output(p)
-      , _combiner(this->parent._input_list, _internal)
+      : MimoProcessorBase::DefaultOutput(p)
+      , _combiner(this->parent.get_list<Input>(), *this)
     {}
 
-    virtual void process()
+    struct Process : MimoProcessorBase::DefaultOutput::Process
     {
-      _combiner.process(my_predicate());
-    }
+      explicit Process(Output& out)
+        : MimoProcessorBase::DefaultOutput::Process(out)
+      {
+        parent._combiner.process(my_predicate());
+      }
+    };
 
   private:
     struct my_predicate
@@ -65,18 +61,14 @@ class MyProcessor::Output : public MimoProcessorBase::Output
       int select(const Input&) { return 1; }
     };
 
-    apf::CombineChannelsCopy<rtlist_proxy<Input>, InternalOutput> _combiner;
+    apf::CombineChannelsCopy<rtlist_proxy<Input>, DefaultOutput> _combiner;
 };
 
 MyProcessor::MyProcessor()
   : MimoProcessorBase()
-  , _input_list(_fifo)
-  , _output_list(_fifo)
 {
-  _input_list.add(new Input(Input::Params(this)));
-  _input_list.add(new Input(Input::Params(this)));
-
-  _output_list.add(new Output(Output::Params(this)));
+  this->add<Input>();
+  this->add<Output>();
 }
 
 int main()

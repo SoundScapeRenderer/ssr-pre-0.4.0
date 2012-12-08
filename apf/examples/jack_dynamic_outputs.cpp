@@ -35,18 +35,22 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
   public:
     typedef MimoProcessorBase::DefaultInput Input;
 
-    class Output : public MimoProcessorBase::Output
+    class Output : public MimoProcessorBase::DefaultOutput
     {
       public:
         explicit Output(const Params& p)
-          : MimoProcessorBase::Output(p)
-          , _combiner(this->parent._input_list, _internal)
+          : MimoProcessorBase::DefaultOutput(p)
+          , _combiner(this->parent.get_list<Input>(), *this)
         {}
 
-        virtual void process()
+        struct Process : MimoProcessorBase::DefaultOutput::Process
         {
-          _combiner.process(select_all_inputs());
-        }
+          explicit Process(Output& out)
+            : MimoProcessorBase::DefaultOutput::Process(out)
+          {
+            out._combiner.process(select_all_inputs());
+          }
+        };
 
       private:
         struct select_all_inputs
@@ -54,35 +58,14 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
           int select(const Input&) { return 1; }
         };
 
-        apf::CombineChannelsCopy<rtlist_proxy<Input>, InternalOutput> _combiner;
+        apf::CombineChannelsCopy<rtlist_proxy<Input>, Output> _combiner;
     };
 
     MyProcessor(const apf::parameter_map& p)
       : MimoProcessorBase(p)
-      , _input_list(_fifo)
-      , _output_list(_fifo)
     {
-      _input_list.add(new Input(Input::Params(this)));
+      this->add<Input>();
     }
-
-    void process()
-    {
-      // _input_list doesn't need to be processed, Input doesn't have .process()
-      _process_list(_output_list);
-    }
-
-    Output* add_output(const Output::Params& p)
-    {
-      Output::Params temp = p;
-      temp.parent = this;
-      return _output_list.add(new Output(temp));
-    }
-
-    void rem_input(Input* in) { _input_list.rem(in); }
-    void rem_output(Output* out) { _output_list.rem(out); }
-
-  private:
-    rtlist_t _input_list, _output_list;
 };
 
 int main()
@@ -103,7 +86,7 @@ int main()
   {
     MyProcessor::Output::Params op;
     op.set("id", i * 10);
-    outputs.push_back(engine.add_output(op));
+    outputs.push_back(engine.add(op));
     sleep(1);
   }
 
@@ -112,9 +95,7 @@ int main()
   // remove the outputs one by one ...
   while (outputs.begin() != outputs.end())
   {
-    engine.rem_output(outputs.front());
-    // wait two times because InternalOutput is removed in ~Output
-    engine.wait_for_rt_thread();
+    engine.rem(outputs.front());
     engine.wait_for_rt_thread();
     outputs.erase(outputs.begin());
     sleep(1);

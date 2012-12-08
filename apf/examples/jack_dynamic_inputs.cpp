@@ -37,19 +37,24 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
   public:
     typedef MimoProcessorBase::DefaultInput Input;
 
-    class Output : public MimoProcessorBase::Output
+    class Output : public MimoProcessorBase::DefaultOutput
     {
       public:
         explicit Output(const Params& p)
-          : MimoProcessorBase::Output(p)
-          , _combiner(this->parent._input_list, _internal)
+          : MimoProcessorBase::DefaultOutput(p)
+          , _combiner(this->parent.get_list<Input>(), *this)
         {}
 
-        virtual void process()
+        struct Process : MimoProcessorBase::DefaultOutput::Process
         {
-          float weight = 1.0f/static_cast<float>(this->parent._input_list.size());
-          _combiner.process(simple_predicate(weight));
-        }
+          explicit Process(Output& out)
+            : MimoProcessorBase::DefaultOutput::Process(out)
+          {
+            float weight = 1.0f/static_cast<float>(
+                out.parent.get_list<Input>().size());
+            out._combiner.process(simple_predicate(weight));
+          }
+        };
 
       private:
         class simple_predicate
@@ -66,36 +71,13 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
             float _weight;
         };
 
-        apf::CombineChannels<rtlist_proxy<Input>, InternalOutput> _combiner;
+        apf::CombineChannels<rtlist_proxy<Input>, Output> _combiner;
     };
 
     MyProcessor()
-      : _input_list(_fifo)
-      , _output_list(_fifo)
     {
-      _output_list.add(new Output(Output::Params(this)));
-
-      // TODO: remove output in destructor?
+      this->add<Output>();
     }
-
-    void process()
-    {
-      // _input_list doesn't need to be processed, Input doesn't have .process()
-      _process_list(_output_list);
-    }
-
-    Input* add_input(const Input::Params& p)
-    {
-      Input::Params temp = p;
-      temp.parent = this;
-      return _input_list.add(new Input(temp));
-    }
-
-    void rem_input(Input* in) { _input_list.rem(in); }
-    void rem_output(Output* out) { _output_list.rem(out); }
-
-  private:
-    rtlist_t _input_list, _output_list;
 };
 
 int main()
@@ -113,7 +95,7 @@ int main()
   {
     MyProcessor::Input::Params p;
     p.set("id", i * 10);
-    inputs.push_back(engine.add_input(p));
+    inputs.push_back(engine.add(p));
     sleep(1);
   }
 
@@ -122,9 +104,7 @@ int main()
   // remove the inputs one by one ...
   while (inputs.begin() != inputs.end())
   {
-    engine.rem_input(inputs.front());
-    // wait two times because InternalInput is removed in ~Input
-    engine.wait_for_rt_thread();
+    engine.rem(inputs.front());
     engine.wait_for_rt_thread();
     inputs.erase(inputs.begin());
     sleep(1);

@@ -41,14 +41,6 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
     class CombineFunction;
 
     MyProcessor(const apf::parameter_map& p);
-
-    void process()
-    {
-      _process_list(_output_list);
-    }
-
-  private:
-    rtlist_t _input_list, _output_list;
 };
 
 class MyProcessor::CombineFunction
@@ -81,37 +73,40 @@ class MyProcessor::CombineFunction
     apf::math::linear_interpolator<float> _interpolator;
 };
 
-class MyProcessor::Output : public MimoProcessorBase::Output
+class MyProcessor::Output : public MimoProcessorBase::DefaultOutput
 {
   public:
     explicit Output(const Params& p)
-      : MimoProcessorBase::Output(p)
-      , _combine_and_interpolate(this->parent._input_list, _internal)
+      : MimoProcessorBase::DefaultOutput(p)
+      , _combine_and_interpolate(this->parent.get_list<Input>(), *this)
     {}
 
-    virtual void process()
+    struct Process : MimoProcessorBase::DefaultOutput::Process
     {
-      _combine_and_interpolate.process(CombineFunction(this->parent.block_size()));
-    }
+      explicit Process(Output& out)
+        : MimoProcessorBase::DefaultOutput::Process(out)
+      {
+        parent._combine_and_interpolate.process(
+            CombineFunction(parent.parent.block_size()));
+      }
+    };
 
   private:
-    apf::CombineChannelsInterpolation<rtlist_proxy<Input>, InternalOutput>
+    apf::CombineChannelsInterpolation<rtlist_proxy<Input>, Output>
       _combine_and_interpolate;
 };
 
 MyProcessor::MyProcessor(const apf::parameter_map& p)
   : MimoProcessorBase(p)
-  , _input_list(_fifo)
-  , _output_list(_fifo)
 {
   for (int i = 0; i < p.get<int>("in_channels"); ++i)
   {
-    _input_list.add(new Input(MimoProcessorBase::Input::Params(this)));
+    this->add<Input>();
   }
 
   for (int i = 0; i < p.get<int>("out_channels"); ++i)
   {
-    _output_list.add(new Output(MimoProcessorBase::Output::Params(this)));
+    this->add<Output>();
   }
 }
 

@@ -59,8 +59,11 @@ class portaudio_policy
 
     // const PaStreamInfo *    Pa_GetStreamInfo (PaStream *stream)
 
-    std::string device_info()
+    static std::string device_info()
     {
+      PaError err = Pa_Initialize();
+      if (err != paNoError) throw portaudio_error(err);
+
       std::string result;
       for (int i = 0; i < Pa_GetDeviceCount(); ++i)
       {
@@ -160,13 +163,13 @@ class portaudio_policy
       _in = static_cast<sample_type* const*>(input);
       _out = static_cast<sample_type* const*>(output);
 
-      _process();
+      this->process();
 
       return paContinue;
       // possible return values: paContinue, paComplete, paAbort
     }
 
-    virtual void _process() = 0;
+    virtual void process() = 0;
 
     /// Generate next higher input ID.
     /// @warning This function is \b not re-entrant!

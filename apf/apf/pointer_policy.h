@@ -79,7 +79,7 @@ class pointer_policy<T*>
     virtual ~pointer_policy() {}
 
   private:
-    virtual void _process() = 0;
+    virtual void process() = 0;
 
     /// Generate next higher input ID.
     /// @warning This function is \b not re-entrant!
@@ -117,7 +117,7 @@ pointer_policy<T*>::audio_callback(int n, T* const* in, T* const* out)
 
   _in = in;
   _out = out;
-  _process();
+  this->process();
 }
 
 template<typename T>

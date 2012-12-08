@@ -543,8 +543,6 @@ class MimoProcessor : public interface_policy
 
     class Input;
     class Output;
-    class InternalInput;
-    class InternalOutput;
     class DefaultInput;
     class DefaultOutput;
 
@@ -556,8 +554,30 @@ class MimoProcessor : public interface_policy
     {
       virtual ~Item() {}
 
+      /// Empty, non-virtual implementation. Used in CombineChannelsCrossfade.
+      /// This can be overwritten if needed.
+      void update() const {}
+
       /// to be overwritten in the derived class
       virtual void process() = 0;
+    };
+
+    template<typename X>
+    class ProcessItem : public Item
+    {
+      public:
+        struct Process
+        {
+          explicit Process(X& p) : parent(p) {}
+          X& parent;
+        };
+
+      private:
+        virtual void process()
+        {
+          assert(dynamic_cast<X*>(this));
+          typename X::Process(*static_cast<X*>(this));
+        }
     };
 
     typedef RtList<Item*> rtlist_t;
@@ -658,6 +678,34 @@ class MimoProcessor : public interface_policy
 
     void wait_for_rt_thread() { _fifo.wait(); }
 
+    template<typename X>
+    X* add()
+    {
+      return this->add(typename X::Params());
+    }
+
+    // TODO: find a way to get the outer type automatically
+    template<typename P>
+    typename P::outer* add(const P& p)
+    {
+      typedef typename P::outer X;
+      P temp = p;
+      assert(dynamic_cast<Derived*>(this));
+      temp.parent = static_cast<Derived*>(this);
+      return static_cast<X*>(_add_helper(new X(temp)));
+    }
+
+    void rem(Input* in) { _input_list.rem(in); }
+    void rem(Output* out) { _output_list.rem(out); }
+
+    template<typename ItemType>
+    rtlist_proxy<ItemType> get_list() const
+    {
+      assert(dynamic_cast<const Derived*>(this));
+      return static_cast<const Derived*>(this)->_get_list_helper(
+          static_cast<ItemType*>(0));
+    }
+
     const parameter_map params;
 
     template<typename F>
@@ -674,10 +722,21 @@ class MimoProcessor : public interface_policy
     typedef typename rtlist_t::iterator       rtlist_iterator;
     typedef typename rtlist_t::const_iterator rtlist_const_iterator;
 
+    struct Process
+    {
+      Process(Derived& p) : parent(p) {}
+      Derived& parent;
+    };
+
     explicit MimoProcessor(const parameter_map& params = parameter_map());
 
     /// Protected non-virtual destructor
-    ~MimoProcessor() {}
+    ~MimoProcessor()
+    {
+      this->deactivate();
+      _input_list.clear();
+      _output_list.clear();
+    }
 
     void _process_list(rtlist_t& l);
     void _process_list(rtlist_t& l1, rtlist_t& l2);
@@ -740,16 +799,36 @@ class MimoProcessor : public interface_policy
     };
 
     class thread_init_helper;
+    class Xput;
 
-    template<typename X> class Xput;
-    template<typename X> class InternalXput;
-
-    virtual void _process();
+    // This is called from the interface_policy
+    virtual void process()
+    {
+      _fifo.process_commands();
+      _process_list(_input_list);
+      assert(dynamic_cast<Derived*>(this));
+      typename Derived::Process(*static_cast<Derived*>(this));
+      _process_list(_output_list);
+      _query_fifo.process_commands();
+    }
 
     void _process_current_list_in_main_thread();
     void _process_selected_items_in_current_list(int thread_number);
 
-    rtlist_t _internal_list; ///< internal Input/Output objects are stored here
+    Input* _add_helper(Input* in) { return _input_list.add(in); }
+    Output* _add_helper(Output* out) { return _output_list.add(out); }
+
+    template<typename T> struct _empty_type {};
+
+    const rtlist_t& _get_list_helper(Input*) const
+    {
+      return _input_list;
+    }
+
+    const rtlist_t& _get_list_helper(Output*) const
+    {
+      return _output_list;
+    }
 
     // TODO: make "volatile"?
     rtlist_t* _current_list;
@@ -758,43 +837,8 @@ class MimoProcessor : public interface_policy
     const int _num_threads;
 
     fixed_vector<WorkerThread> _thread_data;
-};
 
-// Private helper class to avoid code duplication in internal Input/Output
-// Template parameter X: Base class (Input/Output from interface_policy)
-APF_MIMOPROCESSOR_TEMPLATES
-template<typename X>
-class APF_MIMOPROCESSOR_BASE::InternalXput : public X, public Item
-{
-  public:
-    // Parameters for an Input or Output.
-    // You can add your own parameters by deriving from it.
-    struct Params : parameter_map
-    {
-      Params() : parent(0) {}
-      explicit Params(Derived* p) : parent(p) {}
-      Derived* parent;
-
-      Params& operator=(const parameter_map& p)
-      {
-        this->parameter_map::operator=(p);
-        return *this;
-      }
-    };
-
-    virtual void process()
-    {
-      this->fetch_buffer();
-    }
-
-  protected:
-    // Protected Constructor.
-    explicit InternalXput(const Params& p)
-      : X(*(p.parent
-            ? p.parent
-            : throw std::logic_error("Bug: Internal In/Output: parent == 0!"))
-          , p)
-    {}
+    rtlist_t _input_list, _output_list;
 };
 
 APF_MIMOPROCESSOR_TEMPLATES
@@ -825,7 +869,6 @@ APF_MIMOPROCESSOR_BASE::MimoProcessor(const parameter_map& params_)
   , query_policy(params_.get("fifo_size", 128))
   , params(params_)
   , _fifo(params.get("fifo_size", 128))
-  , _internal_list(_fifo)
   , _current_list(0)
   , _num_threads(params.get("threads", APF_MIMOPROCESSOR_DEFAULT_THREADS))
   // Create worker threads.  NOTE: Number 0 is reserved for the main thread.
@@ -834,6 +877,8 @@ APF_MIMOPROCESSOR_BASE::MimoProcessor(const parameter_map& params_)
         , thread_init_helper(this)),
       make_transform_iterator(make_index_iterator(_num_threads)
         , thread_init_helper(this)))
+  , _input_list(_fifo)
+  , _output_list(_fifo)
 {
   assert(_num_threads > 0);
 
@@ -917,145 +962,121 @@ APF_MIMOPROCESSOR_BASE::_process_current_list_in_main_thread()
 }
 
 APF_MIMOPROCESSOR_TEMPLATES
-void
-APF_MIMOPROCESSOR_BASE::_process()
-{
-  _fifo.process_commands();
-
-  _process_list(_internal_list);
-
-  static_cast<Derived*>(this)->process();
-
-  _query_fifo.process_commands();
-}
-
-APF_MIMOPROCESSOR_TEMPLATES
-class APF_MIMOPROCESSOR_BASE::InternalInput :
-                           public InternalXput<typename interface_policy::Input>
-{
-  private:
-    typedef InternalXput<typename interface_policy::Input> _base_type;
-
-  public:
-    typedef typename _base_type::iterator iterator;
-    typedef typename _base_type::Params Params;
-
-    iterator begin() const { return this->_begin; }
-    iterator   end() const { return this->_end; }
-
-  private:
-    friend class APF_MIMOPROCESSOR_BASE;
-    explicit InternalInput(const Params& p) : _base_type(p) {}
-};
-
-APF_MIMOPROCESSOR_TEMPLATES
-class APF_MIMOPROCESSOR_BASE::InternalOutput :
-                          public InternalXput<typename interface_policy::Output>
-{
-  private:
-    typedef InternalXput<typename interface_policy::Output> _base_type;
-
-  public:
-    typedef typename _base_type::iterator iterator;
-    typedef typename _base_type::Params Params;
-
-    iterator begin() const { return this->_begin; }
-    iterator   end() const { return this->_end; }
-
-  private:
-    friend class APF_MIMOPROCESSOR_BASE;
-    explicit InternalOutput(const Params& p) : _base_type(p) {}
-};
-
-APF_MIMOPROCESSOR_TEMPLATES
-template<typename X>
 class APF_MIMOPROCESSOR_BASE::Xput : public Item
 {
   public:
-    typedef typename X::Params Params;
-
-    virtual void process()
+    // Parameters for an Input or Output.
+    // You can add your own parameters by deriving from it.
+    struct Params : parameter_map
     {
-      throw std::logic_error("Bug: Input/Output: process() not implemented!");
-    }
+      Params() : parent(0) {}
+      Derived* parent;
 
-    X& internal() const { return _internal; }
+      Params& operator=(const parameter_map& p)
+      {
+        this->parameter_map::operator=(p);
+        return *this;
+      }
+    };
 
-    /// Parent object of the Input/Output
     Derived& parent;
 
   protected:
+    /// Protected Constructor.
     /// @throw std::logic_error if parent == NULL
     explicit Xput(const Params& p)
       : parent(*(p.parent
-          ? p.parent
-          : throw std::logic_error("Bug: Input/Output: parent == 0!")))
-      , _internal(*this->parent._internal_list.add(new X(p)))
+            ? p.parent
+            : throw std::logic_error("Bug: In/Output: parent == 0!")))
     {}
-
-    ~Xput() { this->parent._internal_list.rem(&_internal); }
-
-    X& _internal;  ///< Reference to InternalInput/InternalOutput
 };
 
 /// %Input class.
 APF_MIMOPROCESSOR_TEMPLATES
-class APF_MIMOPROCESSOR_BASE::Input : public Xput<InternalInput>
+class APF_MIMOPROCESSOR_BASE::Input : public Xput
+                                    , public interface_policy::Input
 {
-  private:
-    typedef Xput<InternalInput> _base_type;
-
   public:
-    typedef typename _base_type::Params Params;
+    // 'outer' is needed for add()
+    struct Params : Xput::Params { typedef typename Derived::Input outer; };
 
-    explicit Input(const Params& p) : _base_type(p) {}
+    struct Process
+    {
+      Process(typename Derived::Input& p) : parent(p) {}
+      typename Derived::Input& parent;
+    };
+
+    explicit Input(const Params& p)
+      : Xput(p)
+      , interface_policy::Input(*p.parent, p)
+    {}
+
+  private:
+    virtual void process()
+    {
+      this->fetch_buffer();
+      assert(dynamic_cast<typename Derived::Input*>(this));
+      typename Derived::Input::Process(
+          *static_cast<typename Derived::Input*>(this));
+    }
 };
 
 /// %Input class with begin() and end().
 APF_MIMOPROCESSOR_TEMPLATES
 class APF_MIMOPROCESSOR_BASE::DefaultInput : public Input
 {
-  protected:
-    using Input::_internal;
-
   public:
     typedef typename Input::Params Params;
-    typedef typename InternalInput::iterator iterator;
+    typedef typename Input::iterator iterator;
 
     DefaultInput(const Params& p) : Input(p) {}
 
-    iterator begin() const { return _internal.begin(); }
-    iterator   end() const { return _internal.end(); }
+    iterator begin() const { return this->_begin; }
+    iterator   end() const { return this->_end; }
 };
 
 /// %Output class.
 APF_MIMOPROCESSOR_TEMPLATES
-class APF_MIMOPROCESSOR_BASE::Output : public Xput<InternalOutput>
+class APF_MIMOPROCESSOR_BASE::Output : public Xput
+                                     , public interface_policy::Output
 {
-  private:
-    typedef Xput<InternalOutput> _base_type;
-
   public:
-    typedef typename _base_type::Params Params;
+    // 'outer' is needed for add()
+    struct Params : Xput::Params { typedef typename Derived::Output outer; };
 
-    explicit Output(const Params& p) : _base_type(p) {}
+    struct Process
+    {
+      Process(typename Derived::Output& p) : parent(p) {}
+      typename Derived::Output& parent;
+    };
+
+    explicit Output(const Params& p)
+      : Xput(p)
+      , interface_policy::Output(*p.parent, p)
+    {}
+
+  private:
+    virtual void process()
+    {
+      this->fetch_buffer();
+      assert(dynamic_cast<typename Derived::Output*>(this));
+      typename Derived::Output::Process(
+          *static_cast<typename Derived::Output*>(this));
+    }
 };
 
 /// %Output class with begin() and end().
 APF_MIMOPROCESSOR_TEMPLATES
 class APF_MIMOPROCESSOR_BASE::DefaultOutput : public Output
 {
-  protected:
-    using Output::_internal;
-
   public:
     typedef typename Output::Params Params;
-    typedef typename InternalOutput::iterator iterator;
+    typedef typename Output::iterator iterator;
 
     DefaultOutput(const Params& p) : Output(p) {}
 
-    iterator begin() const { return _internal.begin(); }
-    iterator   end() const { return _internal.end(); }
+    iterator begin() const { return this->_begin; }
+    iterator   end() const { return this->_end; }
 };
 
 }  // namespace apf

@@ -43,10 +43,7 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
       , _query_thread(QueryThread(_query_fifo), 1000*1000 / this->block_size())
     {}
 
-    void process()
-    {
-      // MyProcessor doesn't process anything
-    }
+    // MyProcessor doesn't process anything, no Process struct needed
 
     void start_querying()
     {

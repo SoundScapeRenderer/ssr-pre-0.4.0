@@ -42,9 +42,18 @@ class SimpleProcessor : public apf::MimoProcessor<SimpleProcessor
 {
   public:
     class Input : public MimoProcessorBase::Input
-       , public apf::has_begin_and_end<std::vector<sample_type>::const_iterator>
+                , public apf::has_begin_and_end<
+                                 apf::fixed_vector<sample_type>::const_iterator>
     {
+      private:
+        typedef apf::has_begin_and_end<apf::fixed_vector<sample_type>
+          ::const_iterator> _begin_end_base;
+        using _begin_end_base::_begin;
+        using _begin_end_base::_end;
+
       public:
+        typedef _begin_end_base::iterator iterator;
+
         explicit Input(const Params& p)
           : MimoProcessorBase::Input(p)
           , _buffer(this->parent.block_size())
@@ -54,64 +63,51 @@ class SimpleProcessor : public apf::MimoProcessor<SimpleProcessor
           _end = _buffer.end();
         }
 
-      private:
-        virtual void process()
+        struct Process : MimoProcessorBase::Input::Process
         {
-          // Copying the input buffers is only needed for the Pd external
-          // because input buffers are re-used as output buffers!
-          // In non-trivial applications there will be some intermediate buffer
-          // anyway and copying the input buffers will not be necessary.
+          explicit Process(Input& in)
+            : MimoProcessorBase::Input::Process(in)
+          {
+            // Copying the input buffers is only needed for the Pd external
+            // because input buffers are re-used as output buffers! In
+            // non-trivial applications there will be some intermediate buffer
+            // anyway and copying the input buffers will not be necessary.
 
-          std::copy(_internal.begin(), _internal.end(), _buffer.begin());
-        }
+            std::copy(parent.MimoProcessorBase::Input::_begin
+                , parent.MimoProcessorBase::Input::_end
+                , parent._buffer.begin());
+          }
+        };
 
-        std::vector<sample_type> _buffer;
+      private:
+        apf::fixed_vector<sample_type> _buffer;
     };
 
     class Output;
 
     explicit SimpleProcessor(const apf::parameter_map& p=apf::parameter_map());
-
-    ~SimpleProcessor()
-    {
-      this->deactivate();
-      _input_list.clear();
-      _output_list.clear();
-    }
-
-    void process()
-    {
-      _process_list(_input_list);
-      _process_list(_output_list);
-    }
-
-    Input* add_input(const Input::Params& p)
-    {
-      Input::Params temp = p;
-      temp.parent = this;
-      return _input_list.add(new Input(temp));
-    }
-
-  private:
-    rtlist_t _input_list, _output_list;
 };
 
-class SimpleProcessor::Output : public MimoProcessorBase::Output
+class SimpleProcessor::Output : public MimoProcessorBase::DefaultOutput
 {
   public:
     typedef MimoProcessorBase::Output::Params Params;
 
     explicit Output(const Params& p)
-      : MimoProcessorBase::Output(p)
-      , _combiner(this->parent._input_list, _internal)
+      : MimoProcessorBase::DefaultOutput(p)
+      , _combiner(this->parent.get_list<Input>(), *this)
     {}
 
-    virtual void process()
+    struct Process : MimoProcessorBase::Output::Process
     {
-      float weight = 1.0f / float(this->parent._input_list.size());
+      explicit Process(Output& out)
+        : MimoProcessorBase::Output::Process(out)
+      {
+        float weight = 1.0f / float(parent.parent.get_list<Input>().size());
 
-      _combiner.process(simple_predicate(weight));
-    }
+        parent._combiner.process(simple_predicate(weight));
+      }
+    };
 
   private:
     class simple_predicate
@@ -136,16 +132,13 @@ class SimpleProcessor::Output : public MimoProcessorBase::Output
         float _weight;
     };
 
-    apf::CombineChannels<rtlist_proxy<Input>, InternalOutput> _combiner;
+    apf::CombineChannels<rtlist_proxy<Input>, Output> _combiner;
 };
 
 SimpleProcessor::SimpleProcessor(const apf::parameter_map& p)
   : MimoProcessorBase(p)
-  , _input_list(_fifo)
-  , _output_list(_fifo)
 {
   Input::Params ip;
-  ip.parent = this;
   std::string in_port_prefix = p.get("in_port_prefix", "");
   int in_ch = p.get<int>("in_channels");
   for (int i = 1; i <= in_ch; ++i)
@@ -155,11 +148,10 @@ SimpleProcessor::SimpleProcessor(const apf::parameter_map& p)
     {
       ip.set("connect_to", in_port_prefix + apf::str::A2S(i));
     }
-    _input_list.add(new Input(ip));  // ignore return value
+    this->add(ip);  // ignore return value
   }
 
   Output::Params op;
-  op.parent = this;
   std::string out_port_prefix = p.get("out_port_prefix", "");
   int out_ch = p.get<int>("out_channels");
   for (int i = 1; i <= out_ch; ++i)
@@ -169,7 +161,7 @@ SimpleProcessor::SimpleProcessor(const apf::parameter_map& p)
     {
       op.set("connect_to", out_port_prefix + apf::str::A2S(i));
     }
-    _output_list.add(new Output(op));  // ignore return value
+    this->add(op);  // ignore return value
   }
 
   this->activate();

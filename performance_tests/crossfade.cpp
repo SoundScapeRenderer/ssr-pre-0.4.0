@@ -42,13 +42,7 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
 
     MyProcessor(const apf::parameter_map& p);
 
-    void process()
-    {
-      _process_list(_output_list);
-    }
-
   private:
-    rtlist_t _input_list, _output_list;
     apf::raised_cosine_fade<float> _fade;
 };
 
@@ -72,39 +66,41 @@ class MyProcessor::CombineFunction
     }
 };
 
-class MyProcessor::Output : public MimoProcessorBase::Output
+class MyProcessor::Output : public MimoProcessorBase::DefaultOutput
 {
   public:
     explicit Output(const Params& p)
-      : MimoProcessorBase::Output(p)
-      , _combine_and_crossfade(this->parent._input_list, _internal
+      : MimoProcessorBase::DefaultOutput(p)
+      , _combine_and_crossfade(this->parent.get_list<Input>(), *this
           , this->parent._fade)
     {}
 
-    virtual void process()
+    struct Process : MimoProcessorBase::DefaultOutput::Process
     {
-      _combine_and_crossfade.process(CombineFunction());
-    }
+      explicit Process(Output& out)
+        : MimoProcessorBase::DefaultOutput::Process(out)
+      {
+        parent._combine_and_crossfade.process(CombineFunction());
+      }
+    };
 
   private:
-    apf::CombineChannelsCrossfade<rtlist_proxy<Input>, InternalOutput
+    apf::CombineChannelsCrossfade<rtlist_proxy<Input>, Output
       , apf::raised_cosine_fade<float> > _combine_and_crossfade;
 };
 
 MyProcessor::MyProcessor(const apf::parameter_map& p)
   : MimoProcessorBase(p)
-  , _input_list(_fifo)
-  , _output_list(_fifo)
   , _fade(this->block_size())
 {
   for (int i = 0; i < p.get<int>("in_channels"); ++i)
   {
-    _input_list.add(new Input(MimoProcessorBase::Input::Params(this)));
+    this->add<Input>();
   }
 
   for (int i = 0; i < p.get<int>("out_channels"); ++i)
   {
-    _output_list.add(new Output(MimoProcessorBase::Output::Params(this)));
+    this->add<Output>();
   }
 }
 

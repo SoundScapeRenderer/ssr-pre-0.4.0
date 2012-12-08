@@ -42,20 +42,11 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
 
     MyProcessor();
 
-    ~MyProcessor() { this->deactivate(); }
-
-    void process()
-    {
-      _process_list(_input_list);
-      _process_list(_output_list);
-    }
-
     enum { CROSSFADE, INTERPOLATION } mode;
 
     apf::SharedData<float> volume;
 
   private:
-    rtlist_t _input_list, _output_list;
     apf::raised_cosine_fade<float> _fade;
 };
 
@@ -68,12 +59,21 @@ class MyProcessor::Input : public MimoProcessorBase::DefaultInput
       , old_weight(this->parent.volume())
     {}
 
-    virtual void process()
+    struct Process : MimoProcessorBase::DefaultInput::Process
     {
-      // In real-life applications, this will be more complicated:
-      old_weight = weight;
-      weight = this->parent.volume();
-    }
+      explicit Process(Input& in)
+        : MimoProcessorBase::DefaultInput::Process(in)
+      {
+        // In real-life applications, this will be more complicated:
+        parent.old_weight = parent.weight;
+        parent.weight = parent.parent.volume();
+      }
+    };
+
+#if 0
+    // This is called by CombineChannelsCrossfade, but we don't use it
+    void update() const {}
+#endif
 
     float weight, old_weight;
 };
@@ -123,35 +123,39 @@ class MyProcessor::CombineFunction
     apf::math::linear_interpolator<float> _interpolator;
 };
 
-class MyProcessor::Output : public MimoProcessorBase::Output
+class MyProcessor::Output : public MimoProcessorBase::DefaultOutput
 {
   public:
     explicit Output(const Params& p)
-      : MimoProcessorBase::Output(p)
-      , _combine_and_interpolate(this->parent._input_list, _internal)
-      , _combine_and_crossfade(this->parent._input_list, _internal
+      : MimoProcessorBase::DefaultOutput(p)
+      , _combine_and_interpolate(this->parent.get_list<Input>(), *this)
+      , _combine_and_crossfade(this->parent.get_list<Input>(), *this
           , this->parent._fade)
       , _combine_function(this->parent.block_size())
     {}
 
-    virtual void process()
+    struct Process : MimoProcessorBase::DefaultOutput::Process
     {
-      switch (this->parent.mode)
+      explicit Process(Output& out)
+        : MimoProcessorBase::DefaultOutput::Process(out)
       {
-        case INTERPOLATION:
-          _combine_and_interpolate.process(_combine_function);
-          break;
+        switch (parent.parent.mode)
+        {
+          case INTERPOLATION:
+            parent._combine_and_interpolate.process(parent._combine_function);
+            break;
 
-        case CROSSFADE:
-          _combine_and_crossfade.process(_combine_function);
-          break;
+          case CROSSFADE:
+            parent._combine_and_crossfade.process(parent._combine_function);
+            break;
+        }
       }
-    }
+    };
 
   private:
-    apf::CombineChannelsInterpolation<rtlist_proxy<Input>, InternalOutput>
+    apf::CombineChannelsInterpolation<rtlist_proxy<Input>, Output>
       _combine_and_interpolate;
-    apf::CombineChannelsCrossfade<rtlist_proxy<Input>, InternalOutput
+    apf::CombineChannelsCrossfade<rtlist_proxy<Input>, Output
       , apf::raised_cosine_fade<float> > _combine_and_crossfade;
     CombineFunction _combine_function;
 };
@@ -160,16 +164,14 @@ MyProcessor::MyProcessor()
   : MimoProcessorBase()
   , mode(CROSSFADE)
   , volume(_fifo, 1.0f)
-  , _input_list(_fifo)
-  , _output_list(_fifo)
   , _fade(this->block_size())
 {
   // Let's create 2 inputs ...
-  _input_list.add(new Input(Input::Params(this)));
-  _input_list.add(new Input(Input::Params(this)));
+  this->add<Input>();
+  this->add<Input>();
 
   // ... and 1 output, OK?
-  _output_list.add(new Output(Output::Params(this)));
+  this->add<Output>();
 
   std::cout << "following keys are supported:\n"
     " +<enter> to increment volume\n"

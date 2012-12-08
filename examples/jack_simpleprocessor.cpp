@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 
   SimpleProcessor::Input::Params p3;
   p3.set("port_name", "another_port_just_for_fun");
-  engine.add_input(p3);
+  engine.add(p3);
 
   sleep(60);
 }

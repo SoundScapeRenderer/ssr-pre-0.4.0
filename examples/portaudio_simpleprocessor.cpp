@@ -43,6 +43,9 @@ int main(int argc, char *argv[])
     std::cerr << "Error: too few arguments!" << std::endl;
     std::cout << "Usage: " << argv[0]
      << " inchannels outchannels samplerate blocksize [device-id]" << std::endl;
+
+    std::cout << "\nList of devices:" << std::endl;
+    std::cout << SimpleProcessor::device_info() << std::endl;
     return 42;
   }
 

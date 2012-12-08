@@ -55,20 +55,21 @@ class MatrixProcessor : public apf::MimoProcessor<MatrixProcessor
     ~MatrixProcessor()
     {
       this->deactivate();
-      _output_list.clear();
       _m3_list.clear();
       _m2_list.clear();
       _m1_list.clear();
-      _input_list.clear();
     }
 
-    void process()
+    struct Process : MimoProcessorBase::Process
     {
-      _process_list(_m1_list);
-      _process_list(_m2_list);
-      _process_list(_m3_list);
-      _process_list(_output_list);
-    }
+      explicit Process(MatrixProcessor& p)
+        : MimoProcessorBase::Process(p)
+      {
+        parent._process_list(parent._m1_list);
+        parent._process_list(parent._m2_list);
+        parent._process_list(parent._m3_list);
+      }
+    };
 
   private:
     /// make sure blocksize is divisible by parts.
@@ -81,10 +82,10 @@ class MatrixProcessor : public apf::MimoProcessor<MatrixProcessor
 
     const int _channels, _blocksize, _parts, _part_length, _part_channels;
     matrix_t _m1, _m2, _m3;
-    rtlist_t _input_list, _m1_list, _m2_list, _m3_list, _output_list;
+    rtlist_t _m1_list, _m2_list, _m3_list;
 };
 
-class MatrixProcessor::m1_channel : public Item
+class MatrixProcessor::m1_channel : public ProcessItem<m1_channel>
 {
   public:
     struct Params
@@ -98,7 +99,7 @@ class MatrixProcessor::m1_channel : public Item
     class Setup
     {
       public:
-        Setup(int parts, int part_length, const rtlist_t& input_list)
+        Setup(int parts, int part_length, const rtlist_proxy<Input>& input_list)
           : _part(0)
           , _parts(parts)
           , _part_length(part_length)
@@ -125,15 +126,20 @@ class MatrixProcessor::m1_channel : public Item
       private:
         int _part;
         const int _parts, _part_length;
-        apf::cast_iterator<Input, rtlist_const_iterator> _input;
+        rtlist_proxy<Input>::iterator _input;
     };
 
-    virtual void process()
+    struct Process : ProcessItem<m1_channel>::Process
     {
-      assert(_input != 0);
-      Input::iterator begin = _input->begin() + _part * _part_size;
-      std::copy(begin, begin + _part_size, _channel.begin());
-    }
+      explicit Process(m1_channel& ch)
+        : ProcessItem<m1_channel>::Process(ch)
+      {
+        assert(parent._input != 0);
+        Input::iterator begin = parent._input->begin()
+          + parent._part * parent._part_size;
+        std::copy(begin, begin + parent._part_size, parent._channel.begin());
+      }
+    };
 
   private:
     m1_channel(const Params& p)
@@ -148,7 +154,7 @@ class MatrixProcessor::m1_channel : public Item
     const int _part, _part_size;
 };
 
-class MatrixProcessor::m2_channel : public Item
+class MatrixProcessor::m2_channel : public ProcessItem<m2_channel>
 {
   public:
     struct Params { Channel channel; Slice input; };
@@ -161,10 +167,15 @@ class MatrixProcessor::m2_channel : public Item
       return new m2_channel(temp);
     }
 
-    virtual void process()
+    struct Process : ProcessItem<m2_channel>::Process
     {
-      std::copy(_input.begin(), _input.end(), _channel.begin());
-    }
+      explicit Process(m2_channel& ch)
+        : ProcessItem<m2_channel>::Process(ch)
+      {
+        std::copy(parent._input.begin(), parent._input.end()
+            , parent._channel.begin());
+      }
+    };
 
   private:
     m2_channel(const Params& p) : _channel(p.channel) , _input(p.input) {}
@@ -173,7 +184,7 @@ class MatrixProcessor::m2_channel : public Item
     Slice _input;
 };
 
-class MatrixProcessor::m3_slice : public Item
+class MatrixProcessor::m3_slice : public ProcessItem<m3_slice>
 {
   public:
     struct Params { Slice slice; Channel input; };
@@ -186,10 +197,15 @@ class MatrixProcessor::m3_slice : public Item
       return new m3_slice(temp);
     }
 
-    virtual void process()
+    struct Process : ProcessItem<m3_slice>::Process
     {
-      std::copy(_input.begin(), _input.end(), _slice.begin());
-    }
+      explicit Process(m3_slice& s)
+        : ProcessItem<m3_slice>::Process(s)
+      {
+        std::copy(parent._input.begin(), parent._input.end()
+            , parent._slice.begin());
+      }
+    };
 
   private:
     m3_slice(const Params& p) : _slice(p.slice), _input(p.input) {}
@@ -198,33 +214,37 @@ class MatrixProcessor::m3_slice : public Item
     Channel _input;
 };
 
-class MatrixProcessor::Output : public MimoProcessorBase::Output
+class MatrixProcessor::Output : public MimoProcessorBase::DefaultOutput
 {
   public:
-    struct Params : MimoProcessorBase::Output::Params
+    struct Params : MimoProcessorBase::DefaultOutput::Params
     {
       std::list<Channel> channel_list;
     };
 
     explicit Output(const Params& p)
-      : MimoProcessorBase::Output(p)
+      : MimoProcessorBase::DefaultOutput(p)
       , _channel_list(p.channel_list)
     {}
 
-    virtual void process()
+    struct Process : MimoProcessorBase::DefaultOutput::Process
     {
-      InternalOutput::iterator out = _internal.begin();
-
-      for (std::list<Channel>::iterator it = _channel_list.begin()
-          ; it != _channel_list.end()
-          ; ++it)
+      explicit Process(Output& o)
+        : MimoProcessorBase::DefaultOutput::Process(o)
       {
-        for (channel_iterator i = it->begin(); i != it->end(); ++i)
+        Output::iterator out = parent.begin();
+
+        for (std::list<Channel>::iterator it = parent._channel_list.begin()
+            ; it != parent._channel_list.end()
+            ; ++it)
         {
-          *out++ = *i;
+          for (channel_iterator i = it->begin(); i != it->end(); ++i)
+          {
+            *out++ = *i;
+          }
         }
       }
-    }
+    };
 
   private:
     std::list<Channel> _channel_list;
@@ -240,11 +260,9 @@ MatrixProcessor::MatrixProcessor(const apf::parameter_map& p)
   , _m1(_part_channels, _part_length)
   , _m2(_part_length,   _part_channels)
   , _m3(_part_channels, _part_length)
-  , _input_list(_fifo)
   , _m1_list(_fifo)
   , _m2_list(_fifo)
   , _m3_list(_fifo)
-  , _output_list(_fifo)
 {
   std::cout << "channels: " << _channels << ", parts: " << _parts
     << ", blocksize: " << _blocksize << std::endl;
@@ -258,13 +276,12 @@ MatrixProcessor::MatrixProcessor(const apf::parameter_map& p)
   for (int i = 1; i <= _channels; ++i)
   {
     ip.set("id", i);
-    ip.parent = this;
-    _input_list.add(new Input(ip));
+    this->add(ip);
   }
 
   // m1: input channels are split up in more (and smaller) channels
 
-  m1_channel::Setup m1_setup(_parts, _part_length, _input_list);
+  m1_channel::Setup m1_setup(_parts, _part_length, this->get_list<Input>());
   for (matrix_t::channels_iterator i = _m1.channels.begin()
       ; i != _m1.channels.end()
       ; ++i)
@@ -299,7 +316,7 @@ MatrixProcessor::MatrixProcessor(const apf::parameter_map& p)
     {
       op.channel_list.push_back(*next_channel++);
     }
-    _output_list.add(new Output(op));
+    this->add(op);
   }
 
   this->activate();

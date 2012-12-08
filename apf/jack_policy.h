@@ -97,12 +97,12 @@ class jack_policy : public JackClient
 
       // call member function which is implemented in derived class
       // (template method design pattern)
-      _process();
+      this->process();
 
       return 0;
     }
 
-    virtual void _process() = 0;
+    virtual void process() = 0;
 };
 
 template<typename interface_policy, typename native_handle_type>

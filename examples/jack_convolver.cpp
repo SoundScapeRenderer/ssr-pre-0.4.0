@@ -38,42 +38,56 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
 {
   public:
     typedef MimoProcessorBase::DefaultInput Input;
-    typedef MimoProcessorBase::DefaultOutput Output;
 
     template<typename In>
     MyProcessor(In first, In last);
 
     ~MyProcessor() { this->deactivate(); }
 
-    void process()
+    struct Output : MimoProcessorBase::DefaultOutput
     {
-      _convolver.add_input_block(_input->begin());
-      _convolver.rotate_queues();  // TODO: check if necessary?
-      if (reverb() != _old_reverb)
+      Output(const Params& p) : MimoProcessorBase::DefaultOutput(p) {}
+
+      // Deactivate process() function, fetch_buffer() is called earlier!
+      virtual void process() {}
+    };
+
+    struct Process : MimoProcessorBase::Process
+    {
+      explicit Process(MyProcessor& p)
+        : MimoProcessorBase::Process(p)
       {
-        if (reverb())
+        parent._convolver.add_input_block(parent._input->begin());
+        parent._convolver.rotate_queues();  // TODO: check if necessary?
+        if (parent.reverb() != parent._old_reverb)
         {
-          _convolver.set_filter(_filter_partitions);
+          if (parent.reverb())
+          {
+            parent._convolver.set_filter(parent._filter_partitions);
+          }
+          else
+          {
+            // Load Dirac
+            float one = 1.0f;
+            parent._convolver.set_filter(&one, (&one)+1);
+            // One could prepare frequency domain version to avoid repeated FFTs
+          }
+          parent._old_reverb = parent.reverb();
         }
-        else
-        {
-          // Load Dirac
-          float one = 1.0f;
-          _convolver.set_filter(&one, (&one)+1);
-          // One could prepare a frequency domain version to avoid repeated FFTs
-        }
-        _old_reverb = reverb();
+        float* result = parent._convolver.convolve_signal();
+
+        // This is necessary because _output is used before _output_list is
+        // processed:
+        parent._output->fetch_buffer();
+
+        std::copy(result, result+parent.block_size(), parent._output->begin());
       }
-      float* result = _convolver.convolve_signal();
-      std::copy(result, result + this->block_size(), _output->begin());
-    }
+    };
 
     apf::SharedData<bool> reverb;
 
   private:
     bool _old_reverb;
-
-    rtlist_t _input_list, _output_list;
 
     Input* _input;
     Output* _output;
@@ -90,17 +104,15 @@ MyProcessor::MyProcessor(In first, In last)
   : MimoProcessorBase()
   , reverb(_fifo, true)
   , _old_reverb(false)
-  , _input_list(_fifo)
-  , _output_list(_fifo)
-  , _partitions((std::distance(first, last)/this->block_size())+1)
+  , _partitions((std::distance(first, last) + this->block_size() - 1)
+      / this->block_size())
   , _convolver(this->block_size(), _partitions)
   , _filter_partitions(std::make_pair(_partitions, this->block_size() * 2))
 {
   _convolver.prepare_filter(first, last, _filter_partitions);
 
-  _input = _input_list.add(new Input(Input::Params(this)));
-
-  _output = _output_list.add(new Output(Output::Params(this)));
+  _input = this->add<Input>();
+  _output = this->add<Output>();
 
   std::cout << "Press <enter> to switch and q to quit" << std::endl;
   this->activate();

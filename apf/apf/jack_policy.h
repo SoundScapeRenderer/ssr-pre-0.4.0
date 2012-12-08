@@ -148,6 +148,8 @@ class jack_policy::Xput
   public:
     typedef typename X::iterator iterator;
 
+    struct buffer_type : has_begin_and_end<iterator> { friend class Xput; };
+
     void fetch_buffer()
     {
       this->buffer._begin = static_cast<sample_type*>(
@@ -157,14 +159,14 @@ class jack_policy::Xput
 
     std::string port_name() const { return _port_name; }
 
+    buffer_type buffer;
+
   protected:
      Xput(jack_policy& parent, const parameter_map& p);
 
     ~Xput() { _parent.unregister_port(_port); }
 
   private:
-    struct buffer_type : has_begin_and_end<iterator> { friend class Xput; };
-
     Xput(const Xput&); Xput& operator=(const Xput&);  // deactivated
 
     jack_policy& _parent;
@@ -173,9 +175,6 @@ class jack_policy::Xput
     JackClient::port_t* _init_port(const parameter_map& p, jack_policy& parent);
 
     const std::string _port_name;  // actual JACK port name
-
-  public:
-    buffer_type buffer;
 };
 
 template<typename X>

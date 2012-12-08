@@ -196,11 +196,15 @@ class portaudio_policy::Input
   public:
     typedef sample_type const* iterator;
 
+    struct buffer_type : has_begin_and_end<iterator> { friend class Input; };
+
     void fetch_buffer()
     {
       this->buffer._begin = _parent._in[_id];
       this->buffer._end   = this->buffer._begin + _parent.block_size();
     }
+
+    buffer_type buffer;
 
   protected:
     Input(portaudio_policy& parent, const parameter_map&)
@@ -211,13 +215,8 @@ class portaudio_policy::Input
     ~Input() {}
 
   private:
-    struct buffer_type : has_begin_and_end<iterator> { friend class Input; };
-
     portaudio_policy& _parent;
     const int _id;
-
-  public:
-    buffer_type buffer;
 };
 
 class portaudio_policy::Output
@@ -225,11 +224,15 @@ class portaudio_policy::Output
   public:
     typedef sample_type* iterator;
 
+    struct buffer_type : has_begin_and_end<iterator> { friend class Output; };
+
     void fetch_buffer()
     {
       this->buffer._begin = _parent._out[_id];
       this->buffer._end   = this->buffer._begin + _parent.block_size();
     }
+
+    buffer_type buffer;
 
   protected:
     Output(portaudio_policy& parent, const parameter_map&)
@@ -240,13 +243,8 @@ class portaudio_policy::Output
     ~Output() {}
 
   private:
-    struct buffer_type : has_begin_and_end<iterator> { friend class Output; };
-
     portaudio_policy& _parent;
     const int _id;
-
-  public:
-    buffer_type buffer;
 };
 
 }  // namespace apf

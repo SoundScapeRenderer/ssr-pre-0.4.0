@@ -32,6 +32,7 @@
 
 #include "apf/parameter_map.h"
 #include "apf/stringtools.h"
+#include "apf/iterator.h"  // for has_begin_and_end
 
 #ifndef APF_MIMOPROCESSOR_INTERFACE_POLICY
 #define APF_MIMOPROCESSOR_INTERFACE_POLICY apf::portaudio_policy
@@ -197,8 +198,8 @@ class portaudio_policy::Input
 
     void fetch_buffer()
     {
-      _begin = _parent._in[_id];
-      _end   = _begin + _parent.block_size();
+      this->buffer._begin = _parent._in[_id];
+      this->buffer._end   = this->buffer._begin + _parent.block_size();
     }
 
   protected:
@@ -209,12 +210,14 @@ class portaudio_policy::Input
 
     ~Input() {}
 
-    iterator _begin;
-    iterator _end;
-
   private:
+    struct buffer_type : has_begin_and_end<iterator> { friend class Input; };
+
     portaudio_policy& _parent;
     const int _id;
+
+  public:
+    buffer_type buffer;
 };
 
 class portaudio_policy::Output
@@ -224,8 +227,8 @@ class portaudio_policy::Output
 
     void fetch_buffer()
     {
-      _begin = _parent._out[_id];
-      _end   = _begin + _parent.block_size();
+      this->buffer._begin = _parent._out[_id];
+      this->buffer._end   = this->buffer._begin + _parent.block_size();
     }
 
   protected:
@@ -236,12 +239,14 @@ class portaudio_policy::Output
 
     ~Output() {}
 
-    iterator _begin;
-    iterator _end;
-
   private:
+    struct buffer_type : has_begin_and_end<iterator> { friend class Output; };
+
     portaudio_policy& _parent;
     const int _id;
+
+  public:
+    buffer_type buffer;
 };
 
 }  // namespace apf

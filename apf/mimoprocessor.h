@@ -1031,8 +1031,8 @@ class APF_MIMOPROCESSOR_BASE::DefaultInput : public Input
 
     DefaultInput(const Params& p) : Input(p) {}
 
-    iterator begin() const { return this->_begin; }
-    iterator   end() const { return this->_end; }
+    iterator begin() const { return this->buffer.begin(); }
+    iterator   end() const { return this->buffer.end(); }
 };
 
 /// %Output class.
@@ -1075,8 +1075,8 @@ class APF_MIMOPROCESSOR_BASE::DefaultOutput : public Output
 
     DefaultOutput(const Params& p) : Output(p) {}
 
-    iterator begin() const { return this->_begin; }
-    iterator   end() const { return this->_end; }
+    iterator begin() const { return this->buffer.begin(); }
+    iterator   end() const { return this->buffer.end(); }
 };
 
 }  // namespace apf

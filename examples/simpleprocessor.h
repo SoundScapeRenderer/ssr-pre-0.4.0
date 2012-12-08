@@ -48,8 +48,6 @@ class SimpleProcessor : public apf::MimoProcessor<SimpleProcessor
       private:
         typedef apf::has_begin_and_end<apf::fixed_vector<sample_type>
           ::const_iterator> _begin_end_base;
-        using _begin_end_base::_begin;
-        using _begin_end_base::_end;
 
       public:
         typedef _begin_end_base::iterator iterator;
@@ -59,8 +57,8 @@ class SimpleProcessor : public apf::MimoProcessor<SimpleProcessor
           , _buffer(this->parent.block_size())
         {
           // initialize protected members from has_begin_and_end
-          _begin = _buffer.begin();
-          _end = _buffer.end();
+          _begin = this->buffer.begin();
+          _end = this->buffer.end();
         }
 
         struct Process : MimoProcessorBase::Input::Process
@@ -73,8 +71,7 @@ class SimpleProcessor : public apf::MimoProcessor<SimpleProcessor
             // non-trivial applications there will be some intermediate buffer
             // anyway and copying the input buffers will not be necessary.
 
-            std::copy(parent.MimoProcessorBase::Input::_begin
-                , parent.MimoProcessorBase::Input::_end
+            std::copy(parent.buffer.begin(), parent.buffer.end()
                 , parent._buffer.begin());
           }
         };

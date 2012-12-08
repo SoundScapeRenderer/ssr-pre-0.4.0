@@ -9,18 +9,5 @@ git subtree add --prefix=apf --squash apf/master
 
 git subtree pull --prefix=apf --squash apf/master
 
-# maybe an alternative:
-git remote update
-git subtree merge ...?
-
 git subtree split --prefix=apf --annotate='(SSR) ' --branch ssr-changes
-
-# untested:
-
-git push https://username@dev.qu.tu-berlin.de/git/apf-internal ssr-changes:master
-
-# maybe better without the local data?
-
-git subtree add --prefix=apf --squash https://username@dev.qu.tu-berlin.de/git/apf-internal master
-
-git subtree pull --prefix=apf --squash https://username@dev.qu.tu-berlin.de/git/apf-internal master
+git push apf ssr-changes:master

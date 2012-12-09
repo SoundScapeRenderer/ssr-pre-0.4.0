@@ -41,6 +41,7 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
     class Output;
 
     MyProcessor();
+    ~MyProcessor() { this->deactivate(); }
 
     enum { CROSSFADE, INTERPOLATION } mode;
 

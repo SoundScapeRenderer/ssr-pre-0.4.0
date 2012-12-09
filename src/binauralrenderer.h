@@ -241,9 +241,6 @@ class BinauralRenderer::Output : public _base::Output
         : _base::Output::Process(p)
       {
         p._combiner.process(RenderFunction());
-
-        // TODO: move to RendererBase:
-        p._level_helper(p.parent);
       }
     };
 

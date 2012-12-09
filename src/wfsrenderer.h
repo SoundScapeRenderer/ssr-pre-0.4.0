@@ -232,9 +232,6 @@ class WfsRenderer::Output : public _base::Output
         : _base::Output::Process(p)
       {
         p._combiner.process(RenderFunction(p));
-
-        // TODO: move to RendererBase:
-        p._level_helper(p.parent);
       }
     };
 

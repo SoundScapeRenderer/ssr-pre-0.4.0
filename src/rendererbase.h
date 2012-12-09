@@ -428,6 +428,19 @@ class RendererBase<Derived>::Output : public Base::Output
       , _level()
     {}
 
+    struct Process : Base::Output::Process
+    {
+      explicit Process(Output& o) : Base::Output::Process(o) , _out(o) {}
+
+      ~Process()
+      {
+        _out._level_helper(_out.parent);
+      }
+
+      private:
+        Output& _out;
+    };
+
     sample_type get_level() const { return _level; }
 
   protected:

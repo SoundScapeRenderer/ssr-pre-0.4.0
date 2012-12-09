@@ -336,8 +336,7 @@ class RendererBase<Derived>::Source
     typedef typename std::iterator_traits<typename Input::iterator>::value_type
       sample_type;
 
-    // TODO: remove. This is a temporary solution for rem_source
-    friend class RendererBase<Derived>;
+    friend class RendererBase<Derived>;  // rem_source() needs access to _input
 
     Source(apf::CommandQueue& fifo, const Input& in)
       : position(fifo)

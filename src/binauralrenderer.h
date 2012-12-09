@@ -70,12 +70,6 @@ class BinauralRenderer : public RendererBase<BinauralRenderer>
 
     void load_reproduction_setup();
 
-    void process()
-    {
-      _process_list(_source_list);
-      _process_list(_output_list);
-    }
-
     // TODO: proper solution for getting the reproduction setup
     template<typename SomeListType>
     void get_loudspeakers(SomeListType&) {}
@@ -238,22 +232,26 @@ class BinauralRenderer::Output : public _base::Output
 
     Output(const Params& p)
       : _base::Output(p)
-      , _combiner(_sourcechannels, _internal, this->parent._fade)
+      , _combiner(_sourcechannels, this->buffer, this->parent._fade)
     {}
 
-  private:
-    virtual void process()
+    struct Process : _base::Output::Process
     {
-      _combiner.process(RenderFunction());
+      explicit Process(Output& p)
+        : _base::Output::Process(p)
+      {
+        p._combiner.process(RenderFunction());
 
-      // TODO: move to RendererBase:
-      _level_helper(this->parent);
-    }
+        // TODO: move to RendererBase:
+        p._level_helper(p.parent);
+      }
+    };
 
+  private:
     std::list<SourceChannel*> _sourcechannels;
 
     apf::CombineChannelsCrossfadeCopy<apf::cast_proxy<SourceChannel
-      , std::list<SourceChannel*> >, _base::InternalOutput
+      , std::list<SourceChannel*> >, buffer_type
       , apf::raised_cosine_fade<sample_type> > _combiner;
 };
 
@@ -272,23 +270,35 @@ void BinauralRenderer::load_reproduction_setup()
     // TODO: read target from proper reproduction file
     params.set("connect_to", prefix + "1");
   }
-  this->_add_output(params);
+  this->add(params);
 
   if (prefix != "")
   {
     params.set("connect_to", prefix + "2");
   }
-  this->_add_output(params);
+  this->add(params);
 }
 
 class BinauralRenderer::Source : public _base::Source
 {
+  private:
+    void _process();
+
   public:
     Source(apf::CommandQueue& fifo, const Input& in)
       : _base::Source(fifo, in)
       , output(std::make_pair(2
             , std::make_pair(in.parent.block_size(), in.parent._partitions)))
     {}
+
+    struct Process : _base::Source::Process
+    {
+      explicit Process(Source& p)
+        : _base::Source::Process(p)
+      {
+        p._process();
+      }
+    };
 
     void connect_to_outputs(rtlist_t& output_list)
     {
@@ -307,8 +317,6 @@ class BinauralRenderer::Source : public _base::Source
           , apf::make_cast_proxy<Output>(output_list)
           , &Output::_sourcechannels);
     }
-
-    void do_process();
 
     apf::fixed_vector<SourceChannel> output;
 
@@ -340,7 +348,7 @@ class BinauralRenderer::Source : public _base::Source
     float _gain, _old_gain;
 };
 
-void BinauralRenderer::Source::do_process()
+void BinauralRenderer::Source::_process()
 {
   _old_gain = _gain;
   _old_hrtf_index = _hrtf_index;
@@ -371,7 +379,10 @@ void BinauralRenderer::Source::do_process()
       float source_distance
         = (this->position() - ref_pos).length();
 
-      if (source_distance < 0.5f) _interp_factor = 1.0f - 2*source_distance;
+      if (source_distance < 0.5f)
+      {
+        _interp_factor = 1.0f - 2 * source_distance;
+      }
 
       // no volume increase for sources closer than 0.5m
       source_distance = std::max(source_distance, 0.5f);
@@ -398,28 +409,32 @@ void BinauralRenderer::Source::do_process()
     if (_hrtf_index != _old_hrtf_index || _interp_factor != _old_interp_factor)
     {
       // left and right channels are interleaved
-      filter& filter_data = (*_input.parent._hrtfs)[2 * _hrtf_index + i];
+      filter& filter_data
+        = (*_input.parent._hrtfs)[2 * _hrtf_index + i];
 
       if (_interp_factor == 0)
       {
-        apf::copy_nested(filter_data, output[i].hrtf);
+        apf::copy_nested(filter_data, this->output[i].hrtf);
       }
       else
       {
         apf::transform_nested(filter_data, *_input.parent._neutral_filter
-            , output[i].hrtf, _interpolate(_interp_factor));
+            , this->output[i].hrtf
+            , _interpolate(_interp_factor));
       }
     }
 
-    output[i].hrtf_index = _hrtf_index;
-    output[i].interp_factor = _interp_factor;
-    output[i].gain = _gain;
+    this->output[i].hrtf_index = _hrtf_index;
+    this->output[i].interp_factor = _interp_factor;
+    this->output[i].gain = _gain;
   }
 
   int crossfade_mode;
 
-  if (output[0].convolver.queues_empty() && output[1].convolver.queues_empty()
-      && _gain == _old_gain && _hrtf_index == _old_hrtf_index
+  if (this->output[0].convolver.queues_empty()
+      && this->output[1].convolver.queues_empty()
+      && _gain == _old_gain
+      && _hrtf_index == _old_hrtf_index
       && _interp_factor == _old_interp_factor)
   {
     if (_gain == 0)
@@ -438,15 +453,17 @@ void BinauralRenderer::Source::do_process()
 
   for (size_t i = 0; i < 2; ++i)
   {
-    output[i].convolver.add_input_block(_input.begin());
+    this->output[i].convolver.add_input_block(_input.begin());
 
     if (crossfade_mode != 0)
     {
-      output[i]._begin = output[i].convolver.convolve_signal(_old_gain);
-      output[i]._end = output[i]._begin + _input.parent.block_size();
+      this->output[i]._begin
+        = this->output[i].convolver.convolve_signal(_old_gain);
+      this->output[i]._end
+        = this->output[i]._begin + _input.parent.block_size();
     }
 
-    output[i].crossfade_mode = crossfade_mode;
+    this->output[i].crossfade_mode = crossfade_mode;
   }
 }
 

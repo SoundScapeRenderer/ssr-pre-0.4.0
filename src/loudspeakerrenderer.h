@@ -90,7 +90,7 @@ LoudspeakerRenderer<Derived>::get_loudspeakers(std::vector<Loudspeaker>& l)
 {
   typedef typename _base::template rtlist_proxy<typename Derived::Output>
     out_list_t;
-  out_list_t outputs(this->get_output_list());
+  out_list_t outputs = this->get_output_list();
 
   for (typename out_list_t::iterator i = outputs.begin()
       ; i != outputs.end()
@@ -254,7 +254,7 @@ LoudspeakerRenderer<Derived>::_load_loudspeaker(const Node& node)
   params.weight = weight;
   params.delay = delay;
   _set_connection(params);
-  this->_add_output(params);
+  this->add(params);
 }
 
 template<typename Derived>
@@ -343,7 +343,7 @@ LoudspeakerRenderer<Derived>::_load_linear_array(const Node& node)
     params.position = current.position;
     params.orientation = current.orientation;
     _set_connection(params);
-    this->_add_output(params);
+    this->add(params);
 
     current += increment;
   }
@@ -422,7 +422,7 @@ LoudspeakerRenderer<Derived>::_load_circular_array(const Node& node)
     params.position = point.position;
     params.orientation = point.orientation;
     _set_connection(params);
-    this->_add_output(params);
+    this->add(params);
   }
 }
 

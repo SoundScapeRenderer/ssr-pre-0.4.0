@@ -1305,7 +1305,7 @@ Controller<Renderer>::_load_audio_recorder(const std::string& audio_file_name
       ; it != output_list.end()
       ; ++it, ++channel)
   {
-    _renderer.connect_ports(it->internal().port_name()
+    _renderer.connect_ports(it->port_name()
         , client_name + ":" + input_prefix + "_" + apf::str::A2S(channel));
   }
 }

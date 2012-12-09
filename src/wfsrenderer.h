@@ -131,13 +131,6 @@ class WfsRenderer : public LoudspeakerRenderer<WfsRenderer>
       temp_convolver.prepare_filter(ir.begin(), ir.end(), *_pre_filter);
     }
 
-    void process()
-    {
-      _process_list(_input_list);
-      _process_list(_source_list);
-      _process_list(_output_list);
-    }
-
   private:
     apf::raised_cosine_fade<sample_type> _fade;
     std::auto_ptr<apf::Convolver::filter_t> _pre_filter;
@@ -157,12 +150,15 @@ class WfsRenderer::Input : public _base::Input
           , this->parent._initial_delay)
     {}
 
-    virtual void process()
+    struct Process : _base::Input::Process
     {
-      _convolver.add_input_block(_internal.begin());
-      sample_type* data = _convolver.convolve_signal();
-      _delayline.write_block(data);
-    }
+      explicit Process(Input& p)
+        : _base::Input::Process(p)
+      {
+        p._convolver.add_input_block(p.buffer.begin());
+        p._delayline.write_block(p._convolver.convolve_signal());
+      }
+    };
 
   private:
     apf::StaticConvolver _convolver;
@@ -227,35 +223,51 @@ class WfsRenderer::Output : public _base::Output
 
     Output(const Params& p)
       : _base::Output(p)
-      , _combiner(_sourcechannels, _internal, this->parent._fade)
+      , _combiner(_sourcechannels, this->buffer, this->parent._fade)
     {}
 
-  private:
-    virtual void process()
+    struct Process : _base::Output::Process
     {
-      _combiner.process(RenderFunction(*this));
+      explicit Process(Output& p)
+        : _base::Output::Process(p)
+      {
+        p._combiner.process(RenderFunction(p));
 
-      // TODO: move to RendererBase:
-      _level_helper(this->parent);
-    }
+        // TODO: move to RendererBase:
+        p._level_helper(p.parent);
+      }
+    };
 
+  private:
     std::list<SourceChannel*> _sourcechannels;
 
     apf::CombineChannelsCrossfade<apf::cast_proxy<SourceChannel
-      , std::list<SourceChannel*> >, _base::InternalOutput
+      , std::list<SourceChannel*> >, buffer_type
       , apf::raised_cosine_fade<sample_type> > _combiner;
 };
 
 class WfsRenderer::Source : public _base::Source
 {
+  private:
+    void _process();
+
   public:
     Source(apf::CommandQueue& fifo, const Input& in)
       : _base::Source(fifo, in)
         // We cannot create a std::pair of a reference, so we use a pointer:
-      , output(std::make_pair(in.parent._output_list.size(), this))
+      , output(std::make_pair(in.parent.get_output_list().size(), this))
       , delayline(in._delayline)
       , block_size(in.parent.block_size())
     {}
+
+    struct Process : _base::Source::Process
+    {
+      explicit Process(Source& p)
+        : _base::Source::Process(p)
+      {
+        p._process();
+      }
+    };
 
     void connect_to_outputs(rtlist_t& output_list)
     {
@@ -274,8 +286,6 @@ class WfsRenderer::Source : public _base::Source
           , apf::make_cast_proxy<Output>(output_list)
           , &Output::_sourcechannels);
     }
-
-    void do_process();
 
     bool get_output_levels(sample_type* first, sample_type* last) const
     {
@@ -301,7 +311,7 @@ class WfsRenderer::Source : public _base::Source
     bool _focused;
 };
 
-void WfsRenderer::Source::do_process()
+void WfsRenderer::Source::_process()
 {
   if (this->model() == ::Source::plane)
   {
@@ -360,7 +370,7 @@ int WfsRenderer::RenderFunction::select(SourceChannel& in)
   // define a restricted area around loudspeakers to avoid division by zero:
   const float safety_radius = 0.01f; // 1 cm
 
-  // TODO: move reference calculation to WfsRenderer::process()?
+  // TODO: move reference calculation to WfsRenderer::Process?
   DirectionalPoint ref_off(_out.parent.state.reference_offset_position()
       , _out.parent.state.reference_offset_orientation());
   DirectionalPoint ref(_out.parent.state.reference_position()

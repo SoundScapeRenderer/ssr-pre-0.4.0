@@ -99,6 +99,15 @@ class RendererBase : public apf::MimoProcessor<Derived
       apf::SharedData<sample_type> amplitude_reference_distance;
     } state;
 
+    struct Process : Base::Process
+    {
+      explicit Process(RendererBase& p)
+        : Base::Process(p)
+      {
+        p._process_list(p._source_list);
+      }
+    };
+
     // If you don't need a list proxy, just use a reference to the list
     template<typename L, typename ListProxy, typename DataMember>
     class AddToSublistCommand : public apf::CommandQueue::Command
@@ -169,15 +178,10 @@ class RendererBase : public apf::MimoProcessor<Derived
     void rem_source(Source* source);
     void rem_all_sources();
 
-#if 0
-    void process();
-#endif
-
     Source* get_source(int id);
 
     // May only be used in realtime thread!
     const rtlist_t& get_source_list() const { return _source_list; }
-    const rtlist_t& get_output_list() const { return _output_list; }
 
     const std::map<int, Source*>& get_source_map() const { return _source_map; }
 
@@ -196,20 +200,10 @@ class RendererBase : public apf::MimoProcessor<Derived
 
     RendererBase(const apf::parameter_map& p);
 
-    template<typename P>
-    Output* _add_output(const P& p)
-    {
-      P temp = p;
-      temp.parent = static_cast<Derived*>(this);
-      Output* out = new typename Derived::Output(temp);
-      _output_list.add(out);
-      return out;
-    }
-
     // TODO: make private?
     sample_type _master_level;
 
-    rtlist_t _input_list, _source_list, _output_list;
+    rtlist_t _source_list;
 
     // TODO: find a better solution to get loudspeaker vs. headphone renderer
     bool _show_head;
@@ -248,9 +242,7 @@ RendererBase<Derived>::RendererBase(const apf::parameter_map& p)
   , master_volume_correction(apf::math::dB2linear(
         this->params.get("master_volume_correction", 0.0)))
   , _master_level()
-  , _input_list(_fifo)
   , _source_list(_fifo)
-  , _output_list(_fifo)
   , _show_head(true)
   , _highest_id(0)
 {}
@@ -260,19 +252,17 @@ int RendererBase<Derived>::add_source(const apf::parameter_map& p)
 {
   ScopedLock guard(_lock);
 
-  // TODO: re-use existing inputs?
-
   typename Derived::Input::Params temp;
   temp = p;
-  temp.parent = static_cast<Derived*>(this);
-  const typename Derived::Input* in = _input_list.add(new typename Derived::Input(temp));
+  const typename Derived::Input* in = this->add(temp);
 
-  Source* src = _source_list.add(new typename Derived::Source(_fifo, *in));
+  typename Derived::Source* src
+    = _source_list.add(new typename Derived::Source(_fifo, *in));
 
   // This cannot be done in the Derived::Source constructor because then the
   // connections to the Outputs are active before the Source is properly added
   // to the source list:
-  static_cast<typename Derived::Source*>(src)->connect_to_outputs(_output_list);
+  src->connect_to_outputs(const_cast<rtlist_t&>(this->get_output_list()));
 
   int id = _get_new_id();
   // TODO: check if id already exists? e.g. if (_source_map.count(id) > 0) {...}
@@ -295,18 +285,17 @@ void RendererBase<Derived>::rem_source(Source* source)
         , _find_source(source));
   _source_map.erase(delinquent);
 
+  assert(dynamic_cast<typename Derived::Source*>(source));
   static_cast<typename Derived::Source*>(source)->disconnect_from_outputs(
-      _output_list);
+      const_cast<rtlist_t&>(this->get_output_list()));
 
   Input* input = const_cast<Input*>(&source->_input);
   _source_list.rem(source);
 
   // TODO: really remove the corresponding Input?
   // ATTENTION: there may be several sources using the input! (or not?)
-  // ... and there may be the case that the number of inputs is constant.
 
-  // TODO: this is temporary, doesn't work with a fixed number of inputs!
-  _input_list.rem(input);
+  this->rem(input);
 }
 
 template<typename Derived>
@@ -318,20 +307,6 @@ void RendererBase<Derived>::rem_all_sources()
   }
   _highest_id = 0;
 }
-
-#if 0
-/** Main audio callback.
- * Is called by MimoProcessor in each audio cycle.
- * @see process_rt_commands()
- **/
-template<typename Derived>
-void
-RendererBase<Derived>::process()
-{
-  this->_process_list(_source_list);
-  this->_process_list(_output_list);
-}
-#endif
 
 template<typename Derived>
 typename RendererBase<Derived>::Source*
@@ -349,9 +324,14 @@ RendererBase<Derived>::_get_new_id()
 
 /// A sound source.
 template<typename Derived>
-class RendererBase<Derived>::Source : public Base::Item
-                       , public apf::has_begin_and_end<typename Input::iterator>
+class RendererBase<Derived>::Source
+                   : public Base::template ProcessItem<typename Derived::Source>
+                   , public apf::has_begin_and_end<typename Input::iterator>
 {
+  private:
+    typedef typename Base::template ProcessItem<typename Derived::Source>
+      SourceBase;
+
   public:
     typedef typename std::iterator_traits<typename Input::iterator>::value_type
       sample_type;
@@ -372,41 +352,25 @@ class RendererBase<Derived>::Source : public Base::Item
       , _level()
     {}
 
-    virtual void process()
+    struct Process : SourceBase::Process
     {
-      this->_begin = _input.begin();
-      this->_end = _input.end();
-
-      this->old_weighting_factor = this->weighting_factor;
-
-      if (!_input.parent.state.processing() || this->mute())
+      explicit Process(Source& p)
+        : SourceBase::Process(p)
       {
-        this->weighting_factor = 0.0;
+        p._process();
       }
-      else
-      {
-        this->weighting_factor = this->gain();
-        // If the renderer does something nonlinear, the master volume should be
-        // applied to the output signal ... TODO: shall we care?
-        this->weighting_factor *= _input.parent.state.master_volume();
-        this->weighting_factor *= _input.parent.master_volume_correction;
-      }
-
-      _level_helper(_input.parent);
-
-      // TODO: re-think (and improve!) this mechanism:
-      static_cast<typename Derived::Source*>(this)->do_process();
-    }
+    };
 
     sample_type get_level() const { return _level; }
 
     // In the default case, the output level are ignored
     bool get_output_levels(sample_type*, sample_type*) const { return false; }
 
-    /// This is empty in the base class. Can be overwritten in derived class.
+#if 0
+    // TODO: check if all renderers implement this. If not, provide default.
     void connect_to_outputs(rtlist_t&) {}
-    /// This is empty in the base class. Can be overwritten in derived class.
     void disconnect_from_outputs(rtlist_t&) {}
+#endif
 
     apf::SharedData<Position> position;
     apf::SharedData<Orientation> orientation;
@@ -427,6 +391,29 @@ class RendererBase<Derived>::Source : public Base::Item
     }
 
     void _level_helper(apf::disable_queries&) {}
+
+    void _process()
+    {
+      this->_begin = _input.begin();
+      this->_end = _input.end();
+
+      old_weighting_factor = weighting_factor;
+
+      if (!_input.parent.state.processing() || mute())
+      {
+        weighting_factor = 0.0;
+      }
+      else
+      {
+        weighting_factor = gain();
+        // If the renderer does something nonlinear, the master volume should
+        // be applied to the output signal ... TODO: shall we care?
+        weighting_factor *= _input.parent.state.master_volume();
+        weighting_factor *= _input.parent.master_volume_correction;
+      }
+
+      _level_helper(_input.parent);
+    }
 
     sample_type _pre_fader_level;
     sample_type _level;
@@ -454,8 +441,8 @@ class RendererBase<Derived>::Output : public Base::Output
   protected:
     void _level_helper(apf::enable_queries&)
     {
-      _level = apf::math::max_amplitude(this->_internal.begin()
-          , this->_internal.end());
+      _level = apf::math::max_amplitude(this->buffer.begin()
+          , this->buffer.end());
     }
 
     void _level_helper(apf::disable_queries&) {}

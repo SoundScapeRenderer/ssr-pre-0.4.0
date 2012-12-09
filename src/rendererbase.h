@@ -417,14 +417,6 @@ class RendererBase<Derived>::Source
 
     sample_type _pre_fader_level;
     sample_type _level;
-
-#if 0
-  private:
-    std::map<int,bool> _activity_map; ///< Under development  
-
-  public:
-    void set_output_activity(int output, bool active);
-#endif
 };
 
 template<typename Derived>

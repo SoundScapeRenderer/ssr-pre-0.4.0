@@ -694,8 +694,8 @@ class MimoProcessor : public interface_policy
     void rem(Input* in) { _input_list.rem(in); }
     void rem(Output* out) { _output_list.rem(out); }
 
-    const rtlist_t& get_input_list() { return _input_list; }
-    const rtlist_t& get_output_list() { return _output_list; }
+    const rtlist_t& get_input_list() const { return _input_list; }
+    const rtlist_t& get_output_list() const { return _output_list; }
 
     const parameter_map params;
 

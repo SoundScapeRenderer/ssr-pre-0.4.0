@@ -78,7 +78,7 @@ class MyProcessor::Output : public MimoProcessorBase::DefaultOutput
   public:
     explicit Output(const Params& p)
       : MimoProcessorBase::DefaultOutput(p)
-      , _combine_and_interpolate(this->parent.get_list<Input>(), *this)
+      , _combine_and_interpolate(this->parent.get_input_list(), *this)
     {}
 
     struct Process : MimoProcessorBase::DefaultOutput::Process
@@ -86,8 +86,8 @@ class MyProcessor::Output : public MimoProcessorBase::DefaultOutput
       explicit Process(Output& out)
         : MimoProcessorBase::DefaultOutput::Process(out)
       {
-        parent._combine_and_interpolate.process(
-            CombineFunction(parent.parent.block_size()));
+        out._combine_and_interpolate.process(
+            CombineFunction(out.parent.block_size()));
       }
     };
 

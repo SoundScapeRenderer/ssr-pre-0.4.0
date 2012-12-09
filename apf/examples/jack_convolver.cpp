@@ -57,36 +57,41 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
       explicit Process(MyProcessor& p)
         : MimoProcessorBase::Process(p)
       {
-        parent._convolver.add_input_block(parent._input->begin());
-        parent._convolver.rotate_queues();  // TODO: check if necessary?
-        if (parent.reverb() != parent._old_reverb)
-        {
-          if (parent.reverb())
-          {
-            parent._convolver.set_filter(parent._filter_partitions);
-          }
-          else
-          {
-            // Load Dirac
-            float one = 1.0f;
-            parent._convolver.set_filter(&one, (&one)+1);
-            // One could prepare frequency domain version to avoid repeated FFTs
-          }
-          parent._old_reverb = parent.reverb();
-        }
-        float* result = parent._convolver.convolve_signal();
-
-        // This is necessary because _output is used before _output_list is
-        // processed:
-        parent._output->fetch_buffer();
-
-        std::copy(result, result+parent.block_size(), parent._output->begin());
+        p._process();
       }
     };
 
     apf::SharedData<bool> reverb;
 
   private:
+    void _process()
+    {
+      _convolver.add_input_block(_input->begin());
+      _convolver.rotate_queues();  // TODO: check if necessary?
+      if (this->reverb() != _old_reverb)
+      {
+        if (this->reverb())
+        {
+          _convolver.set_filter(_filter_partitions);
+        }
+        else
+        {
+          // Load Dirac
+          float one = 1.0f;
+          _convolver.set_filter(&one, (&one)+1);
+          // One could prepare frequency domain version to avoid repeated FFTs
+        }
+        _old_reverb = this->reverb();
+      }
+      float* result = _convolver.convolve_signal();
+
+      // This is necessary because _output is used before _output_list is
+      // processed:
+      _output->fetch_buffer();
+
+      std::copy(result, result + this->block_size(), _output->begin());
+    }
+
     bool _old_reverb;
 
     Input* _input;

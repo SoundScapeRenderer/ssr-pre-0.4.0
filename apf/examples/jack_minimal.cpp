@@ -42,7 +42,7 @@ class MyProcessor::Output : public MimoProcessorBase::DefaultOutput
   public:
     explicit Output(const Params& p)
       : MimoProcessorBase::DefaultOutput(p)
-      , _combiner(this->parent.get_list<Input>(), *this)
+      , _combiner(this->parent.get_input_list(), *this)
     {}
 
     struct Process : MimoProcessorBase::DefaultOutput::Process
@@ -50,7 +50,7 @@ class MyProcessor::Output : public MimoProcessorBase::DefaultOutput
       explicit Process(Output& out)
         : MimoProcessorBase::DefaultOutput::Process(out)
       {
-        parent._combiner.process(my_predicate());
+        out._combiner.process(my_predicate());
       }
     };
 

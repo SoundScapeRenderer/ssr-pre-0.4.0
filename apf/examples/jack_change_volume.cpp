@@ -66,15 +66,10 @@ class MyProcessor::Input : public MimoProcessorBase::DefaultInput
         : MimoProcessorBase::DefaultInput::Process(in)
       {
         // In real-life applications, this will be more complicated:
-        parent.old_weight = parent.weight;
-        parent.weight = parent.parent.volume();
+        in.old_weight = in.weight;
+        in.weight = in.parent.volume();
       }
     };
-
-#if 0
-    // This is called by CombineChannelsCrossfade, but we don't use it
-    void update() const {}
-#endif
 
     float weight, old_weight;
 };
@@ -129,8 +124,8 @@ class MyProcessor::Output : public MimoProcessorBase::DefaultOutput
   public:
     explicit Output(const Params& p)
       : MimoProcessorBase::DefaultOutput(p)
-      , _combine_and_interpolate(this->parent.get_list<Input>(), *this)
-      , _combine_and_crossfade(this->parent.get_list<Input>(), *this
+      , _combine_and_interpolate(this->parent.get_input_list(), *this)
+      , _combine_and_crossfade(this->parent.get_input_list(), *this
           , this->parent._fade)
       , _combine_function(this->parent.block_size())
     {}
@@ -140,14 +135,14 @@ class MyProcessor::Output : public MimoProcessorBase::DefaultOutput
       explicit Process(Output& out)
         : MimoProcessorBase::DefaultOutput::Process(out)
       {
-        switch (parent.parent.mode)
+        switch (out.parent.mode)
         {
           case INTERPOLATION:
-            parent._combine_and_interpolate.process(parent._combine_function);
+            out._combine_and_interpolate.process(out._combine_function);
             break;
 
           case CROSSFADE:
-            parent._combine_and_crossfade.process(parent._combine_function);
+            out._combine_and_crossfade.process(out._combine_function);
             break;
         }
       }

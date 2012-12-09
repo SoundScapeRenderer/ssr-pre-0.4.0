@@ -65,9 +65,9 @@ class MatrixProcessor : public apf::MimoProcessor<MatrixProcessor
       explicit Process(MatrixProcessor& p)
         : MimoProcessorBase::Process(p)
       {
-        parent._process_list(parent._m1_list);
-        parent._process_list(parent._m2_list);
-        parent._process_list(parent._m3_list);
+        p._process_list(p._m1_list);
+        p._process_list(p._m2_list);
+        p._process_list(p._m3_list);
       }
     };
 
@@ -135,9 +135,9 @@ class MatrixProcessor::m1_channel : public ProcessItem<m1_channel>
         : ProcessItem<m1_channel>::Process(ch)
       {
         assert(parent._input != 0);
-        Input::iterator begin = parent._input->begin()
-          + parent._part * parent._part_size;
-        std::copy(begin, begin + parent._part_size, parent._channel.begin());
+        Input::iterator begin = ch._input->begin()
+          + ch._part * ch._part_size;
+        std::copy(begin, begin + ch._part_size, ch._channel.begin());
       }
     };
 
@@ -172,8 +172,7 @@ class MatrixProcessor::m2_channel : public ProcessItem<m2_channel>
       explicit Process(m2_channel& ch)
         : ProcessItem<m2_channel>::Process(ch)
       {
-        std::copy(parent._input.begin(), parent._input.end()
-            , parent._channel.begin());
+        std::copy(ch._input.begin(), ch._input.end(), ch._channel.begin());
       }
     };
 
@@ -202,8 +201,7 @@ class MatrixProcessor::m3_slice : public ProcessItem<m3_slice>
       explicit Process(m3_slice& s)
         : ProcessItem<m3_slice>::Process(s)
       {
-        std::copy(parent._input.begin(), parent._input.end()
-            , parent._slice.begin());
+        std::copy(s._input.begin(), s._input.end(), s._slice.begin());
       }
     };
 
@@ -232,10 +230,10 @@ class MatrixProcessor::Output : public MimoProcessorBase::DefaultOutput
       explicit Process(Output& o)
         : MimoProcessorBase::DefaultOutput::Process(o)
       {
-        Output::iterator out = parent.begin();
+        Output::iterator out = o.begin();
 
-        for (std::list<Channel>::iterator it = parent._channel_list.begin()
-            ; it != parent._channel_list.end()
+        for (std::list<Channel>::iterator it = o._channel_list.begin()
+            ; it != o._channel_list.end()
             ; ++it)
         {
           for (channel_iterator i = it->begin(); i != it->end(); ++i)
@@ -281,7 +279,7 @@ MatrixProcessor::MatrixProcessor(const apf::parameter_map& p)
 
   // m1: input channels are split up in more (and smaller) channels
 
-  m1_channel::Setup m1_setup(_parts, _part_length, this->get_list<Input>());
+  m1_channel::Setup m1_setup(_parts, _part_length, this->get_input_list());
   for (matrix_t::channels_iterator i = _m1.channels.begin()
       ; i != _m1.channels.end()
       ; ++i)

@@ -42,7 +42,7 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
       public:
         explicit Output(const Params& p)
           : MimoProcessorBase::DefaultOutput(p)
-          , _combiner(this->parent.get_list<Input>(), *this)
+          , _combiner(this->parent.get_input_list(), *this)
         {}
 
         struct Process : MimoProcessorBase::DefaultOutput::Process
@@ -51,7 +51,7 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
             : MimoProcessorBase::DefaultOutput::Process(out)
           {
             float weight = 1.0f/static_cast<float>(
-                out.parent.get_list<Input>().size());
+                out.parent.get_input_list().size());
             out._combiner.process(simple_predicate(weight));
           }
         };

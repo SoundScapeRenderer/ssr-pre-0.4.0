@@ -29,6 +29,7 @@
 
 #include <cassert>  // for assert()
 #include "apf/parameter_map.h"
+#include "apf/iterator.h"  // for has_begin_and_end
 
 #ifndef APF_MIMOPROCESSOR_SAMPLE_TYPE
 #define APF_MIMOPROCESSOR_SAMPLE_TYPE float
@@ -126,11 +127,15 @@ class pointer_policy<T*>::Input
   public:
     typedef T const* iterator;
 
+    struct buffer_type : has_begin_and_end<iterator> { friend class Input; };
+
     void fetch_buffer()
     {
       this->buffer._begin = _parent._in[_id];
       this->buffer._end   = this->buffer._begin + _parent.block_size();
     }
+
+    buffer_type buffer;
 
   protected:
     Input(pointer_policy& parent, const parameter_map&)
@@ -141,15 +146,10 @@ class pointer_policy<T*>::Input
     ~Input() {}
 
   private:
-    struct buffer_type : has_begin_and_end<iterator> { friend class Input; };
-
     Input(const Input&); Input& operator=(const Input&);  // deactivated
 
     pointer_policy& _parent;
     const int _id;
-
-  public:
-    buffer_type buffer;
 };
 
 template<typename T>
@@ -158,11 +158,15 @@ class pointer_policy<T*>::Output
   public:
     typedef T* iterator;
 
+    struct buffer_type : has_begin_and_end<iterator> { friend class Output; };
+
     void fetch_buffer()
     {
       this->buffer._begin = _parent._out[_id];
       this->buffer._end   = this->buffer._begin + _parent.block_size();
     }
+
+    buffer_type buffer;
 
   protected:
     Output(pointer_policy& parent, const parameter_map&)
@@ -173,15 +177,10 @@ class pointer_policy<T*>::Output
     ~Output() {}
 
   private:
-    struct buffer_type : has_begin_and_end<iterator> { friend class Output; };
-
     Output(const Output&); Output& operator=(const Output&);  // deactivated
 
     pointer_policy& _parent;
     const int _id;
-
-  public:
-    buffer_type buffer;
 };
 
 }  // namespace apf

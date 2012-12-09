@@ -71,8 +71,8 @@ class SimpleProcessor : public apf::MimoProcessor<SimpleProcessor
             // non-trivial applications there will be some intermediate buffer
             // anyway and copying the input buffers will not be necessary.
 
-            std::copy(parent.buffer.begin(), parent.buffer.end()
-                , parent._buffer.begin());
+            std::copy(in.buffer.begin(), in.buffer.end()
+                , in._buffer.begin());
           }
         };
 
@@ -92,7 +92,7 @@ class SimpleProcessor::Output : public MimoProcessorBase::DefaultOutput
 
     explicit Output(const Params& p)
       : MimoProcessorBase::DefaultOutput(p)
-      , _combiner(this->parent.get_list<Input>(), *this)
+      , _combiner(this->parent.get_input_list(), *this)
     {}
 
     struct Process : MimoProcessorBase::Output::Process
@@ -100,9 +100,9 @@ class SimpleProcessor::Output : public MimoProcessorBase::DefaultOutput
       explicit Process(Output& out)
         : MimoProcessorBase::Output::Process(out)
       {
-        float weight = 1.0f / float(parent.parent.get_list<Input>().size());
+        float weight = 1.0f / float(out.parent.get_input_list().size());
 
-        parent._combiner.process(simple_predicate(weight));
+        out._combiner.process(simple_predicate(weight));
       }
     };
 

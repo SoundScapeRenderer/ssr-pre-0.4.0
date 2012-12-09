@@ -71,7 +71,7 @@ class MyProcessor::Output : public MimoProcessorBase::DefaultOutput
   public:
     explicit Output(const Params& p)
       : MimoProcessorBase::DefaultOutput(p)
-      , _combine_and_crossfade(this->parent.get_list<Input>(), *this
+      , _combine_and_crossfade(this->parent.get_input_list(), *this
           , this->parent._fade)
     {}
 
@@ -80,7 +80,7 @@ class MyProcessor::Output : public MimoProcessorBase::DefaultOutput
       explicit Process(Output& out)
         : MimoProcessorBase::DefaultOutput::Process(out)
       {
-        parent._combine_and_crossfade.process(CombineFunction());
+        out._combine_and_crossfade.process(CombineFunction());
       }
     };
 

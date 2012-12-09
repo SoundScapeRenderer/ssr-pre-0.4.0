@@ -566,11 +566,7 @@ class MimoProcessor : public interface_policy
     class ProcessItem : public Item
     {
       public:
-        struct Process
-        {
-          explicit Process(X& p) : parent(p) {}
-          X& parent;
-        };
+        struct Process { explicit Process(Item&) {} };
 
       private:
         virtual void process()
@@ -698,13 +694,8 @@ class MimoProcessor : public interface_policy
     void rem(Input* in) { _input_list.rem(in); }
     void rem(Output* out) { _output_list.rem(out); }
 
-    template<typename ItemType>
-    rtlist_proxy<ItemType> get_list() const
-    {
-      assert(dynamic_cast<const Derived*>(this));
-      return static_cast<const Derived*>(this)->_get_list_helper(
-          static_cast<ItemType*>(0));
-    }
+    const rtlist_t& get_input_list() const { return _input_list; }
+    const rtlist_t& get_output_list() const { return _output_list; }
 
     const parameter_map params;
 
@@ -722,11 +713,7 @@ class MimoProcessor : public interface_policy
     typedef typename rtlist_t::iterator       rtlist_iterator;
     typedef typename rtlist_t::const_iterator rtlist_const_iterator;
 
-    struct Process
-    {
-      Process(Derived& p) : parent(p) {}
-      Derived& parent;
-    };
+    struct Process { Process(MimoProcessorBase&) {} };
 
     explicit MimoProcessor(const parameter_map& params = parameter_map());
 
@@ -819,16 +806,6 @@ class MimoProcessor : public interface_policy
     Output* _add_helper(Output* out) { return _output_list.add(out); }
 
     template<typename T> struct _empty_type {};
-
-    const rtlist_t& _get_list_helper(Input*) const
-    {
-      return _input_list;
-    }
-
-    const rtlist_t& _get_list_helper(Output*) const
-    {
-      return _output_list;
-    }
 
     // TODO: make "volatile"?
     rtlist_t* _current_list;
@@ -997,14 +974,13 @@ class APF_MIMOPROCESSOR_BASE::Input : public Xput
                                     , public interface_policy::Input
 {
   public:
-    // 'outer' is needed for add()
-    struct Params : Xput::Params { typedef typename Derived::Input outer; };
-
-    struct Process
+    struct Params : Xput::Params
     {
-      Process(typename Derived::Input& p) : parent(p) {}
-      typename Derived::Input& parent;
+      using Xput::Params::operator=;
+      typedef typename Derived::Input outer;  // see add()
     };
+
+    struct Process { Process(Input&) {} };
 
     explicit Input(const Params& p)
       : Xput(p)
@@ -1041,14 +1017,13 @@ class APF_MIMOPROCESSOR_BASE::Output : public Xput
                                      , public interface_policy::Output
 {
   public:
-    // 'outer' is needed for add()
-    struct Params : Xput::Params { typedef typename Derived::Output outer; };
-
-    struct Process
+    struct Params : Xput::Params
     {
-      Process(typename Derived::Output& p) : parent(p) {}
-      typename Derived::Output& parent;
+      using Xput::Params::operator=;
+      typedef typename Derived::Output outer;  // see add()
     };
+
+    struct Process { Process(Output&) {} };
 
     explicit Output(const Params& p)
       : Xput(p)

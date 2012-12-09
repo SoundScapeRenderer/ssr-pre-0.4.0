@@ -52,14 +52,9 @@ class WfsRenderer : public LoudspeakerRenderer<WfsRenderer>
   private:
     typedef LoudspeakerRenderer<WfsRenderer> _base;
 
-    apf::parameter_map _add_params(const apf::parameter_map& params)
-    {
-      apf::parameter_map temp(params);
-      temp.set("name", params.get("name", "WFS-Renderer"));
-      return temp;
-    }
-
   public:
+    static const char* name() { return "WFS-Renderer"; }
+
     class Input;
     class Source;
     class SourceChannel;
@@ -67,7 +62,7 @@ class WfsRenderer : public LoudspeakerRenderer<WfsRenderer>
     class RenderFunction;
 
     WfsRenderer(const apf::parameter_map& params)
-      : _base(_add_params(params))
+      : _base(params)
       , _fade(this->block_size())
       , _max_delay(this->params.get("delayline_size", 0))
       , _initial_delay(this->params.get("initial_delay", 0))

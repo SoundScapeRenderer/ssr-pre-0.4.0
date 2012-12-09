@@ -223,6 +223,13 @@ class RendererBase : public apf::MimoProcessor<Derived
         Source* _source;
     };
 
+    apf::parameter_map _add_params(const apf::parameter_map& params)
+    {
+      apf::parameter_map temp(params);
+      temp.set("name", params.get("name", Derived::name()));
+      return temp;
+    }
+
     int _get_new_id();
 
     std::map<int, Source*> _source_map;
@@ -237,7 +244,7 @@ class RendererBase : public apf::MimoProcessor<Derived
  **/
 template<typename Derived>
 RendererBase<Derived>::RendererBase(const apf::parameter_map& p)
-  : Base(p)
+  : Base(_add_params(p))
   , state(_fifo)
   , master_volume_correction(apf::math::dB2linear(
         this->params.get("master_volume_correction", 0.0)))

@@ -49,21 +49,16 @@ class BinauralRenderer : public RendererBase<BinauralRenderer>
   private:
     typedef RendererBase<BinauralRenderer> _base;
 
-    apf::parameter_map _add_params(const apf::parameter_map& params)
-    {
-      apf::parameter_map temp(params);
-      temp.set("name", params.get("name", "BinauralRenderer"));
-      return temp;
-    }
-
   public:
+    static const char* name() { return "BinauralRenderer"; }
+
     class SourceChannel;
     class Source;
     class Output;
     class RenderFunction;
 
     BinauralRenderer(const apf::parameter_map& params)
-      : _base(_add_params(params))
+      : _base(params)
       , _fade(this->block_size())
       , _partitions(0)
     {}

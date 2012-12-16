@@ -75,14 +75,10 @@ class MyProcessor::Output : public MimoProcessorBase::DefaultOutput
           , this->parent._fade)
     {}
 
-    struct Process : MimoProcessorBase::DefaultOutput::Process
+    APF_PROCESS(Output, MimoProcessorBase::DefaultOutput)
     {
-      explicit Process(Output& out)
-        : MimoProcessorBase::DefaultOutput::Process(out)
-      {
-        out._combine_and_crossfade.process(CombineFunction());
-      }
-    };
+      _combine_and_crossfade.process(CombineFunction());
+    }
 
   private:
     apf::CombineChannelsCrossfade<rtlist_proxy<Input>, Output

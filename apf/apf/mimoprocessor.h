@@ -48,6 +48,33 @@
 #define APF_MIMOPROCESSOR_DEFAULT_THREADS 1
 #endif
 
+/** Macro to create a @c Process struct and a corresponding member function.
+ * @param name Name of the containing class
+ * @param parent Parent class (must have an inner class @c Process).
+ *   The class apf::MimoProcessor::ProcessItem can be used.
+ *
+ * Usage examples:
+ *                                                                         @code
+ * // In 'public' section of Output:
+ * APF_PROCESS(Output, MimoProcessorBase::Output)
+ * {
+ *   // do something here, you have access to members of Output
+ * }
+ *
+ * // In 'public' section of MyItem:
+ * APF_PROCESS(MyItem, ProcessItem<MyItem>)
+ * {
+ *   // do something here, you have access to members of MyItem
+ *   // MyItem has to be publicly derived from ProcessItem<MyItem>
+ * }
+ *                                                                      @endcode
+ **/
+#define APF_PROCESS(name, parent) \
+struct Process : parent::Process { \
+  explicit Process(name& name ## _arg) : parent::Process(name ## _arg) { \
+    name ## _arg._ ## name ## _process(); } }; \
+void _ ## name ## _process()
+
 namespace apf
 {
 
@@ -471,63 +498,7 @@ class disable_queries
  *   jack_policy, pointer_policy<T*>) or write your own policy class.
  * @tparam thread_policy Policy for threads, locks and semaphores.
  *
- * Example:
- *                                                                         @code
- * class MyProcessor : public MimoProcessor<MyProcessor
- *                                          , my_interface_policy
- *                                          , my_thread_policy
- *                                          , my_sync_policy>
- * {
- *   public:
- *     class Input : public MimoProcessorBase::Input
- *     {
- *       explicit Input(const Params& p) : MimoProcessorBase::Input(p) {}
- *       virtual void process()
- *       {
- *         // ...
- *         // _internal.begin() and _internal.end() gives access to audio data
- *       }
- *     };
- *     class Output : public MimoProcessorBase::Output
- *     {
- *       explicit Output(const Params& p) : MimoProcessorBase::Output(p) {}
- *       virtual void process()
- *       {
- *         // ...
- *         // _internal.begin() and _internal.end() gives access to audio data
- *       }
- *     };
- *     class MyIntermediateThing : public Item
- *     {
- *       // you can create other classes and use them in their own RtList, as
- *       // long as they are derived from Item and have a process() function.
- *       virtual void process() { ... }
- *     };
- *
- *     MyProcessor(const parameter_map& params, ...)
- *       : MimoProcessorBase(params)
- *       , _input_list(_fifo)
- *       , _intermediate_list(_fifo)
- *       , _output_list(_fifo)
- *     {
- *       ...
- *       _input_list.add(new Input(...));
- *       _intermediate_list.add(new MyIntermediateThing(...));
- *       ...
- *       this->activate();
- *     }
- *
- *     void process()
- *     {
- *       _process_list(_input_list);
- *       _process_list(_intermediate_list);
- *       _process_list(_output_list);
- *     }
- *
- *   private:
- *     rtlist_t _input_list, _intermediate_list, _output_list;
- * };
- *                                                                      @endcode
+ * Example: @ref MimoProcessor
  **/
 template<typename Derived
   , typename interface_policy, typename thread_policy
@@ -562,6 +533,19 @@ class MimoProcessor : public interface_policy
       virtual void process() = 0;
     };
 
+    /** Base class for items which have a @c Process class.
+     * Usage:
+     *                                                                     @code
+     * class MyItem : public ProcessItem<MyItem>
+     * {
+     *   public:
+     *     APF_PROCESS(MyItem, ProcessItem<MyItem>)
+     *     {
+     *       // do something here, you have access to members of MyItem
+     *     }
+     * };
+     *                                                                  @endcode
+     **/
     template<typename X>
     class ProcessItem : public Item
     {

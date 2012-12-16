@@ -36,7 +36,6 @@
 #include <stdexcept>  // for std::runtime_error
 #include <cassert>    // for assert()
 #include <errno.h>    // for EEXIST
-#include <memory>
 
 #ifdef APF_JACKCLIENT_DEBUG
 #include <iostream>
@@ -53,9 +52,9 @@ namespace apf
 /** C++ wrapper for a JACK client.
  * @warning When several JACK clients are running and one of them is closed,
  * this can lead to a segmentation fault in the callback function
- * (jack_port_get_buffer() delivers bad data). I couldn't really track down the
+ * (jack_port_get_buffer() delivers bad data). We couldn't really track down the
  * error, but to be on the sure side, delete your JackClients only on the very
- * end (or just let the std::auto_ptr do its work).
+ * end.
  * \par
  * A related issue may be that after calling jack_client_close() the
  * corresponding thread is not closed, in the end it becomes a "zombie thread".
@@ -69,7 +68,6 @@ class JackClient
     typedef jack_default_audio_sample_t sample_t;
     typedef jack_nframes_t              nframes_t;
     typedef jack_port_t                 port_t;
-    typedef std::auto_ptr<JackClient>   ptr_t;  ///< auto_ptr to JackClient
 
     /// Select if JACK's audio callback function shall be called
     enum callback_usage_t
@@ -107,31 +105,8 @@ class JackClient
       {}
     };
 
-    // Constructor. See below.
     explicit inline JackClient(const std::string& name = "JackClient"
         , callback_usage_t callback_usage = dont_use_jack_process_callback);
-
-    /// "named constructor" for JackClient objects.
-    /// @param name client name of the JACK client to be created.
-    /// @param callback_usage if @p use_jack_process_callback, the member
-    /// function jack_process_callback() is called by JACK in each audio cycle.
-    /// @return std::auto_ptr to the new JackClient object.
-    /// @warning @p name should not include a colon. This doesn't cause
-    ///   an error directly, but it messes up the JACK client- and portnames.
-    static ptr_t create(const std::string& name = "JackClient"
-        , callback_usage_t callback_usage = dont_use_jack_process_callback)
-    {
-      ptr_t temp;  // temp = NULL
-      try
-      {
-        temp.reset(new JackClient(name, callback_usage));
-      }
-      catch(jack_error& e)
-      {
-        APF_JACKCLIENT_DEBUG_MSG(e.what());
-      }
-      return temp;
-    }
 
     virtual ~JackClient()
     {
@@ -442,8 +417,11 @@ class JackClient
 };
 
 /** Constructor.
- * @warning Constructor may throw an exception! Use JackClient::create(...)
- * if you don't want to care about that.
+ * @param name client name of the JACK client to be created.
+ * @param callback_usage if @p use_jack_process_callback, the member
+ * function jack_process_callback() is called by JACK in each audio cycle.
+ * @warning @p name should not include a colon. This doesn't cause
+ *   an error directly, but it messes up the JACK client- and portnames.
  * @throw jack_error
  **/
 JackClient::JackClient(const std::string& name

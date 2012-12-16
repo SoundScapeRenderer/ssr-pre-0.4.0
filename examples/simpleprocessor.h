@@ -61,20 +61,15 @@ class SimpleProcessor : public apf::MimoProcessor<SimpleProcessor
           _end = this->buffer.end();
         }
 
-        struct Process : MimoProcessorBase::Input::Process
+        APF_PROCESS(Input, MimoProcessorBase::Input)
         {
-          explicit Process(Input& in)
-            : MimoProcessorBase::Input::Process(in)
-          {
-            // Copying the input buffers is only needed for the Pd external
-            // because input buffers are re-used as output buffers! In
-            // non-trivial applications there will be some intermediate buffer
-            // anyway and copying the input buffers will not be necessary.
+          // Copying the input buffers is only needed for the Pd external
+          // because input buffers are re-used as output buffers! In
+          // non-trivial applications there will be some intermediate buffer
+          // anyway and copying the input buffers will not be necessary.
 
-            std::copy(in.buffer.begin(), in.buffer.end()
-                , in._buffer.begin());
-          }
-        };
+          std::copy(this->buffer.begin(), this->buffer.end(), _buffer.begin());
+        }
 
       private:
         apf::fixed_vector<sample_type> _buffer;
@@ -95,16 +90,11 @@ class SimpleProcessor::Output : public MimoProcessorBase::DefaultOutput
       , _combiner(this->parent.get_input_list(), *this)
     {}
 
-    struct Process : MimoProcessorBase::Output::Process
+    APF_PROCESS(Output, MimoProcessorBase::Output)
     {
-      explicit Process(Output& out)
-        : MimoProcessorBase::Output::Process(out)
-      {
-        float weight = 1.0f / float(out.parent.get_input_list().size());
-
-        out._combiner.process(simple_predicate(weight));
-      }
-    };
+      float weight = 1.0f / float(this->parent.get_input_list().size());
+      _combiner.process(simple_predicate(weight));
+    }
 
   private:
     class simple_predicate

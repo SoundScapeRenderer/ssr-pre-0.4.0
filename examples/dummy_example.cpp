@@ -21,85 +21,68 @@
  *                                 http://AudioProcessingFramework.github.com *
  ******************************************************************************/
 
-// A small example of the MimoProcessor with varying JACK output ports.
-// This is a stand-alone program.
+// This example is used in the Doxygen documentation to MimoProcessor.
 
 #include "apf/mimoprocessor.h"
-#include "apf/jack_policy.h"
+#include "apf/pointer_policy.h"
 #include "apf/dummy_thread_policy.h"
 
 class MyProcessor : public apf::MimoProcessor<MyProcessor
-                    , apf::jack_policy
-                    , apf::dummy_thread_policy>
+                    , apf::pointer_policy<float*>, apf::dummy_thread_policy>
 {
   public:
     typedef MimoProcessorBase::DefaultInput Input;
+
+    class MyIntermediateThing : public ProcessItem<MyIntermediateThing>
+    {
+      public:
+        // you can create other classes and use them in their own RtList, as
+        // long as they are derived from ProcessItem<YourClass> and have a
+        // Process class publicly derived from ProcessItem<YourClass>::Process.
+
+        // This can be facilitated with this macro call:
+        APF_PROCESS(MyIntermediateThing, ProcessItem<MyIntermediateThing>)
+        {
+          // do your processing here!
+        }
+    };
 
     class Output : public MimoProcessorBase::DefaultOutput
     {
       public:
         explicit Output(const Params& p)
           : MimoProcessorBase::DefaultOutput(p)
-          , _combiner(this->parent.get_input_list(), *this)
         {}
 
         APF_PROCESS(Output, MimoProcessorBase::DefaultOutput)
         {
-          _combiner.process(select_all_inputs());
+          // this->buffer.begin() and this->buffer.end(): access to audio data
         }
-
-      private:
-        struct select_all_inputs
-        {
-          int select(const Input&) { return 1; }
-        };
-
-        apf::CombineChannelsCopy<rtlist_proxy<Input>, Output> _combiner;
     };
 
     MyProcessor(const apf::parameter_map& p)
       : MimoProcessorBase(p)
+      , _intermediate_list(_fifo)
     {
       this->add<Input>();
+      _intermediate_list.add(new MyIntermediateThing());
+      this->add<Output>();
+      this->activate();
     }
+
+    APF_PROCESS(MyProcessor, MimoProcessorBase)
+    {
+      // input/output lists are processed automatically before/after this:
+      _process_list(_intermediate_list);
+    }
+
+  private:
+    rtlist_t _intermediate_list;
 };
 
 int main()
 {
-  int out_channels = 20;
-
-  apf::parameter_map p;
-  p.set("threads", 1);
-  //p.set("threads", 2);  // not allowed with dummy_thread_policy!
-  MyProcessor engine(p);
-  engine.activate();
-
-  sleep(2);
-
-  std::vector<MyProcessor::Output*> outputs;
-
-  for (int i = 1; i <= out_channels; ++i)
-  {
-    MyProcessor::Output::Params op;
-    op.set("id", i * 10);
-    outputs.push_back(engine.add(op));
-    sleep(1);
-  }
-
-  sleep(2);
-
-  // remove the outputs one by one ...
-  while (outputs.begin() != outputs.end())
-  {
-    engine.rem(outputs.front());
-    engine.wait_for_rt_thread();
-    outputs.erase(outputs.begin());
-    sleep(1);
-  }
-
-  sleep(2);
-
-  engine.deactivate();
+  // For now, this does nothing, we just want it to compile ...
 }
 
 // Settings for Vim (http://www.vim.org/), please do not remove:

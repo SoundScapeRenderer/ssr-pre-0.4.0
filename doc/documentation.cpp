@@ -21,7 +21,7 @@ Blog: http://spatialaudio.net
 
 Components:
 
-- Multithreaded Multichannel Audio Processing Framework: apf::MimoProcessor
+- Multithreaded Multichannel Audio Processing Framework: @subpage MimoProcessor
 
 - C++ wrapper for the JACK Audio Connection Kit (http://jackaudio.org/):
 apf::JackClient
@@ -76,6 +76,7 @@ New policies can be provided in user code!
 @example jack_dynamic_inputs.cpp
 @example jack_dynamic_outputs.cpp
 @example jack_minimal.cpp
+@example dummy_example.cpp
 **/
 
 // APF NAMESPACE

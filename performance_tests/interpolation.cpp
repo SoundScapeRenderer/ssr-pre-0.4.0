@@ -81,15 +81,11 @@ class MyProcessor::Output : public MimoProcessorBase::DefaultOutput
       , _combine_and_interpolate(this->parent.get_input_list(), *this)
     {}
 
-    struct Process : MimoProcessorBase::DefaultOutput::Process
+    APF_PROCESS(Output, MimoProcessorBase::DefaultOutput)
     {
-      explicit Process(Output& out)
-        : MimoProcessorBase::DefaultOutput::Process(out)
-      {
-        out._combine_and_interpolate.process(
-            CombineFunction(out.parent.block_size()));
-      }
-    };
+      _combine_and_interpolate.process(
+          CombineFunction(this->parent.block_size()));
+    }
 
   private:
     apf::CombineChannelsInterpolation<rtlist_proxy<Input>, Output>

@@ -60,16 +60,12 @@ class MatrixProcessor : public apf::MimoProcessor<MatrixProcessor
       _m1_list.clear();
     }
 
-    struct Process : MimoProcessorBase::Process
+    APF_PROCESS(MatrixProcessor, MimoProcessorBase)
     {
-      explicit Process(MatrixProcessor& p)
-        : MimoProcessorBase::Process(p)
-      {
-        p._process_list(p._m1_list);
-        p._process_list(p._m2_list);
-        p._process_list(p._m3_list);
-      }
-    };
+      _process_list(_m1_list);
+      _process_list(_m2_list);
+      _process_list(_m3_list);
+    }
 
   private:
     /// make sure blocksize is divisible by parts.
@@ -129,17 +125,12 @@ class MatrixProcessor::m1_channel : public ProcessItem<m1_channel>
         rtlist_proxy<Input>::iterator _input;
     };
 
-    struct Process : ProcessItem<m1_channel>::Process
+    APF_PROCESS(m1_channel, ProcessItem<m1_channel>)
     {
-      explicit Process(m1_channel& ch)
-        : ProcessItem<m1_channel>::Process(ch)
-      {
-        assert(parent._input != 0);
-        Input::iterator begin = ch._input->begin()
-          + ch._part * ch._part_size;
-        std::copy(begin, begin + ch._part_size, ch._channel.begin());
-      }
-    };
+      assert(_input != 0);
+      Input::iterator begin = _input->begin() + _part * _part_size;
+      std::copy(begin, begin + _part_size, _channel.begin());
+    }
 
   private:
     m1_channel(const Params& p)
@@ -167,14 +158,10 @@ class MatrixProcessor::m2_channel : public ProcessItem<m2_channel>
       return new m2_channel(temp);
     }
 
-    struct Process : ProcessItem<m2_channel>::Process
+    APF_PROCESS(m2_channel, ProcessItem<m2_channel>)
     {
-      explicit Process(m2_channel& ch)
-        : ProcessItem<m2_channel>::Process(ch)
-      {
-        std::copy(ch._input.begin(), ch._input.end(), ch._channel.begin());
-      }
-    };
+      std::copy(_input.begin(), _input.end(), _channel.begin());
+    }
 
   private:
     m2_channel(const Params& p) : _channel(p.channel) , _input(p.input) {}
@@ -196,14 +183,10 @@ class MatrixProcessor::m3_slice : public ProcessItem<m3_slice>
       return new m3_slice(temp);
     }
 
-    struct Process : ProcessItem<m3_slice>::Process
+    APF_PROCESS(m3_slice, ProcessItem<m3_slice>)
     {
-      explicit Process(m3_slice& s)
-        : ProcessItem<m3_slice>::Process(s)
-      {
-        std::copy(s._input.begin(), s._input.end(), s._slice.begin());
-      }
-    };
+      std::copy(_input.begin(), _input.end(), _slice.begin());
+    }
 
   private:
     m3_slice(const Params& p) : _slice(p.slice), _input(p.input) {}
@@ -225,24 +208,20 @@ class MatrixProcessor::Output : public MimoProcessorBase::DefaultOutput
       , _channel_list(p.channel_list)
     {}
 
-    struct Process : MimoProcessorBase::DefaultOutput::Process
+    APF_PROCESS(Output, MimoProcessorBase::DefaultOutput)
     {
-      explicit Process(Output& o)
-        : MimoProcessorBase::DefaultOutput::Process(o)
-      {
-        Output::iterator out = o.begin();
+      Output::iterator out = this->begin();
 
-        for (std::list<Channel>::iterator it = o._channel_list.begin()
-            ; it != o._channel_list.end()
-            ; ++it)
+      for (std::list<Channel>::iterator it = _channel_list.begin()
+          ; it != _channel_list.end()
+          ; ++it)
+      {
+        for (channel_iterator i = it->begin(); i != it->end(); ++i)
         {
-          for (channel_iterator i = it->begin(); i != it->end(); ++i)
-          {
-            *out++ = *i;
-          }
+          *out++ = *i;
         }
       }
-    };
+    }
 
   private:
     std::list<Channel> _channel_list;

@@ -52,19 +52,7 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
       virtual void process() {}
     };
 
-    struct Process : MimoProcessorBase::Process
-    {
-      explicit Process(MyProcessor& p)
-        : MimoProcessorBase::Process(p)
-      {
-        p._process();
-      }
-    };
-
-    apf::SharedData<bool> reverb;
-
-  private:
-    void _process()
+    APF_PROCESS(MyProcessor, MimoProcessorBase)
     {
       _convolver.add_input_block(_input->begin());
       _convolver.rotate_queues();  // TODO: check if necessary?
@@ -92,6 +80,9 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
       std::copy(result, result + this->block_size(), _output->begin());
     }
 
+    apf::SharedData<bool> reverb;
+
+  private:
     bool _old_reverb;
 
     Input* _input;

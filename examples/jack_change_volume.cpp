@@ -60,16 +60,12 @@ class MyProcessor::Input : public MimoProcessorBase::DefaultInput
       , old_weight(this->parent.volume())
     {}
 
-    struct Process : MimoProcessorBase::DefaultInput::Process
+    APF_PROCESS(Input, MimoProcessorBase::DefaultInput)
     {
-      explicit Process(Input& in)
-        : MimoProcessorBase::DefaultInput::Process(in)
-      {
-        // In real-life applications, this will be more complicated:
-        in.old_weight = in.weight;
-        in.weight = in.parent.volume();
-      }
-    };
+      // In real-life applications, this will be more complicated:
+      this->old_weight = this->weight;
+      this->weight = this->parent.volume();
+    }
 
     float weight, old_weight;
 };
@@ -130,23 +126,19 @@ class MyProcessor::Output : public MimoProcessorBase::DefaultOutput
       , _combine_function(this->parent.block_size())
     {}
 
-    struct Process : MimoProcessorBase::DefaultOutput::Process
+    APF_PROCESS(Output, MimoProcessorBase::DefaultOutput)
     {
-      explicit Process(Output& out)
-        : MimoProcessorBase::DefaultOutput::Process(out)
+      switch (this->parent.mode)
       {
-        switch (out.parent.mode)
-        {
-          case INTERPOLATION:
-            out._combine_and_interpolate.process(out._combine_function);
-            break;
+        case INTERPOLATION:
+          _combine_and_interpolate.process(_combine_function);
+          break;
 
-          case CROSSFADE:
-            out._combine_and_crossfade.process(out._combine_function);
-            break;
-        }
+        case CROSSFADE:
+          _combine_and_crossfade.process(_combine_function);
+          break;
       }
-    };
+    }
 
   private:
     apf::CombineChannelsInterpolation<rtlist_proxy<Input>, Output>

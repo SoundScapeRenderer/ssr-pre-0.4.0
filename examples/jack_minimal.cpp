@@ -45,14 +45,10 @@ class MyProcessor::Output : public MimoProcessorBase::DefaultOutput
       , _combiner(this->parent.get_input_list(), *this)
     {}
 
-    struct Process : MimoProcessorBase::DefaultOutput::Process
+    APF_PROCESS(Output, MimoProcessorBase::DefaultOutput)
     {
-      explicit Process(Output& out)
-        : MimoProcessorBase::DefaultOutput::Process(out)
-      {
-        out._combiner.process(my_predicate());
-      }
-    };
+      _combiner.process(my_predicate());
+    }
 
   private:
     struct my_predicate

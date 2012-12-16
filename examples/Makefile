@@ -11,6 +11,7 @@ SNDFILE_STUFF += jack_convolver
 FFTW_STUFF += jack_convolver
 
 EXECUTABLES += $(SNDFILE_STUFF) $(JACK_STUFF) $(PORTAUDIO_STUFF) $(FFTW_STUFF)
+EXECUTABLES += dummy_example
 
 MEX_FILES = mex_simpleprocessor.mex
 

@@ -99,14 +99,10 @@ class RendererBase : public apf::MimoProcessor<Derived
       apf::SharedData<sample_type> amplitude_reference_distance;
     } state;
 
-    struct Process : Base::Process
+    APF_PROCESS(RendererBase, Base)
     {
-      explicit Process(RendererBase& p)
-        : Base::Process(p)
-      {
-        p._process_list(p._source_list);
-      }
-    };
+      _process_list(_source_list);
+    }
 
     // If you don't need a list proxy, just use a reference to the list
     template<typename L, typename ListProxy, typename DataMember>
@@ -358,14 +354,28 @@ class RendererBase<Derived>::Source
       , _level()
     {}
 
-    struct Process : SourceBase::Process
+    APF_PROCESS(Source, SourceBase)
     {
-      explicit Process(Source& p)
-        : SourceBase::Process(p)
+      this->_begin = _input.begin();
+      this->_end = _input.end();
+
+      old_weighting_factor = weighting_factor;
+
+      if (!_input.parent.state.processing() || mute())
       {
-        p._process();
+        weighting_factor = 0.0;
       }
-    };
+      else
+      {
+        weighting_factor = gain();
+        // If the renderer does something nonlinear, the master volume should
+        // be applied to the output signal ... TODO: shall we care?
+        weighting_factor *= _input.parent.state.master_volume();
+        weighting_factor *= _input.parent.master_volume_correction;
+      }
+
+      _level_helper(_input.parent);
+    }
 
     sample_type get_level() const { return _level; }
 
@@ -397,29 +407,6 @@ class RendererBase<Derived>::Source
     }
 
     void _level_helper(apf::disable_queries&) {}
-
-    void _process()
-    {
-      this->_begin = _input.begin();
-      this->_end = _input.end();
-
-      old_weighting_factor = weighting_factor;
-
-      if (!_input.parent.state.processing() || mute())
-      {
-        weighting_factor = 0.0;
-      }
-      else
-      {
-        weighting_factor = gain();
-        // If the renderer does something nonlinear, the master volume should
-        // be applied to the output signal ... TODO: shall we care?
-        weighting_factor *= _input.parent.state.master_volume();
-        weighting_factor *= _input.parent.master_volume_correction;
-      }
-
-      _level_helper(_input.parent);
-    }
 
     sample_type _pre_fader_level;
     sample_type _level;

@@ -145,15 +145,11 @@ class WfsRenderer::Input : public _base::Input
           , this->parent._initial_delay)
     {}
 
-    struct Process : _base::Input::Process
+    APF_PROCESS(Input, _base::Input)
     {
-      explicit Process(Input& p)
-        : _base::Input::Process(p)
-      {
-        p._convolver.add_input_block(p.buffer.begin());
-        p._delayline.write_block(p._convolver.convolve_signal());
-      }
-    };
+      _convolver.add_input_block(this->buffer.begin());
+      _delayline.write_block(_convolver.convolve_signal());
+    }
 
   private:
     apf::StaticConvolver _convolver;
@@ -221,14 +217,10 @@ class WfsRenderer::Output : public _base::Output
       , _combiner(_sourcechannels, this->buffer, this->parent._fade)
     {}
 
-    struct Process : _base::Output::Process
+    APF_PROCESS(Output, _base::Output)
     {
-      explicit Process(Output& p)
-        : _base::Output::Process(p)
-      {
-        p._combiner.process(RenderFunction(p));
-      }
-    };
+      _combiner.process(RenderFunction(*this));
+    }
 
   private:
     std::list<SourceChannel*> _sourcechannels;
@@ -252,14 +244,10 @@ class WfsRenderer::Source : public _base::Source
       , block_size(in.parent.block_size())
     {}
 
-    struct Process : _base::Source::Process
+    APF_PROCESS(Source, _base::Source)
     {
-      explicit Process(Source& p)
-        : _base::Source::Process(p)
-      {
-        p._process();
-      }
-    };
+      _process();
+    }
 
     void connect_to_outputs(rtlist_t& output_list)
     {

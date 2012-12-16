@@ -230,14 +230,10 @@ class BinauralRenderer::Output : public _base::Output
       , _combiner(_sourcechannels, this->buffer, this->parent._fade)
     {}
 
-    struct Process : _base::Output::Process
+    APF_PROCESS(Output, _base::Output)
     {
-      explicit Process(Output& p)
-        : _base::Output::Process(p)
-      {
-        p._combiner.process(RenderFunction());
-      }
-    };
+      _combiner.process(RenderFunction());
+    }
 
   private:
     std::list<SourceChannel*> _sourcechannels;
@@ -283,14 +279,10 @@ class BinauralRenderer::Source : public _base::Source
             , std::make_pair(in.parent.block_size(), in.parent._partitions)))
     {}
 
-    struct Process : _base::Source::Process
+    APF_PROCESS(Source, _base::Source)
     {
-      explicit Process(Source& p)
-        : _base::Source::Process(p)
-      {
-        p._process();
-      }
-    };
+      _process();
+    }
 
     void connect_to_outputs(rtlist_t& output_list)
     {

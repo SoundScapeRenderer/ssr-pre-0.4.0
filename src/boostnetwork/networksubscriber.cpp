@@ -47,7 +47,9 @@ ssr::NetworkSubscriber::~NetworkSubscriber() {}
 void
 ssr::NetworkSubscriber::update_all_clients(std::string str)
 {
+#if 0
   _connection.write(str);
+#endif
 }
 
 void

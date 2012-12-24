@@ -185,6 +185,11 @@ class RendererBase : public apf::MimoProcessor<Derived
 
     bool show_head() const { return _show_head; }
 
+    rtlist_t& get_non_const_output_list()
+    {
+      return const_cast<rtlist_t&>(this->get_output_list());
+    }
+
     const sample_type master_volume_correction;  // linear
 
   protected:
@@ -265,7 +270,7 @@ int RendererBase<Derived>::add_source(const apf::parameter_map& p)
   // This cannot be done in the Derived::Source constructor because then the
   // connections to the Outputs are active before the Source is properly added
   // to the source list:
-  src->connect_to_outputs(const_cast<rtlist_t&>(this->get_output_list()));
+  src->connect(*static_cast<Derived*>(this));
 
   int id = _get_new_id();
   // TODO: check if id already exists? e.g. if (_source_map.count(id) > 0) {...}
@@ -289,8 +294,8 @@ void RendererBase<Derived>::rem_source(Source* source)
   _source_map.erase(delinquent);
 
   assert(dynamic_cast<typename Derived::Source*>(source));
-  static_cast<typename Derived::Source*>(source)->disconnect_from_outputs(
-      const_cast<rtlist_t&>(this->get_output_list()));
+  static_cast<typename Derived::Source*>(source)->disconnect(
+      *static_cast<Derived*>(this));
 
   Input* input = const_cast<Input*>(&source->_input);
   _source_list.rem(source);
@@ -384,8 +389,8 @@ class RendererBase<Derived>::Source
 
 #if 0
     // TODO: check if all renderers implement this. If not, provide default.
-    void connect_to_outputs(rtlist_t&) {}
-    void disconnect_from_outputs(rtlist_t&) {}
+    void connect(RendererBase&) {}
+    void disconnect(RendererBase&) {}
 #endif
 
     apf::SharedData<Position> position;
@@ -447,6 +452,58 @@ class RendererBase<Derived>::Output : public Base::Output
 
   private:
     sample_type _level;
+};
+
+// This is a kind of C++ mixin class, but it also includes the CRTP
+template<typename Derived, template<typename> class Base>
+struct SourceToOutput : Base<Derived>
+{
+  typedef typename Base<Derived>::Input Input;
+
+  struct SourceChannel {};
+
+  struct Source : Base<Derived>::Source
+  {
+    template<typename Arg>
+    Source(apf::CommandQueue& fifo, const Input& in, const Arg& arg)
+      : Base<Derived>::Source(fifo, in)
+      , sourcechannels(arg)
+    {}
+
+    void connect(SourceToOutput& parent)
+    {
+      std::list<SourceChannel*> temp;
+      apf::append_pointers(this->sourcechannels, temp);
+      parent.add_to_sublist(temp
+         , apf::make_cast_proxy<Output>(parent.get_non_const_output_list())
+         , &Output::sourcechannels);
+    }
+
+    void disconnect(SourceToOutput& parent)
+    {
+      std::list<SourceChannel*> temp;
+      apf::append_pointers(this->sourcechannels, temp);
+      parent.rem_from_sublist(temp
+          , apf::make_cast_proxy<Output>(parent.get_non_const_output_list())
+          , &Output::sourcechannels);
+    }
+
+    apf::fixed_vector<typename Derived::SourceChannel> sourcechannels;
+  };
+
+  struct Output : Base<Derived>::Output
+  {
+    typedef typename Base<Derived>::Output::Params Params;
+    typedef std::list<SourceChannel*> sourcechannels_t;
+
+    Output(const Params& p) : Base<Derived>::Output(p) {}
+
+    sourcechannels_t sourcechannels;
+  };
+
+  explicit SourceToOutput(const apf::parameter_map& params)
+    : Base<Derived>(params)
+  {}
 };
 
 }  // namespace ssr

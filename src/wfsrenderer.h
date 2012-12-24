@@ -47,10 +47,10 @@ using apf::str::A2S;
 namespace ssr
 {
 
-class WfsRenderer : public LoudspeakerRenderer<WfsRenderer>
+class WfsRenderer : public SourceToOutput<WfsRenderer, LoudspeakerRenderer>
 {
   private:
-    typedef LoudspeakerRenderer<WfsRenderer> _base;
+    typedef SourceToOutput<WfsRenderer, LoudspeakerRenderer> _base;
 
   public:
     static const char* name() { return "WFS-Renderer"; }
@@ -156,7 +156,8 @@ class WfsRenderer::Input : public _base::Input
     apf::NonCausalBlockDelayLine<sample_type> _delayline;
 };
 
-class WfsRenderer::SourceChannel : public apf::has_begin_and_end<
+class WfsRenderer::SourceChannel : public _base::SourceChannel
+                                 , public apf::has_begin_and_end<
                           apf::NonCausalBlockDelayLine<sample_type>::circulator>
 {
   public:
@@ -214,7 +215,7 @@ class WfsRenderer::Output : public _base::Output
 
     Output(const Params& p)
       : _base::Output(p)
-      , _combiner(_sourcechannels, this->buffer, this->parent._fade)
+      , _combiner(this->sourcechannels, this->buffer, this->parent._fade)
     {}
 
     APF_PROCESS(Output, _base::Output)
@@ -223,10 +224,8 @@ class WfsRenderer::Output : public _base::Output
     }
 
   private:
-    std::list<SourceChannel*> _sourcechannels;
-
     apf::CombineChannelsCrossfade<apf::cast_proxy<SourceChannel
-      , std::list<SourceChannel*> >, buffer_type
+      , sourcechannels_t>, buffer_type
       , apf::raised_cosine_fade<sample_type> > _combiner;
 };
 
@@ -237,9 +236,9 @@ class WfsRenderer::Source : public _base::Source
 
   public:
     Source(apf::CommandQueue& fifo, const Input& in)
-      : _base::Source(fifo, in)
-        // We cannot create a std::pair of a reference, so we use a pointer:
-      , output(std::make_pair(in.parent.get_output_list().size(), this))
+      // We cannot create a std::pair of a reference, so we use a pointer:
+      : _base::Source(fifo, in
+          , std::make_pair(in.parent.get_output_list().size(), this))
       , delayline(in._delayline)
       , block_size(in.parent.block_size())
     {}
@@ -249,30 +248,12 @@ class WfsRenderer::Source : public _base::Source
       _process();
     }
 
-    void connect_to_outputs(rtlist_t& output_list)
-    {
-      std::list<SourceChannel*> temp;
-      apf::append_pointers(this->output, temp);
-      _input.parent.add_to_sublist(temp
-         , apf::make_cast_proxy<Output>(output_list)
-         , &Output::_sourcechannels);
-    }
-
-    void disconnect_from_outputs(rtlist_t& output_list)
-    {
-      std::list<SourceChannel*> temp;
-      apf::append_pointers(this->output, temp);
-      _input.parent.rem_from_sublist(temp
-          , apf::make_cast_proxy<Output>(output_list)
-          , &Output::_sourcechannels);
-    }
-
     bool get_output_levels(sample_type* first, sample_type* last) const
     {
-      assert(size_t(std::distance(first, last)) == this->output.size());
+      assert(size_t(std::distance(first, last)) == this->sourcechannels.size());
 
       apf::fixed_vector<SourceChannel>::const_iterator channel
-        = this->output.begin();
+        = this->sourcechannels.begin();
 
       for ( ; first != last; ++first)
       {
@@ -281,8 +262,6 @@ class WfsRenderer::Source : public _base::Source
       }
       return true;
     }
-
-    apf::fixed_vector<SourceChannel> output;
 
     const apf::NonCausalBlockDelayLine<sample_type>& delayline;
     const size_t block_size;

@@ -44,10 +44,10 @@ namespace ssr
 {
 
 // TODO: derive from HeadphoneRenderer?
-class BinauralRenderer : public RendererBase<BinauralRenderer>
+class BinauralRenderer : public SourceToOutput<BinauralRenderer, RendererBase>
 {
   private:
-    typedef RendererBase<BinauralRenderer> _base;
+    typedef SourceToOutput<BinauralRenderer, RendererBase> _base;
 
   public:
     static const char* name() { return "BinauralRenderer"; }
@@ -85,7 +85,8 @@ class BinauralRenderer : public RendererBase<BinauralRenderer>
     std::auto_ptr<apf::Convolver::filter_t> _neutral_filter;
 };
 
-class BinauralRenderer::SourceChannel : public apf::has_begin_and_end<float*>
+class BinauralRenderer::SourceChannel : public _base::SourceChannel
+                                      , public apf::has_begin_and_end<float*>
 {
   public:
     // first: block size, second: number of partitions
@@ -223,11 +224,9 @@ struct BinauralRenderer::RenderFunction
 class BinauralRenderer::Output : public _base::Output
 {
   public:
-    friend class Source;  // to be able to see _sourcechannels
-
     Output(const Params& p)
       : _base::Output(p)
-      , _combiner(_sourcechannels, this->buffer, this->parent._fade)
+      , _combiner(this->sourcechannels, this->buffer, this->parent._fade)
     {}
 
     APF_PROCESS(Output, _base::Output)
@@ -236,10 +235,8 @@ class BinauralRenderer::Output : public _base::Output
     }
 
   private:
-    std::list<SourceChannel*> _sourcechannels;
-
     apf::CombineChannelsCrossfadeCopy<apf::cast_proxy<SourceChannel
-      , std::list<SourceChannel*> >, buffer_type
+      , sourcechannels_t>, buffer_type
       , apf::raised_cosine_fade<sample_type> > _combiner;
 };
 
@@ -274,8 +271,7 @@ class BinauralRenderer::Source : public _base::Source
 
   public:
     Source(apf::CommandQueue& fifo, const Input& in)
-      : _base::Source(fifo, in)
-      , output(std::make_pair(2
+      : _base::Source(fifo, in, std::make_pair(2
             , std::make_pair(in.parent.block_size(), in.parent._partitions)))
     {}
 
@@ -283,26 +279,6 @@ class BinauralRenderer::Source : public _base::Source
     {
       _process();
     }
-
-    void connect_to_outputs(rtlist_t& output_list)
-    {
-      std::list<SourceChannel*> temp;
-      apf::append_pointers(this->output, temp);
-      _input.parent.add_to_sublist(temp
-         , apf::make_cast_proxy<Output>(output_list)
-         , &Output::_sourcechannels);
-    }
-
-    void disconnect_from_outputs(rtlist_t& output_list)
-    {
-      std::list<SourceChannel*> temp;
-      apf::append_pointers(this->output, temp);
-      _input.parent.rem_from_sublist(temp
-          , apf::make_cast_proxy<Output>(output_list)
-          , &Output::_sourcechannels);
-    }
-
-    apf::fixed_vector<SourceChannel> output;
 
   private:
     // Function object for interpolation between filters
@@ -398,25 +374,25 @@ void BinauralRenderer::Source::_process()
 
       if (_interp_factor == 0)
       {
-        apf::copy_nested(filter_data, this->output[i].hrtf);
+        apf::copy_nested(filter_data, this->sourcechannels[i].hrtf);
       }
       else
       {
         apf::transform_nested(filter_data, *_input.parent._neutral_filter
-            , this->output[i].hrtf
+            , this->sourcechannels[i].hrtf
             , _interpolate(_interp_factor));
       }
     }
 
-    this->output[i].hrtf_index = _hrtf_index;
-    this->output[i].interp_factor = _interp_factor;
-    this->output[i].gain = _gain;
+    this->sourcechannels[i].hrtf_index = _hrtf_index;
+    this->sourcechannels[i].interp_factor = _interp_factor;
+    this->sourcechannels[i].gain = _gain;
   }
 
   int crossfade_mode;
 
-  if (this->output[0].convolver.queues_empty()
-      && this->output[1].convolver.queues_empty()
+  if (this->sourcechannels[0].convolver.queues_empty()
+      && this->sourcechannels[1].convolver.queues_empty()
       && _gain == _old_gain
       && _hrtf_index == _old_hrtf_index
       && _interp_factor == _old_interp_factor)
@@ -437,17 +413,17 @@ void BinauralRenderer::Source::_process()
 
   for (size_t i = 0; i < 2; ++i)
   {
-    this->output[i].convolver.add_input_block(_input.begin());
+    this->sourcechannels[i].convolver.add_input_block(_input.begin());
 
     if (crossfade_mode != 0)
     {
-      this->output[i]._begin
-        = this->output[i].convolver.convolve_signal(_old_gain);
-      this->output[i]._end
-        = this->output[i]._begin + _input.parent.block_size();
+      this->sourcechannels[i]._begin
+        = this->sourcechannels[i].convolver.convolve_signal(_old_gain);
+      this->sourcechannels[i]._end
+        = this->sourcechannels[i]._begin + _input.parent.block_size();
     }
 
-    this->output[i].crossfade_mode = crossfade_mode;
+    this->sourcechannels[i].crossfade_mode = crossfade_mode;
   }
 }
 

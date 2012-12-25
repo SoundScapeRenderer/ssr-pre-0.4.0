@@ -235,12 +235,11 @@ class WfsRenderer::Source : public _base::Source
     void _process();
 
   public:
-    Source(apf::CommandQueue& fifo, const Input& in)
-      // We cannot create a std::pair of a reference, so we use a pointer:
-      : _base::Source(fifo, in
-          , std::make_pair(in.parent.get_output_list().size(), this))
-      , delayline(in._delayline)
-      , block_size(in.parent.block_size())
+    Source(const Params& p)
+      : _base::Source(p
+          // We cannot create a std::pair of a reference, so we use a pointer:
+          , std::make_pair(p.parent->get_output_list().size(), this))
+      , delayline(p.input->_delayline)
     {}
 
     APF_PROCESS(Source, _base::Source)
@@ -264,7 +263,6 @@ class WfsRenderer::Source : public _base::Source
     }
 
     const apf::NonCausalBlockDelayLine<sample_type>& delayline;
-    const size_t block_size;
 
   //private:
     bool _focused;
@@ -321,7 +319,7 @@ void WfsRenderer::SourceChannel::update()
 {
   // TODO: avoid reading delay line if weighting_factor == 0?
   _begin = this->source.delayline.get_read_circulator(this->delay);
-  _end = _begin + source.block_size;
+  _end = _begin + source.parent.block_size();
 }
 
 int WfsRenderer::RenderFunction::select(SourceChannel& in)

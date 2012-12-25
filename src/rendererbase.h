@@ -260,12 +260,21 @@ int RendererBase<Derived>::add_source(const apf::parameter_map& p)
 {
   ScopedLock guard(_lock);
 
-  typename Derived::Input::Params temp;
-  temp = p;
-  const typename Derived::Input* in = this->add(temp);
+  typename Derived::Input::Params in_params;
+  in_params = p;
+  const typename Derived::Input* in = this->add(in_params);
+
+  typename Derived::Source::Params src_params;
+  src_params = p;
+#if 0
+  assert(dynamic_cast<Derived*>(this));
+  src_params.parent = static_cast<Derived*>(this);
+  src_params.fifo = &_fifo;
+  src_params.input = in;
+#endif
 
   typename Derived::Source* src
-    = _source_list.add(new typename Derived::Source(_fifo, *in));
+    = _source_list.add(new typename Derived::Source(src_params));
 
   // This cannot be done in the Derived::Source constructor because then the
   // connections to the Outputs are active before the Source is properly added
@@ -346,15 +355,33 @@ class RendererBase<Derived>::Source
 
     friend class RendererBase<Derived>;  // rem_source() needs access to _input
 
-    Source(apf::CommandQueue& fifo, const Input& in)
-      : position(fifo)
-      , orientation(fifo)
-      , gain(fifo, sample_type(1.0))
-      , mute(fifo, false)
-      , model(fifo, ::Source::point)
+    struct Params : apf::parameter_map
+    {
+      Params() : parent(0) {}
+      Derived* parent;
+      typename Derived::Input* input;
+      apf::CommandQueue* fifo;
+
+      Params& operator=(const apf::parameter_map& p)
+      {
+        this->apf::parameter_map::operator=(p);
+        return *this;
+      }
+    };
+
+    explicit Source(const Params& p)
+      : parent(*(p.parent ? p.parent : throw std::logic_error(
+              "Bug (RendererBase::Source): parent == NULL!")))
+      , position(*(p.fifo ? p.fifo : throw std::logic_error(
+              "Bug (RendererBase::Source): fifo == NULL!")))
+      , orientation(*p.fifo)
+      , gain(*p.fifo, sample_type(1.0))
+      , mute(*p.fifo, false)
+      , model(*p.fifo, ::Source::point)
       , weighting_factor()
       , old_weighting_factor()
-      , _input(in)
+      , _input(*(p.input ? p.input : throw std::logic_error(
+              "Bug (RendererBase::Source): input == NULL!")))
       , _pre_fader_level()
       , _level()
     {}
@@ -392,6 +419,8 @@ class RendererBase<Derived>::Source
     void connect(RendererBase&) {}
     void disconnect(RendererBase&) {}
 #endif
+
+    Derived& parent;
 
     apf::SharedData<Position> position;
     apf::SharedData<Orientation> orientation;
@@ -464,9 +493,11 @@ struct SourceToOutput : Base<Derived>
 
   struct Source : Base<Derived>::Source
   {
+    typedef typename Base<Derived>::Source::Params Params;
+
     template<typename Arg>
-    Source(apf::CommandQueue& fifo, const Input& in, const Arg& arg)
-      : Base<Derived>::Source(fifo, in)
+    Source(const Params& p, const Arg& arg)
+      : Base<Derived>::Source(p)
       , sourcechannels(arg)
     {}
 

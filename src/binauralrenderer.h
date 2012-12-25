@@ -270,9 +270,10 @@ class BinauralRenderer::Source : public _base::Source
     void _process();
 
   public:
-    Source(apf::CommandQueue& fifo, const Input& in)
-      : _base::Source(fifo, in, std::make_pair(2
-            , std::make_pair(in.parent.block_size(), in.parent._partitions)))
+    Source(const Params& p)
+      : _base::Source(p, std::make_pair(2
+            // TODO: assert that p.parent != 0?
+            , std::make_pair(p.parent->block_size(), p.parent->_partitions)))
     {}
 
     APF_PROCESS(Source, _base::Source)

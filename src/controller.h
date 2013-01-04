@@ -1451,6 +1451,7 @@ Controller<Renderer>::new_source(const std::string& name, const Source::model_t 
   p["connect_to"] = port_name;
   p["port_name"]  = "in_" + apf::str::A2S(id);
   p["id"] = apf::str::A2S(id);
+  p["properties_file"] = properties_file;
   _renderer.add_source(p);
 
   _publish(&Subscriber::new_source, id);

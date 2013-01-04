@@ -266,12 +266,10 @@ int RendererBase<Derived>::add_source(const apf::parameter_map& p)
 
   typename Derived::Source::Params src_params;
   src_params = p;
-#if 0
   assert(dynamic_cast<Derived*>(this));
   src_params.parent = static_cast<Derived*>(this);
   src_params.fifo = &_fifo;
   src_params.input = in;
-#endif
 
   typename Derived::Source* src
     = _source_list.add(new typename Derived::Source(src_params));
@@ -359,7 +357,7 @@ class RendererBase<Derived>::Source
     {
       Params() : parent(0) {}
       Derived* parent;
-      typename Derived::Input* input;
+      const typename Derived::Input* input;
       apf::CommandQueue* fifo;
 
       Params& operator=(const apf::parameter_map& p)
@@ -494,6 +492,7 @@ struct SourceToOutput : Base<Derived>
   struct Source : Base<Derived>::Source
   {
     typedef typename Base<Derived>::Source::Params Params;
+    typedef apf::fixed_vector<typename Derived::SourceChannel> sourcechannels_t;
 
     template<typename Arg>
     Source(const Params& p, const Arg& arg)
@@ -519,7 +518,7 @@ struct SourceToOutput : Base<Derived>
           , &Output::sourcechannels);
     }
 
-    apf::fixed_vector<typename Derived::SourceChannel> sourcechannels;
+    sourcechannels_t sourcechannels;
   };
 
   struct Output : Base<Derived>::Output

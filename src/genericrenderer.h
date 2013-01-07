@@ -47,7 +47,7 @@ class GenericRenderer : public SourceToOutput<GenericRenderer
                                                           , LoudspeakerRenderer>
 {
   private:
-    typedef SourceToOutput<GenericRenderer, LoudspeakerRenderer> _base;
+    typedef SourceToOutput<GenericRenderer, ssr::LoudspeakerRenderer> _base;
 
   public:
     static const char* name() { return "GenericRenderer"; }

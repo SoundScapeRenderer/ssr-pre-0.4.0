@@ -50,7 +50,7 @@ namespace ssr
 class WfsRenderer : public SourceToOutput<WfsRenderer, LoudspeakerRenderer>
 {
   private:
-    typedef SourceToOutput<WfsRenderer, LoudspeakerRenderer> _base;
+    typedef SourceToOutput<WfsRenderer, ssr::LoudspeakerRenderer> _base;
 
   public:
     static const char* name() { return "WFS-Renderer"; }

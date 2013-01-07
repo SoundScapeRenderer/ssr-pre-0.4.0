@@ -47,7 +47,7 @@ namespace ssr
 class BinauralRenderer : public SourceToOutput<BinauralRenderer, RendererBase>
 {
   private:
-    typedef SourceToOutput<BinauralRenderer, RendererBase> _base;
+    typedef SourceToOutput<BinauralRenderer, ssr::RendererBase> _base;
 
   public:
     static const char* name() { return "BinauralRenderer"; }

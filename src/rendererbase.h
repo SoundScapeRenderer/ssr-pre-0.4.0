@@ -101,7 +101,7 @@ class RendererBase : public apf::MimoProcessor<Derived
 
     APF_PROCESS(RendererBase, Base)
     {
-      _process_list(_source_list);
+      this->_process_list(_source_list);
     }
 
     // If you don't need a list proxy, just use a reference to the list

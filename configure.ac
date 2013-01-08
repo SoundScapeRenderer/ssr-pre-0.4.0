@@ -177,7 +177,7 @@ AS_IF([test x$have_debugging = xyes],
 
 dnl overwrite default CXXFLAGS set by AC_PROG_CXX
 AS_IF([test x$usercxxflags = xno],
-  AS_IF([test x$have_debugging = xyes], [CXXFLAGS="-g"], [CXXFLAGS=""]))
+  AS_IF([test x$have_debugging = xyes], [CXXFLAGS="-g"], [CXXFLAGS="-g"]))
 
 ENABLE_AUTO([optimization], [code optimization],
 [

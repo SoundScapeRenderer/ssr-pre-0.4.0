@@ -328,11 +328,15 @@ int WfsRenderer::RenderFunction::select(SourceChannel& in)
   const float safety_radius = 0.01f; // 1 cm
 
   // TODO: move reference calculation to WfsRenderer::Process?
-  DirectionalPoint ref_off(_out.parent.state.reference_offset_position()
-      , _out.parent.state.reference_offset_orientation());
   DirectionalPoint ref(_out.parent.state.reference_position()
       , _out.parent.state.reference_orientation());
-  ref_off.transform(ref);
+
+  // TODO: this is actually wrong!
+  // We use it to be compatible with the (also wrong) GUI implementation.
+  DirectionalPoint ref_off = ref;
+  ref_off.transform(DirectionalPoint(
+        _out.parent.state.reference_offset_position()
+        , _out.parent.state.reference_offset_orientation()));
 
   in.old_weighting_factor = in.weighting_factor;
   in.old_delay = in.delay;

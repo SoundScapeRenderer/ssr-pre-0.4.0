@@ -119,7 +119,7 @@ ssr::QOpenGLPlotter::QOpenGLPlotter(Publisher& controller, const Scene& scene
   _color_vector.push_back(QColor( 75,135, 35));
   _color_vector.push_back(QColor( 97, 31,160));
   _color_vector.push_back(QColor(173, 54, 35));
-  _color_vector.push_back(QColor(242,226, 22));
+  //_color_vector.push_back(QColor(242,226, 22));  // yellow is too hard to read
 
 }
 

@@ -160,7 +160,17 @@ struct parameter_map
   template<typename T>
   T get(const std::string& k) const
   {
-    return str::S2RV<T>(this->operator[](k));
+    T temp;
+    try
+    {
+      temp = str::S2RV<T>(this->operator[](k));
+    }
+    catch (std::invalid_argument& e)
+    {
+      throw std::invalid_argument(
+          "parameter_map key \"" + k + "\": " + e.what());
+    }
+    return temp;
   }
 
   /** Set value.

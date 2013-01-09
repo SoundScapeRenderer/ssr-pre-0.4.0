@@ -52,7 +52,7 @@ inline SndfileHandle load_sndfile(const std::string& name, size_t sample_rate
 
   SndfileHandle handle(name, SFM_READ);
 
-  if (!handle)
+  if (!handle.rawHandle())
   {
     throw std::logic_error(
         "apf::load_sndfile(): \"" + name + "\" couldn't be loaded!");

@@ -91,8 +91,6 @@ SSRSOURCES = \
 	directionalpoint.cpp \
 	directionalpoint.h \
 	maptools.h \
-	masterscene.cpp \
-	masterscene.h \
 	orientation.cpp \
 	orientation.h \
 	position.cpp \

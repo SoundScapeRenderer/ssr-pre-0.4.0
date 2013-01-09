@@ -264,8 +264,11 @@ int RendererBase<Derived>::add_source(const apf::parameter_map& p)
 {
   ScopedLock guard(_lock);
 
+  int id = _get_new_id();
+
   typename Derived::Input::Params in_params;
   in_params = p;
+  in_params.set("id", in_params.get("id", id));
   const typename Derived::Input* in = this->add(in_params);
 
   typename Derived::Source::Params src_params;
@@ -282,10 +285,6 @@ int RendererBase<Derived>::add_source(const apf::parameter_map& p)
   // connections to the Outputs are active before the Source is properly added
   // to the source list:
   src->connect(*static_cast<Derived*>(this));
-
-  int id = _get_new_id();
-  // TODO: check if id already exists? e.g. if (_source_map.count(id) > 0) {...}
-  // ... but this should never happen ...
 
   _source_map[id] = src;
   return id;

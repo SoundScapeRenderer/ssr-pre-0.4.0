@@ -46,7 +46,6 @@
 
 #include "ssr_global.h"
 #include "publisher.h"
-#include "masterscene.h"
 
 #ifdef ENABLE_ECASOUND
 #include "audioplayer.h"
@@ -235,7 +234,7 @@ class Controller : public Publisher
     char** _argv;
     conf_struct _conf;
 
-    MasterScene& _scene; ///< The one and only master scene
+    Scene _scene;
     std::auto_ptr<ScenePlayer> _scene_player; ///< scene player
     /// a list of subscribers
     typedef std::vector<Subscriber*> subscriber_list_t;
@@ -368,7 +367,6 @@ Controller<Renderer>::Controller(int argc, char* argv[])
   : _argc(argc)
   , _argv(argv)
   , _conf(configuration(_argc, _argv))
-  , _scene(MasterScene::get()) // singleton!
   , _renderer(_conf.renderer_params)
   , _query_state(query_state(*this, _renderer))
   , _tracker(0)
@@ -1412,8 +1410,6 @@ Controller<Renderer>::new_source(const std::string& name, const Source::model_t 
 
   assert(channel >= 0);
 
-  id_t id = _scene.get_new_source_id();
-  // if loading the source fails, this ID will not be used anymore
   std::string port_name;
   std::string file_name = "";
   long int file_length = 0;
@@ -1449,10 +1445,8 @@ Controller<Renderer>::new_source(const std::string& name, const Source::model_t 
 
   apf::parameter_map p;
   p["connect_to"] = port_name;
-  p["port_name"]  = "in_" + apf::str::A2S(id);
-  p["id"] = apf::str::A2S(id);
   p["properties_file"] = properties_file;
-  _renderer.add_source(p);
+  id_t id = _renderer.add_source(p);
 
   _publish(&Subscriber::new_source, id);
   // mute while transmitting data

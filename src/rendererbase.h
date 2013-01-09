@@ -190,6 +190,10 @@ class RendererBase : public apf::MimoProcessor<Derived
       return const_cast<rtlist_t&>(this->get_output_list());
     }
 
+    // TODO: proper solution for getting the reproduction setup
+    template<typename SomeListType>
+    void get_loudspeakers(SomeListType&) {}
+
     const sample_type master_volume_correction;  // linear
 
   protected:

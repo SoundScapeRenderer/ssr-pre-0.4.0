@@ -65,10 +65,6 @@ class BinauralRenderer : public SourceToOutput<BinauralRenderer, RendererBase>
 
     void load_reproduction_setup();
 
-    // TODO: proper solution for getting the reproduction setup
-    template<typename SomeListType>
-    void get_loudspeakers(SomeListType&) {}
-
   private:
     typedef apf::fixed_vector<apf::Convolver::filter_t> hrtf_set_t;
 

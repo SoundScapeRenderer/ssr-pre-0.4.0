@@ -1446,7 +1446,17 @@ Controller<Renderer>::new_source(const std::string& name, const Source::model_t 
   apf::parameter_map p;
   p["connect_to"] = port_name;
   p["properties_file"] = properties_file;
-  id_t id = _renderer.add_source(p);
+  id_t id;
+
+  try
+  {
+    id = _renderer.add_source(p);
+  }
+  catch (std::exception& e)
+  {
+    ERROR(e.what());
+    return;
+  }
 
   _publish(&Subscriber::new_source, id);
   // mute while transmitting data

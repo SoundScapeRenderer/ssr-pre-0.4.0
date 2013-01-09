@@ -259,6 +259,10 @@ RendererBase<Derived>::RendererBase(const apf::parameter_map& p)
   , _highest_id(0)
 {}
 
+/** Create a new source.
+ * @return ID of new source
+ * @throw unknown whatever the Derived::Source constructor throws
+ **/
 template<typename Derived>
 int RendererBase<Derived>::add_source(const apf::parameter_map& p)
 {
@@ -269,7 +273,9 @@ int RendererBase<Derived>::add_source(const apf::parameter_map& p)
   typename Derived::Input::Params in_params;
   in_params = p;
   in_params.set("id", in_params.get("id", id));
-  const typename Derived::Input* in = this->add(in_params);
+  typename Derived::Input* in = this->add(in_params);
+
+  // WARNING: if Derived::Input throws an exception, the SSR crashes!
 
   typename Derived::Source::Params src_params;
   src_params = p;
@@ -278,8 +284,18 @@ int RendererBase<Derived>::add_source(const apf::parameter_map& p)
   src_params.fifo = &_fifo;
   src_params.input = in;
 
-  typename Derived::Source* src
-    = _source_list.add(new typename Derived::Source(src_params));
+  typename Derived::Source* src;
+
+  try
+  {
+    src = _source_list.add(new typename Derived::Source(src_params));
+  }
+  catch (...)
+  {
+    // TODO: really remove the corresponding Input?
+    this->rem(in);
+    throw;
+  }
 
   // This cannot be done in the Derived::Source constructor because then the
   // connections to the Outputs are active before the Source is properly added

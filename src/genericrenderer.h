@@ -30,15 +30,10 @@
 #ifndef SSR_GENERICRENDERER_H
 #define SSR_GENERICRENDERER_H
 
-#include <sndfile.hh>  // C++ bindings for libsndfile
-
 #include "loudspeakerrenderer.h"
 
 #include "apf/convolver.h"  // for StaticConvolver
-#include "apf/blockdelayline.h"  // for NonCausalBlockDelayLine
-
-#include "apf/stringtools.h"
-using apf::str::A2S;
+#include "apf/sndfiletools.h"  // for apf::load_sndfile
 
 namespace ssr
 {
@@ -91,41 +86,17 @@ class GenericRenderer::Source : public _base::Source
       , _new_weighting_factor()
       , _old_weighting_factor()
     {
-      std::string ir_file = p.get<std::string>("properties_file");
-
-      SndfileHandle ir_data(ir_file, SFM_READ);
-
-      if (!ir_data)
-      {
-        throw std::logic_error("\"" + ir_file + "\" couldn't be loaded!");
-      }
-
-      const size_t loudspeakers = this->parent.get_output_list().size();
-      const size_t no_of_channels = ir_data.channels();
-      if (no_of_channels != loudspeakers)
-      {
-        throw std::logic_error(
-            "\"" + ir_file
-            + "\" has " +  A2S(no_of_channels) + " but it needs to have "
-            "as many channels as there are loudspeakers (which is "
-            + A2S(loudspeakers) + ")!");
-      }
-
-      const size_t sr = ir_data.samplerate();
-      if (sr != this->parent.sample_rate())
-      {
-        throw std::logic_error("\"" + ir_file
-            + "\": sample rate mismatch ("
-            + A2S(this->parent.sample_rate()) + " vs. " + A2S(sr) + ")!");
-      }
+      SndfileHandle ir_data = apf::load_sndfile(
+          p.get<std::string>("properties_file"), this->parent.sample_rate()
+          , this->parent.get_output_list().size());
 
       size_t size = ir_data.frames();
 
-      apf::fixed_matrix<sample_type> ir_matrix(size, no_of_channels);
+      apf::fixed_matrix<sample_type> ir_matrix(size, ir_data.channels());
 
       size = ir_data.readf(ir_matrix.begin(), size);
 
-      // TODO: warning if size == 0?
+      // TODO: warning if size changed?
 
       apf::fixed_matrix<sample_type>::slices_iterator slice
         = ir_matrix.slices.begin();

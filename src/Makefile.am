@@ -84,6 +84,7 @@ SSRSOURCES = \
 	../apf/apf/convolver.h \
 	../apf/apf/blockdelayline.h \
 	../apf/apf/fftwtools.h \
+	../apf/apf/sndfiletools.h \
 	configuration.cpp \
 	configuration.h \
 	controller.h \

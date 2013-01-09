@@ -30,15 +30,11 @@
 #ifndef SSR_BINAURALRENDERER_H
 #define SSR_BINAURALRENDERER_H
 
-#include <sndfile.hh>  // C++ bindings for libsndfile
-
 #include "rendererbase.h"
 #include "apf/iterator.h"  // for apf::cast_proxy, apf::make_cast_proxy()
 #include "apf/convolver.h"  // for apf::Convolver
 #include "apf/container.h"  // for apf::fixed_matrix
-
-#include "apf/stringtools.h"
-using apf::str::A2S;
+#include "apf/sndfiletools.h"  // for apf::load_sndfile
 
 namespace ssr
 {
@@ -134,35 +130,15 @@ class BinauralRenderer::SourceChannel : public _base::SourceChannel
 void
 BinauralRenderer::_load_hrtfs(const std::string& filename, size_t size)
 {
-  if (filename == "")
-  {
-    throw std::logic_error("BinauralRenderer: no HRIR filename specified!");
-  }
+  // TODO: arbitrary number of channels (but mod 2!)
+  SndfileHandle hrir_file = apf::load_sndfile(filename, this->sample_rate()
+      , 720);
 
-  SndfileHandle hrir_file(filename, SFM_READ);
-
-  if (!hrir_file)
-  {
-    throw std::logic_error("\"" + filename + "\" couldn't be loaded!");
-  }
-
-  const size_t sr = hrir_file.samplerate();
-  if (sr != this->sample_rate())
-  {
-    throw std::logic_error("\"" + filename + "\": HRIR sample rate mismatch ("
-        + A2S(this->sample_rate()) + " vs. " + A2S(sr) + ")!");
-  }
-
-  const size_t no_of_channels = hrir_file.channels();
-
-  if (no_of_channels != 720)
-  {
-    throw std::logic_error("The file '" + filename
-        + "' does not contain the required number of channels ("
-        + A2S(no_of_channels) + " vs. 720).");
-  }
+  // TODO: handle size > hrir_file.frames()
 
   if (size == 0) size = hrir_file.frames();
+
+  const size_t no_of_channels = hrir_file.channels();
 
   // Deinterleave channels and transform to FFT domain
 
@@ -200,8 +176,6 @@ BinauralRenderer::_load_hrtfs(const std::string& filename, size_t size)
   int index = std::distance(transpose.slices.begin()->begin(), maximum);
 
   int partitions = (index/this->block_size()) + 1;
-
-  // TODO: create vector with zeros and one 1
 
   apf::fixed_vector<sample_type> impulse(index);
   impulse.back() = 1;

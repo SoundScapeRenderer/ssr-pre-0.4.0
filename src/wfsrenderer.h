@@ -30,15 +30,11 @@
 #ifndef SSR_WFSRENDERER_H
 #define SSR_WFSRENDERER_H
 
-#include <sndfile.hh>  // C++ bindings for libsndfile
-
 #include "loudspeakerrenderer.h"
 
 #include "apf/convolver.h"  // for StaticConvolver
 #include "apf/blockdelayline.h"  // for NonCausalBlockDelayLine
-
-#include "apf/stringtools.h"
-using apf::str::A2S;
+#include "apf/sndfiletools.h"  // for apf::load_sndfile
 
 // TODO: make more flexible option:
 #define WEIGHTING_OLD
@@ -75,35 +71,8 @@ class WfsRenderer : public SourceToOutput<WfsRenderer, LoudspeakerRenderer>
       // TODO: get pre-filter from reproduction setup!
       // TODO: allow alternative files for different sample rates
 
-      std::string filename = this->params.get("prefilter_file", "");
-
-      if (filename == "")
-      {
-        throw std::logic_error("No WFS pre-filter file specified!");
-      }
-
-      SndfileHandle prefilter(filename, SFM_READ);
-
-      if (!prefilter)
-      {
-        throw std::logic_error("\"" + filename + "\" couldn't be loaded!");
-      }
-
-      const size_t no_of_channels = prefilter.channels();
-      if (no_of_channels != 1)
-      {
-        throw std::logic_error(
-            "WFS pre-filter must have exactly one channel, \"" + filename
-            + "\" has " + A2S(no_of_channels) + "!");
-      }
-
-      const size_t sr = prefilter.samplerate();
-      if (sr != this->sample_rate())
-      {
-        throw std::logic_error("\"" + filename
-            + "\": WFS pre-filter sample rate mismatch ("
-            + A2S(this->sample_rate()) + " vs. " + A2S(sr) + ")!");
-      }
+      SndfileHandle prefilter = apf::load_sndfile(
+          this->params.get("prefilter_file", ""), this->sample_rate(), 1);
 
       size_t size = prefilter.frames();
 

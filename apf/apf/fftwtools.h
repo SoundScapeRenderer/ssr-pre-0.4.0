@@ -55,12 +55,6 @@ struct fftw<longtype> { \
   static plan plan_r2r_1d(int n, longtype* in, longtype* out \
       , fftw_r2r_kind kind, unsigned flags) { \
     return fftw ## shorttype ## plan_r2r_1d(n, in, out, kind, flags); } \
-  /** Store a plan. It is destroyed when the variable goes out of scope. **/ \
-  class scoped_plan { \
-    public: explicit scoped_plan(const plan& p) : _plan(p) {} \
-      operator plan() const { return _plan; } \
-      ~scoped_plan() { destroy_plan(_plan); } \
-    private: const plan _plan; }; \
 };
 
 APF_FFTW_TRAITS(float, f_)

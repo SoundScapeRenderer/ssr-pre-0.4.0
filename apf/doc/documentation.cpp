@@ -26,7 +26,7 @@ Components:
 - C++ wrapper for the JACK Audio Connection Kit (http://jackaudio.org/):
 apf::JackClient
 
-- Convolution engine using (uniformly) partitioned convolution: apf::Convolver
+- Convolution engine using (uniformly) partitioned convolution: apf::conv
 
 - IIR second order filter (and cascade of filters): apf::BiQuad and apf::Cascade
 

@@ -32,6 +32,8 @@
     INFO("i = " << i); \
     CHECK((left)[i] == Approx((right)[i])); }
 
+namespace c = apf::conv;
+
 TEST_CASE("Convolver", "Test Convolver")
 {
 
@@ -39,7 +41,8 @@ float test_signal[] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f
   , 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 0.0f, 0.0f, 0.0f, 0.0f };
 float zeros[20] = { 0.0f };
 
-apf::Convolver conv(8, 4);
+c::Input conv_input(8, c::min_partitions(8, 16));
+c::Output conv_output(conv_input);
 
 float* result;
 
@@ -50,13 +53,13 @@ filter[12] = 3.0f;
 
 SECTION("silence", "")
 {
-  conv.add_input_block(test_signal);
-  result = conv.convolve_signal();
+  conv_input.add_block(test_signal);
+  result = conv_output.convolve();
 
   CHECK_RANGE(result, zeros, 8);
 
-  conv.add_input_block(test_signal);
-  result = conv.convolve_signal();
+  conv_input.add_block(test_signal);
+  result = conv_output.convolve();
 
   CHECK_RANGE(result, zeros, 8);
 }
@@ -65,35 +68,35 @@ SECTION("impulse", "")
 {
   float one = 1.0f;
 
-  conv.add_input_block(test_signal);
-  conv.set_filter(&one, (&one)+1);
-  result = conv.convolve_signal();
+  conv_input.add_block(test_signal);
+  conv_output.set_filter(&one, (&one)+1);
+  result = conv_output.convolve();
 
   CHECK_RANGE(result, test_signal, 8);
 
-  conv.add_input_block(test_signal + 8);
-  result = conv.convolve_signal();
+  conv_input.add_block(test_signal + 8);
+  result = conv_output.convolve();
 
   CHECK_RANGE(result, test_signal + 8, 8);
 }
 
 SECTION("... and more", "")
 {
-  conv.set_filter(filter, filter + 16);
+  conv_output.set_filter(filter, filter + 16);
 
   float input[8] = { 0.0f };
 
   input[1] = 1.0f;
-  conv.add_input_block(input);
-  result = conv.convolve_signal();
+  conv_input.add_block(input);
+  result = conv_output.convolve();
 
   CHECK_RANGE(result, zeros, 8);
 
   input[1] = 2.0f;
-  conv.add_input_block(input);
-  CHECK_FALSE(conv.queues_empty());
-  conv.rotate_queues();
-  result = conv.convolve_signal();
+  conv_input.add_block(input);
+  CHECK_FALSE(conv_output.queues_empty());
+  conv_output.rotate_queues();
+  result = conv_output.convolve();
 
   float expected[8] = { 0.0f };
   expected[3] = 5.0f;
@@ -103,10 +106,10 @@ SECTION("... and more", "")
   CHECK_RANGE(result, expected, 8);
 
   input[1] = 0.0f;
-  conv.add_input_block(input);
-  CHECK_FALSE(conv.queues_empty());
-  conv.rotate_queues();
-  result = conv.convolve_signal();
+  conv_input.add_block(input);
+  CHECK(conv_output.queues_empty());
+  //conv_output.rotate_queues();  // not necessary, because queues are empty
+  result = conv_output.convolve();
 
   expected[3] = 10.0f;
   expected[4] =  8.0f;
@@ -114,66 +117,68 @@ SECTION("... and more", "")
 
   CHECK_RANGE(result, expected, 8);
 
-  conv.add_input_block(input);
-  CHECK_FALSE(conv.queues_empty());
-  conv.rotate_queues();
-  result = conv.convolve_signal();
+  conv_input.add_block(input);
+  CHECK(conv_output.queues_empty());
+  //conv_output.rotate_queues();  // not necessary, because queues are empty
+  result = conv_output.convolve();
 
   CHECK_RANGE(result, zeros, 8);
 
-  CHECK(conv.queues_empty());
+  CHECK(conv_output.queues_empty());
 }
 
-SECTION("StaticConvolver impulse", "")
+SECTION("StaticConvolverOutput impulse", "")
 {
   float one = 1.0f;
 
-  apf::StaticConvolver sconv(8, &one, (&one)+1);
+  c::Input sconv_input(8, 1);
+  c::StaticOutput sconv_output(sconv_input, &one, (&one)+1);
 
-  sconv.add_input_block(test_signal);
-  result = sconv.convolve_signal();
+  sconv_input.add_block(test_signal);
+  result = sconv_output.convolve();
 
   CHECK_RANGE(result, test_signal, 8);
 
-  sconv.add_input_block(test_signal + 8);
-  result = sconv.convolve_signal();
+  sconv_input.add_block(test_signal + 8);
+  result = sconv_output.convolve();
 
   CHECK_RANGE(result, test_signal + 8, 8);
 }
 
-SECTION("StaticConvolver frequency domain", "")
+SECTION("StaticConvolverOutput frequency domain", "")
 {
   float one = 1.0f;
   // 7 partitions, blocksize 8
-  apf::StaticConvolver::filter_t fd_filter(std::make_pair(7, 16));
+  c::filter_t fd_filter(std::make_pair(7, 16));
 
-  conv.prepare_filter(&one, (&one)+1, fd_filter);
-  apf::StaticConvolver sconv(8, fd_filter);
+  c::Input sconv_input(8, 7);
+  conv_input.prepare_filter(&one, (&one)+1, fd_filter);
+  c::StaticOutput sconv_output(sconv_input, fd_filter);
 
   // TODO: check if there are really 7 partitions
 
-  sconv.add_input_block(test_signal);
-  result = sconv.convolve_signal();
+  sconv_input.add_block(test_signal);
+  result = sconv_output.convolve();
 
   CHECK_RANGE(result, test_signal, 8);
 }
 
-SECTION("more stuff with StaticConvolver", "")
+SECTION("conv::Simple", "")
 {
   // Note: not the full filter is given (the rest is zero anyway)
-  apf::StaticConvolver sconv(8, filter, filter + 13);
+  c::Simple sconv(8, filter, filter + 13);
 
   float input[8] = { 0.0f };
 
   input[1] = 1.0f;
-  sconv.add_input_block(input);
-  result = sconv.convolve_signal();
+  sconv.add_block(input);
+  result = sconv.convolve();
 
   CHECK_RANGE(result, zeros, 8);
 
   input[1] = 2.0f;
-  sconv.add_input_block(input);
-  result = sconv.convolve_signal();
+  sconv.add_block(input);
+  result = sconv.convolve();
 
   float expected[8] = { 0.0f };
   expected[3] = 5.0f;
@@ -183,8 +188,8 @@ SECTION("more stuff with StaticConvolver", "")
   CHECK_RANGE(result, expected, 8);
 
   input[1] = 0.0f;
-  sconv.add_input_block(input);
-  result = sconv.convolve_signal();
+  sconv.add_block(input);
+  result = sconv.convolve();
 
   expected[3] = 10.0f;
   expected[4] =  8.0f;
@@ -192,8 +197,8 @@ SECTION("more stuff with StaticConvolver", "")
 
   CHECK_RANGE(result, expected, 8);
 
-  sconv.add_input_block(input);
-  result = sconv.convolve_signal();
+  sconv.add_block(input);
+  result = sconv.convolve();
 
   CHECK_RANGE(result, zeros, 8);
 }

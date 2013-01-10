@@ -39,15 +39,29 @@
 namespace apf
 {
 
+/** Convolution engine.
+ * A convolution engine normally consists of an Input and either an Output or a
+ * StaticOutput. As a convenience, the combined static version is available as
+ * Simple.
+ **/
+namespace conv
+{
+
+/// Calculate necessary number of partitions for a given filter length
+static size_t min_partitions(size_t block_size, size_t filter_size)
+{
+  return (filter_size + block_size - 1) / block_size;
+}
+
 #ifdef __SSE__
 /// typedef needed by SIMD instructions
 typedef float v4sf __attribute__ ((vector_size(16)));
 
-union f4vector
-{
-  v4sf* v;
-  float* f;
-};
+//union f4vector
+//{
+//  v4sf* v;
+//  float* f;
+//};
 
 union f4vector2
 {
@@ -56,168 +70,132 @@ union f4vector2
 };
 #endif
 
-/// Base class for Convolver et al.
-class ConvolverBase
+/// Two blocks of time-domain or FFT (half-complex) data.
+struct fft_node : fixed_vector<float, fftw_allocator<float> >
+{
+  explicit fft_node(size_t n)
+    : fixed_vector<float, fftw_allocator<float> >(n)
+    , zero(true)
+    , valid(false)
+  {}
+
+  fft_node& operator=(const fft_node& rhs)
+  {
+    assert(this->size() == rhs.size());
+
+    // 'valid' is sometimes ignored ...
+    this->valid = rhs.valid;
+
+    // ... 'zero' may never be ignored!
+    if (rhs.zero)
+    {
+      this->zero = true;
+    }
+    else
+    {
+      std::copy(rhs.begin(), rhs.end(), this->begin());
+      this->zero = false;
+    }
+    return *this;
+  }
+
+  // WARNING: These flags allow saving computation power, but they also
+  // raise the risk of programming errors! Handle with care!
+
+  /// To avoid unnecessary FFTs and filling buffers with zeros.
+  /// @note If zero == true, the buffer itself is not necessarily all zeros!
+  bool zero;
+  /// Only used for filter queues, otherwise ignored!
+  bool valid;
+};
+
+/// Container holding a number of FFT blocks.
+typedef fixed_vector<fft_node> filter_t;
+
+/// Forward-FFT-related functions
+class Transform
 {
   public:
-    /// Two blocks of time-domain or FFT (half-complex) data.
-    struct fft_node : fixed_vector<float, fftw_allocator<float> >
-    {
-      explicit fft_node(size_t n)
-        : fixed_vector<float, fftw_allocator<float> >(n)
-        , zero(true)
-        , valid(false)
-      {}
+    friend class OutputBase;
+    friend class Output;
+    friend class StaticOutput;
 
-      fft_node& operator=(const fft_node& rhs)
-      {
-        assert(this->size() == rhs.size());
+    explicit Transform(size_t block_size);
 
-        // 'valid' is sometimes ignored ...
-        this->valid = rhs.valid;
-
-        // ... 'zero' may never be ignored!
-        if (rhs.zero)
-        {
-          this->zero = true;
-        }
-        else
-        {
-          std::copy(rhs.begin(), rhs.end(), this->begin());
-          this->zero = false;
-        }
-        return *this;
-      }
-
-      // WARNING: These flags allow saving computation power, but they also
-      // raise the risk of programming errors! Handle with care!
-
-      /// To avoid unnecessary FFTs and filling buffers with zeros.
-      /// @note If zero == true, the buffer itself is not necessarily all zeros!
-      bool zero;
-      /// Only used for filter queues, otherwise ignored!
-      bool valid;
-    };
-
-    /// Container holding a number of FFT blocks.
-    typedef fixed_vector<fft_node> filter_t;
+    ~Transform() { fftw<float>::destroy_plan(_fft_plan); }
 
     template<typename In>
-    void add_input_block(In first);
-
-    float* convolve_signal(float weight = 1.0f);
+    void prepare_filter(In first, In last, filter_t& c);
 
   protected:
-    /// Container for filter queues
-    typedef fixed_vector<fixed_list<fft_node> > filter_spectra_t;
-
-    template<typename InitFunction>
-    ConvolverBase(size_t block_size, size_t partitions, InitFunction);
-
-    template<typename In>
-    In _prepare_filter_partition(In first, In last, fft_node& partition);
-
-    /// Internal representation of the filter
-    filter_spectra_t _filter_spectra;
-
-  private:
-    void _multiply_spectra();
-    void _multiply_partition_cpp(const float* signal, const float* filter);
-#ifdef __SSE__
-    void _multiply_partition_simd(const float* signal, const float* filter);
-#endif
-
-    void _sort_coefficients(float* data);
-    void _unsort_coefficients();
-
-    void _fft(float* first);
-    void _ifft();
-
     const size_t _block_size;
     const size_t _partition_size;
 
-    /// List holding the spectrum of the different double-frames 
-    /// of input signal to be convolved
-    /// The first element is the most recent signal chunk
-    fixed_list<fft_node> _input_spectra;
+    /// In-place FFT
+    void _fft(float* first) const
+    {
+      fftw<float>::execute_r2r(_fft_plan, first, first);
+      _sort_coefficients(first);
+    }
 
-    fft_node _output_buffer;
-
-    fftw<float>::scoped_plan _fft_plan, _ifft_plan;
-};
-
-namespace internal
-{
-
-// Create queues with different lengths: 1st list has 1 item, 2nd list 2, ...
-class ConvolverInitQueues
-{
-  public:
-    typedef std::pair<size_t, size_t> result_type;
-    ConvolverInitQueues(size_t block_size) : _size(2 * block_size) {}
-    result_type operator()(size_t nr) { return result_type(nr, _size); }
   private:
-    size_t _size;
+    template<typename In>
+    In _prepare_partition(In first, In last, fft_node& partition) const;
+
+    void _sort_coefficients(float* first) const;
+
+    fftw<float>::plan _fft_plan;
 };
 
-// Disable queues, all queues have length 1.
-class ConvolverInitStatic
-{
-  public:
-    typedef std::pair<size_t, size_t> result_type;
-    ConvolverInitStatic(size_t block_size) : _size(2 * block_size) {}
-    result_type operator()(size_t) { return result_type(1ul, _size); }
-  private:
-    size_t _size;
-};
-
-}  // namespace internal
-
-/// Constructor
-template<typename InitFunction>
-ConvolverBase::ConvolverBase(size_t block_size, size_t partitions
-    , InitFunction init_function)
-  : _filter_spectra(make_transform_iterator(make_index_iterator(1ul)
-        , init_function)
-      , make_transform_iterator(make_index_iterator(partitions+1)
-        , init_function))
-  , _block_size(block_size)
+Transform::Transform(size_t block_size)
+  : _block_size(block_size)
   , _partition_size(2 * block_size)
-  // One additional list element for preparing the upcoming partition:
-  , _input_spectra(std::make_pair(partitions+1, _partition_size))
-  , _output_buffer(_partition_size)
-  // Create in-place FFT plans for halfcomplex data format
-  // Note: FFT plans are not re-entrant except when using FFTW_THREADSAFE!
-  // Also Note: Once a plan of a certain size exists, creating further plans is
-  // very fast because "wisdom" is shared (and therefore the creation of plans
-  // is not thread-safe).
-  // It is not necessary to re-use plans in other Convolver instances.
-  , _fft_plan(fftw<float>::plan_r2r_1d(int(_partition_size)
-      , _input_spectra.front().begin()
-      , _input_spectra.front().begin(), FFTW_R2HC, FFTW_PATIENT))
-  , _ifft_plan(fftw<float>::plan_r2r_1d(int(_partition_size)
-      , _output_buffer.begin()
-      , _output_buffer.begin(), FFTW_HC2R, FFTW_PATIENT))
 {
-  // TODO: check for multiple of 8? Raise an exception!
+  // TODO: check for multiple of 8! Raise an exception?
   assert(block_size >= 8);
-  assert(partitions > 0);
 
-  // Note: In the beginning, all filter spectra are marked as "not valid",
-  // however, this is ignored for the first item of each queue.
+  // Temporary memory area for FFTW planning routines
+  fft_node planning_space(_partition_size);
+
+  // Create in-place FFT plan for halfcomplex data format
+  // Note: FFT plans are not re-entrant except when using FFTW_THREADSAFE!
+  // Also Note: Once a plan of a certain size exists, creating further plans
+  // is very fast because "wisdom" is shared (and therefore the creation of
+  // plans is not thread-safe).
+  // It is not necessary to re-use plans in other Convolver instances.
+  _fft_plan = fftw<float>::plan_r2r_1d(int(_partition_size)
+      , planning_space.begin()
+      , planning_space.begin(), FFTW_R2HC, FFTW_PATIENT);
 }
 
-/** FFT of one block.
+/** %Transform time-domain samples.
+ * If there are too few input samples, the rest is zero-padded, if there are
+ * too few blocks in the container @p c, the rest of the samples is ignored.
+ * @param first Iterator to first time-domain sample
+ * @param last Past-the-end iterator
+ * @param c Target container
+ **/
+template<typename In>
+void
+Transform::prepare_filter(In first, In last, filter_t& c)
+{
+  for (filter_t::iterator it = c.begin(); it != c.end(); ++it)
+  {
+    first = _prepare_partition(first, last, *it);
+  }
+}
+
+/** FFT of one partition.
  * If there are too few coefficients, the rest is zero-padded.
  * @param first Iterator to first coefficient
  * @param last Past-the-end iterator
  * @tparam In Forward iterator
  * @return Iterator to the first coefficient of the next block (for the next
- *   iteration)
+ *   iteration, if needed)
  **/
 template<typename In>
 In
-ConvolverBase::_prepare_filter_partition(In first, In last, fft_node& partition)
+Transform::_prepare_partition(In first, In last, fft_node& partition) const
 {
   assert(size_t(std::distance(partition.begin(), partition.end()))
       == _partition_size);
@@ -240,12 +218,82 @@ ConvolverBase::_prepare_filter_partition(In first, In last, fft_node& partition)
   return first + chunk;
 }
 
+/** Sort the FFT coefficients to be in proper place for the efficient 
+ * multiplication of the spectra.
+ **/
+void
+Transform::_sort_coefficients(float* data) const
+{
+  fixed_vector<float> buffer(_partition_size);
+
+  int base = 8;
+
+  buffer[0] = data[0];
+  buffer[1] = data[1];
+  buffer[2] = data[2];
+  buffer[3] = data[3];
+  buffer[4] = data[_block_size];
+  buffer[5] = data[_partition_size - 1];
+  buffer[6] = data[_partition_size - 2];
+  buffer[7] = data[_partition_size - 3];
+
+  for (size_t i = 0; i < (_partition_size / 8-1); i++)
+  {
+    for (int ii = 0; ii < 4; ii++)
+    {
+      buffer[base+ii] = data[base/2+ii];
+    }
+
+    for (int ii = 0; ii < 4; ii++)
+    {
+      buffer[base+4+ii] = data[_partition_size-base/2-ii];
+    }
+
+    base += 8;
+  }
+
+  std::copy(buffer.begin(), buffer.end(), data);
+}
+
+/** %Input stage of convolution.
+ * New audio data is fed in here, further processing happens in Output or
+ * StaticOutput.
+ **/
+class Input : public Transform
+{
+  public:
+    friend class OutputBase;
+
+    /// @param block_size audio block size
+    /// @param partitions maximum number of partitions
+    Input(size_t block_size, size_t partitions)
+      : Transform(block_size)
+      , _partitions(partitions)
+      // One additional list element for preparing the upcoming partition:
+      , _input_spectra(std::make_pair(partitions+1, _partition_size))
+    {
+      assert(partitions > 0);
+    }
+
+    template<typename In>
+    void add_block(In first);
+
+  private:
+    const size_t _partitions;
+
+    /// List holding the spectrum of the different double-frames 
+    /// of input signal to be convolved
+    /// The first element is the most recent signal chunk
+    fixed_list<fft_node> _input_spectra;
+};
+
 /** Add a block of time-domain input samples.
  * @param first Iterator to first sample.
  * @tparam In Forward iterator
  **/
 template<typename In>
-void ConvolverBase::add_input_block(In first)
+void
+Input::add_block(In first)
 {
   // NOTE: 'valid' is ignored for _input_spectra, they are assumed to be valid.
 
@@ -298,19 +346,77 @@ void ConvolverBase::add_input_block(In first)
   }
 }
 
-/** Fast convolution of audio signal frame.
+/// Base class for Output et al.
+class OutputBase
+{
+  public:
+    /// A queue of FFT nodes
+    typedef fixed_list<fft_node> queue_t;
+    /// Container for filter queues
+    typedef fixed_vector<queue_t> filter_spectra_t;
+
+    float* convolve(float weight = 1.0f);
+
+  protected:
+    template<typename InitFunction>
+    OutputBase(const Input& input, InitFunction init_func);
+
+    ~OutputBase() { fftw<float>::destroy_plan(_ifft_plan); }
+
+    const Input& _input;
+
+    /// Internal representation of the filter
+    filter_spectra_t _filter_spectra;
+
+  private:
+    void _multiply_spectra();
+    void _multiply_partition_cpp(const float* signal, const float* filter);
+#ifdef __SSE__
+    void _multiply_partition_simd(const float* signal, const float* filter);
+#endif
+
+    void _unsort_coefficients();
+
+    void _ifft();
+
+    const size_t _partition_size;
+
+    fft_node _output_buffer;
+    fftw<float>::plan _ifft_plan;
+};
+
+template<typename InitFunction>
+OutputBase::OutputBase(const Input& input, InitFunction init_func)
+  : _input(input)
+  , _filter_spectra(make_transform_iterator(make_index_iterator(1ul)
+        , init_func)
+      , make_transform_iterator(make_index_iterator(input._partitions+1)
+        , init_func))
+  , _partition_size(input._partition_size)
+  , _output_buffer(_partition_size)
+  , _ifft_plan(fftw<float>::plan_r2r_1d(int(_partition_size)
+      , _output_buffer.begin()
+      , _output_buffer.begin(), FFTW_HC2R, FFTW_PATIENT))
+{
+  // Note: In the beginning, all filter spectra are marked as "not valid",
+  // however, this is ignored for the first item of each queue.
+
+  assert(_filter_spectra.size() == _input._input_spectra.size()-1);
+}
+
+/** Fast convolution of one audio block.
  * @param weight amplitude weighting factor for current signal frame.
- * The filter has to be set in the constructor of StaticConvolver or via
- * Convolver::set_filter().
+ * The filter has to be set in the constructor of Simple or via
+ * Output::set_filter().
  * @return pointer to the first sample of the convolved (and weighted) signal
  **/
 float*
-ConvolverBase::convolve_signal(float weight)
+OutputBase::convolve(float weight)
 {
   _multiply_spectra();
 
   // The first half will be discarded
-  float* second_half = _output_buffer.begin() + _block_size;
+  float* second_half = _output_buffer.begin() + _input._block_size;
 
   if (_output_buffer.zero)
   {
@@ -330,7 +436,8 @@ ConvolverBase::convolve_signal(float weight)
 }
 
 void
-ConvolverBase::_multiply_partition_cpp(const float* signal, const float* filter)
+OutputBase::_multiply_partition_cpp(
+    const float* signal, const float* filter)
 {
   // see http://www.ludd.luth.se/~torger/brutefir.html#bruteconv_4
 
@@ -366,7 +473,9 @@ ConvolverBase::_multiply_partition_cpp(const float* signal, const float* filter)
 }
 
 #ifdef __SSE__
-void ConvolverBase::_multiply_partition_simd(const float* signal, const float* filter)
+void
+OutputBase::_multiply_partition_simd(
+    const float* signal, const float* filter)
 {
   //  f4vector2 tmp1, tmp2;//, tmp3;
   f4vector2 sigr, sigi, filtr, filti, out;
@@ -440,15 +549,16 @@ void ConvolverBase::_multiply_partition_simd(const float* signal, const float* f
 #endif
 
 /// This function performs the actual fast convolution.
-void ConvolverBase::_multiply_spectra()
+void
+OutputBase::_multiply_spectra()
 {
-  assert(_input_spectra.size() == _filter_spectra.size() + 1);
+  assert(_input._input_spectra.size() == _filter_spectra.size() + 1);
 
   // Clear IFFT buffer
   std::fill(_output_buffer.begin(), _output_buffer.end(), 0.0f);
   _output_buffer.zero = true;
 
-  fixed_list<fft_node>::iterator input = _input_spectra.begin();
+  queue_t::const_iterator input = _input._input_spectra.begin();
 
   for (filter_spectra_t::iterator queue = _filter_spectra.begin()
       ; queue != _filter_spectra.end()
@@ -466,43 +576,8 @@ void ConvolverBase::_multiply_spectra()
   }
 }
 
-/** Sort the FFT coefficients to be in proper place for the efficient 
- * multiplication of the spectra.
- **/
-void ConvolverBase::_sort_coefficients(float* data)
-{
-  fixed_vector<float> buffer(_partition_size);
-
-  int base = 8;
-
-  buffer[0] = data[0];
-  buffer[1] = data[1];
-  buffer[2] = data[2];
-  buffer[3] = data[3];
-  buffer[4] = data[_block_size];
-  buffer[5] = data[_partition_size - 1];
-  buffer[6] = data[_partition_size - 2];
-  buffer[7] = data[_partition_size - 3];
-
-  for (size_t i = 0; i < (_partition_size / 8-1); i++)
-  {
-    for (int ii = 0; ii < 4; ii++)
-    {
-      buffer[base+ii] = data[base/2+ii];
-    }
-
-    for (int ii = 0; ii < 4; ii++)
-    {
-      buffer[base+4+ii] = data[_partition_size-base/2-ii];
-    }
-
-    base += 8;
-  }
-
-  std::copy(buffer.begin(), buffer.end(), data);
-}
-
-void ConvolverBase::_unsort_coefficients()
+void
+OutputBase::_unsort_coefficients()
 {
   fixed_vector<float> buffer(_partition_size);
 
@@ -512,7 +587,7 @@ void ConvolverBase::_unsort_coefficients()
   buffer[1]                 = _output_buffer[1];
   buffer[2]                 = _output_buffer[2];
   buffer[3]                 = _output_buffer[3];
-  buffer[_block_size]       = _output_buffer[4];
+  buffer[_input._block_size]= _output_buffer[4];
   buffer[_partition_size-1] = _output_buffer[5];
   buffer[_partition_size-2] = _output_buffer[6];
   buffer[_partition_size-3] = _output_buffer[7];
@@ -535,47 +610,60 @@ void ConvolverBase::_unsort_coefficients()
   std::copy(buffer.begin(), buffer.end(), _output_buffer.begin());
 }
 
-/// In-place FFT
-void ConvolverBase::_fft(float* first)
-{
-  fftw<float>::execute_r2r(_fft_plan, first, first);
-  _sort_coefficients(first);
-}
-
-void ConvolverBase::_ifft()
+void
+OutputBase::_ifft()
 {
   _unsort_coefficients();
   fftw<float>::execute(_ifft_plan);
 }
 
-/** Convolution engine.
+namespace internal
+{
+
+// Create queues with different lengths: 1st list has 1 item, 2nd list 2, ...
+class InitQueues
+{
+  public:
+    typedef std::pair<size_t, size_t> result_type;
+    InitQueues(size_t block_size) : _size(2 * block_size) {}
+    result_type operator()(size_t nr) { return result_type(nr, _size); }
+  private:
+    size_t _size;
+};
+
+// Disable queues, all queues have length 1.
+class InitStatic
+{
+  public:
+    typedef std::pair<size_t, size_t> result_type;
+    InitStatic(size_t block_size) : _size(2 * block_size) {}
+    result_type operator()(size_t) { return result_type(1ul, _size); }
+  private:
+    size_t _size;
+};
+
+}  // namespace internal
+
+/** Convolution engine (output part).
  * Uses (uniformly) partitioned convolution.
  *
  * TODO: describe thread (un)safety
- * @see StaticConvolver
+ * @see StaticOutput
  **/
-class Convolver : public ConvolverBase
+class Output : public OutputBase
 {
   public:
     /// Constructor. Initially, all partitions are filled with zeros (i.e.
     /// the output will be silence unless the filter is changed with
     /// set_filter().
-    /// @param block_size audio block size
-    /// @param partitions maximum number of partitions
-    Convolver(size_t block_size, size_t partitions)
-      : ConvolverBase::ConvolverBase(block_size, partitions
-          , internal::ConvolverInitQueues(block_size))
+    explicit Output(const Input& input)
+      : OutputBase(input, internal::InitQueues(input._block_size))
     {}
-
-    template<typename In>
-    void prepare_filter(In first, In last, filter_t& c);
 
     template<typename In>
     void set_filter(In first, In last);
 
     void set_filter(const filter_t& filter);
-
-    // TODO: swap()?
 
     bool queues_empty();
     void rotate_queues();
@@ -592,30 +680,15 @@ class Convolver : public ConvolverBase
  * @param last Past-the-end iterator
  **/
 template<typename In>
-void Convolver::set_filter(In first, In last)
+void
+Output::set_filter(In first, In last)
 {
   for (filter_spectra_t::iterator it = _filter_spectra.begin()
       ; it != _filter_spectra.end()
       ; ++it)
   {
     // The new filter partition starts its journey at the end of the queue
-    first = _prepare_filter_partition(first, last, it->back());
-  }
-}
-
-/** Apply FFT to time-domain samples.
- * If there are too few input samples, the rest is zero-padded, if there are
- * too few blocks in the container @p c, the rest of the samples is ignored.
- * @param first Iterator to first time-domain sample
- * @param laste Past-the-end iterator
- * @param c Target container
- **/
-template<typename In>
-void Convolver::prepare_filter(In first, In last, filter_t& c)
-{
-  for (filter_t::iterator it = c.begin(); it != c.end(); ++it)
-  {
-    first = _prepare_filter_partition(first, last, *it);
+    first = _input._prepare_partition(first, last, it->back());
   }
 }
 
@@ -628,7 +701,7 @@ void Convolver::prepare_filter(In first, In last, filter_t& c)
  * given, they are ignored.
  **/
 void
-Convolver::set_filter(const filter_t& filter)
+Output::set_filter(const filter_t& filter)
 {
   filter_t::const_iterator source = filter.begin();
   filter_spectra_t::iterator queue = _filter_spectra.begin();
@@ -648,7 +721,14 @@ Convolver::set_filter(const filter_t& filter)
   // If further partitions are given, they are ignored
 }
 
-bool Convolver::queues_empty()
+/** Check if there are still valid partitions in the queues.
+ * If this function returns @b false, rotate_queues() should be called.
+ * @note This is important for crossfades: even if set_filter() wasn't used,
+ *   older partitions may still change! If the queues are empty, no crossfade is
+ *   necessary (except @p weight was changed in convolve()).
+ **/
+bool
+Output::queues_empty()
 {
   // Start from the end, more likely to find valid spectra
   for (filter_spectra_t::reverse_iterator queue = _filter_spectra.rbegin()
@@ -657,7 +737,7 @@ bool Convolver::queues_empty()
   {
     if (queue->size() < 2) continue;
 
-    for (fixed_list<fft_node>::iterator it = ++(queue->begin())
+    for (queue_t::iterator it = ++(queue->begin())
         ; it != queue->end()
         ; ++it)
     {
@@ -668,10 +748,11 @@ bool Convolver::queues_empty()
 }
 
 /** Update filter queues.
- * TODO: more documentation
+ * If queues_empty() returns @b true, calling this function unnecessary.
+ * @note This can lead to artifacts, so a crossfade is recommended.
  **/
 void
-Convolver::rotate_queues()
+Output::rotate_queues()
 {
   for (filter_spectra_t::iterator queue = _filter_spectra.begin()
       ; queue != _filter_spectra.end()
@@ -679,7 +760,7 @@ Convolver::rotate_queues()
   {
     if (queue->size() < 2) continue;
 
-    fixed_list<fft_node>::iterator second = ++(queue->begin());
+    queue_t::iterator second = ++(queue->begin());
 
     if (second->valid)
     {
@@ -694,40 +775,39 @@ Convolver::rotate_queues()
   }
 }
 
-/** Convolver with static filter.
- * The filter coefficients are set in the constructor and cannot be changed.
- * All other functions are inherited from ConvolverBase.
- * @see Convolver
+/** Convolver output stage with static filter.
+ * The filter coefficients are set in the constructor(s) and cannot be changed.
+ * @see Output, Simple
  **/
-struct StaticConvolver : ConvolverBase
+struct StaticOutput : OutputBase
 {
-  /// Set block size and filter coefficients.
-  /// @param block_size audio block size
+  /// Set time-domain filter coefficients.
+  /// @param input Reference to Input object
   /// @param first iterator to first coefficient
   /// @param last past-the-end iterator
   /// @tparam In Forward iterator
   template<typename In>
-  StaticConvolver(size_t block_size, In first, In last)
-    : ConvolverBase(block_size
-        , (std::distance(first, last) + block_size - 1) / block_size
-        , internal::ConvolverInitStatic(block_size))
+  StaticOutput(const Input& input, In first, In last)
+    : OutputBase(input, internal::InitStatic(input._block_size))
   {
     for (filter_spectra_t::iterator it = _filter_spectra.begin()
         ; it != _filter_spectra.end()
         ; ++it)
     {
       // All queues have length 1, therefore front() == back()
-      first = _prepare_filter_partition(first, last, it->front());
+      first = _input._prepare_partition(first, last, it->front());
     }
   }
 
-  StaticConvolver(size_t block_size, const filter_t& filter)
-    : ConvolverBase(block_size, filter.size()
-        , internal::ConvolverInitStatic(block_size))
+  /// Set frequency-domain filter coefficients.
+  /// @param input Reference to Input object
+  /// @param filter container with filter data
+  StaticOutput(const Input& input, const filter_t& filter)
+    : OutputBase(input, internal::InitStatic(input._block_size))
   {
-    filter_t::const_iterator source = filter.begin();
+    assert(_filter_spectra.size() == filter.size());
 
-    // _filter_spectra and filter have the same size!
+    filter_t::const_iterator source = filter.begin();
 
     for (filter_spectra_t::iterator it = _filter_spectra.begin()
         ; it != _filter_spectra.end()
@@ -738,15 +818,39 @@ struct StaticConvolver : ConvolverBase
   }
 };
 
+/// Combination of Input and StaticOutput
+class Simple
+{
+  public:
+    /// Constructor (see StaticOutput::StaticOutput)
+    template<typename In>
+    Simple(size_t block_size, In first, In last)
+      : _input(block_size
+          , min_partitions(block_size, std::distance(first, last)))
+      , _output(_input, first, last)
+    {}
+
+    /// See Input::add_block()
+    template<typename In>
+    void add_block(In first) { _input.add_block(first); }
+
+    /// See StaticOutput::convolve()
+    float* convolve(float weight = 1.0f) { return _output.convolve(weight); }
+
+  private:
+    Input _input;
+    StaticOutput _output;
+};
+
+/// Apply @c std::transform to a container of fft_node%s
 template<typename BinaryFunction>
-void transform_nested(const Convolver::filter_t& in1
-    , const Convolver::filter_t& in2, Convolver::filter_t& out
+void transform_nested(const filter_t& in1, const filter_t& in2, filter_t& out
     , BinaryFunction f)
 {
-  Convolver::filter_t::const_iterator it1 = in1.begin();
-  Convolver::filter_t::const_iterator it2 = in2.begin();
+  filter_t::const_iterator it1 = in1.begin();
+  filter_t::const_iterator it2 = in2.begin();
 
-  for (Convolver::filter_t::iterator it3 = out.begin()
+  for (filter_t::iterator it3 = out.begin()
       ; it3 != out.end()
       ; ++it3)
   {
@@ -787,11 +891,12 @@ void transform_nested(const Convolver::filter_t& in1
   }
 }
 
-inline void copy_nested(const Convolver::filter_t& in, Convolver::filter_t& out)
+/// Copy all data from one filter_t to another
+inline void copy_nested(const filter_t& in, filter_t& out)
 {
-  Convolver::filter_t::const_iterator source = in.begin();
+  filter_t::const_iterator source = in.begin();
 
-  for (Convolver::filter_t::iterator target = out.begin()
+  for (filter_t::iterator target = out.begin()
       ; target != out.end()
       ; ++target)
   {
@@ -806,6 +911,8 @@ inline void copy_nested(const Convolver::filter_t& in, Convolver::filter_t& out)
     }
   }
 }
+
+}  // namespace conv
 
 }  // namespace apf
 

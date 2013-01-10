@@ -54,24 +54,24 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
 
     APF_PROCESS(MyProcessor, MimoProcessorBase)
     {
-      _convolver.add_input_block(_input->begin());
-      _convolver.rotate_queues();  // TODO: check if necessary?
+      _convolver_in.add_block(_input->begin());
+      _convolver_out.rotate_queues();  // TODO: check if necessary?
       if (this->reverb() != _old_reverb)
       {
         if (this->reverb())
         {
-          _convolver.set_filter(_filter_partitions);
+          _convolver_out.set_filter(_filter_partitions);
         }
         else
         {
           // Load Dirac
           float one = 1.0f;
-          _convolver.set_filter(&one, (&one)+1);
+          _convolver_out.set_filter(&one, (&one)+1);
           // One could prepare frequency domain version to avoid repeated FFTs
         }
         _old_reverb = this->reverb();
       }
-      float* result = _convolver.convolve_signal();
+      float* result = _convolver_out.convolve();
 
       // This is necessary because _output is used before _output_list is
       // processed:
@@ -90,9 +90,10 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
 
     size_t _partitions;
 
-    apf::Convolver _convolver;
+    apf::conv::Input _convolver_in;
+    apf::conv::Output _convolver_out;
 
-    apf::Convolver::filter_t _filter_partitions;
+    apf::conv::filter_t _filter_partitions;
 };
 
 template<typename In>
@@ -102,10 +103,11 @@ MyProcessor::MyProcessor(In first, In last)
   , _old_reverb(false)
   , _partitions((std::distance(first, last) + this->block_size() - 1)
       / this->block_size())
-  , _convolver(this->block_size(), _partitions)
+  , _convolver_in(this->block_size(), _partitions)
+  , _convolver_out(_convolver_in)
   , _filter_partitions(std::make_pair(_partitions, this->block_size() * 2))
 {
-  _convolver.prepare_filter(first, last, _filter_partitions);
+  _convolver_in.prepare_filter(first, last, _filter_partitions);
 
   _input = this->add<Input>();
   _output = this->add<Output>();

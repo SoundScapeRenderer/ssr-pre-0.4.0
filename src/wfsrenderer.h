@@ -497,8 +497,8 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
     // no volume increase for sources closer than 0.5m to reference position
     source_distance = std::max(source_distance, 0.5f);
 
-    weighting_factor *= 0.5f / source_distance; // 1/r
-    // weighting_factor *= 0.25f / sqrt(source_distance); // 1/sqrt(r)
+    //weighting_factor *= 0.5f / source_distance; // 1/r
+    weighting_factor *= sqrt(0.5f) / sqrt(source_distance); // 1/sqrt(r)
 #elif defined(WEIGHTING_DELFT)
 #endif
   }

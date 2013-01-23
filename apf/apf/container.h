@@ -531,8 +531,8 @@ class fixed_matrix<T, Allocator>::slices_iterator
 
   private:
     channel_iterator _base_iterator;
-    const size_type _max_channels;
-    const size_type _max_slices;
+    size_type _max_channels;
+    size_type _max_slices;
 };
 
 /// Append pointers to the elements of the first list to the second list.

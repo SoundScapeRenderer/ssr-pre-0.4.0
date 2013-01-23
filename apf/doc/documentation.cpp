@@ -45,6 +45,8 @@ apf::JackClient
 
 - Parameter map with a few conversion functions: apf::parameter_map
 
+- Some tools for using the FFTW library: fftwtools.h
+
 - Simple stopwatch: apf::StopWatch
 
 - Miscellaneous stuff: misc.h

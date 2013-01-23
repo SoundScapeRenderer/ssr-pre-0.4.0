@@ -48,6 +48,7 @@ struct fftw<longtype> { \
   typedef fftw ## shorttype ## plan plan; \
   static void* malloc(size_t n) { return fftw ## shorttype ## malloc(n); } \
   static void free(void* p) { fftw ## shorttype ## free(p); } \
+  /** Destroy plan. @warning Multiple deletion is fatal! **/ \
   static void destroy_plan(plan p) { fftw ## shorttype ## destroy_plan(p); } \
   static void execute(const plan p) { fftw ## shorttype ## execute(p); } \
   static void execute_r2r(const plan p, longtype *in, longtype *out) { \

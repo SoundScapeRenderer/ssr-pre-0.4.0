@@ -32,7 +32,7 @@
 
 #include "loudspeakerrenderer.h"
 
-#include "apf/convolver.h"  // for StaticConvolver
+#include "apf/convolver.h"  // for Convolver
 #include "apf/blockdelayline.h"  // for NonCausalBlockDelayLine
 #include "apf/sndfiletools.h"  // for apf::load_sndfile
 
@@ -42,6 +42,8 @@
 
 namespace ssr
 {
+
+namespace Convolver = apf::conv;
 
 class WfsRenderer : public SourceToOutput<WfsRenderer, LoudspeakerRenderer>
 {
@@ -83,21 +85,13 @@ class WfsRenderer : public SourceToOutput<WfsRenderer, LoudspeakerRenderer>
       // TODO: warning if size changed?
       // TODO: warning if size == 0?
 
-      const size_t partitions
-        = (size + this->block_size() - 1) / (this->block_size());
-
-      _pre_filter.reset(new apf::Convolver::filter_t(
-            std::make_pair(partitions, 2 * this->block_size())));
-
-      // create local Convolver to prepare filters (1 partition is enough)
-      apf::Convolver temp_convolver(this->block_size(), 1);
-
-      temp_convolver.prepare_filter(ir.begin(), ir.end(), *_pre_filter);
+      _pre_filter.reset(new Convolver::StaticFilter(this->block_size()
+            , ir.begin(), ir.end()));
     }
 
   private:
     apf::raised_cosine_fade<sample_type> _fade;
-    std::auto_ptr<apf::Convolver::filter_t> _pre_filter;
+    std::auto_ptr<Convolver::StaticFilter> _pre_filter;
 
     size_t _max_delay, _initial_delay;
 };
@@ -109,24 +103,27 @@ class WfsRenderer::Input : public _base::Input
 
     Input(const Params& p)
       : _base::Input(p)
-      , _convolver(this->parent.block_size(), *this->parent._pre_filter)
+      , _convolver_in(this->parent.block_size()
+          // TODO: check if _pre_filter != 0!
+          , this->parent._pre_filter->partitions())
+      , _convolver_out(_convolver_in, *this->parent._pre_filter)
       , _delayline(this->parent.block_size(), this->parent._max_delay
           , this->parent._initial_delay)
     {}
 
     APF_PROCESS(Input, _base::Input)
     {
-      _convolver.add_input_block(this->buffer.begin());
-      _delayline.write_block(_convolver.convolve_signal());
+      _convolver_in.add_block(this->buffer.begin());
+      _delayline.write_block(_convolver_out.convolve());
     }
 
   private:
-    apf::StaticConvolver _convolver;
+    Convolver::Input _convolver_in;
+    Convolver::Output _convolver_out;
     apf::NonCausalBlockDelayLine<sample_type> _delayline;
 };
 
-class WfsRenderer::SourceChannel : public _base::SourceChannel
-                                 , public apf::has_begin_and_end<
+class WfsRenderer::SourceChannel : public apf::has_begin_and_end<
                           apf::NonCausalBlockDelayLine<sample_type>::circulator>
 {
   public:

@@ -506,8 +506,6 @@ struct SourceToOutput : Base<Derived>
 {
   typedef typename Base<Derived>::Input Input;
 
-  struct SourceChannel {};
-
   struct Source : Base<Derived>::Source
   {
     typedef typename Base<Derived>::Source::Params Params;
@@ -519,9 +517,16 @@ struct SourceToOutput : Base<Derived>
       , sourcechannels(arg)
     {}
 
+    // ctor from sequence
+    template<typename In>
+    Source(const Params& p, In first, In last)
+      : Base<Derived>::Source(p)
+      , sourcechannels(first, last)
+    {}
+
     void connect(SourceToOutput& parent)
     {
-      std::list<SourceChannel*> temp;
+      std::list<typename Derived::SourceChannel*> temp;
       apf::append_pointers(this->sourcechannels, temp);
       parent.add_to_sublist(temp
          , apf::make_cast_proxy<Output>(parent.get_non_const_output_list())
@@ -530,7 +535,7 @@ struct SourceToOutput : Base<Derived>
 
     void disconnect(SourceToOutput& parent)
     {
-      std::list<SourceChannel*> temp;
+      std::list<typename Derived::SourceChannel*> temp;
       apf::append_pointers(this->sourcechannels, temp);
       parent.rem_from_sublist(temp
           , apf::make_cast_proxy<Output>(parent.get_non_const_output_list())
@@ -543,7 +548,7 @@ struct SourceToOutput : Base<Derived>
   struct Output : Base<Derived>::Output
   {
     typedef typename Base<Derived>::Output::Params Params;
-    typedef std::list<SourceChannel*> sourcechannels_t;
+    typedef std::list<typename Derived::SourceChannel*> sourcechannels_t;
 
     Output(const Params& p) : Base<Derived>::Output(p) {}
 

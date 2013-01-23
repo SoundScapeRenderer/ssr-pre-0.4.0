@@ -32,11 +32,13 @@
 
 #include "loudspeakerrenderer.h"
 
-#include "apf/convolver.h"  // for StaticConvolver
+#include "apf/convolver.h"  // for Convolver
 #include "apf/sndfiletools.h"  // for apf::load_sndfile
 
 namespace ssr
 {
+
+namespace Convolver = apf::conv;
 
 class GenericRenderer : public SourceToOutput<GenericRenderer
                                                           , LoudspeakerRenderer>
@@ -59,13 +61,26 @@ class GenericRenderer : public SourceToOutput<GenericRenderer
     {}
 
   private:
+    class _source_initializer;
+
     apf::raised_cosine_fade<sample_type> _fade;
 };
 
-struct GenericRenderer::SourceChannel : _base::SourceChannel
-                                          , apf::has_begin_and_end<sample_type*>
+struct GenericRenderer::SourceChannel : apf::has_begin_and_end<sample_type*>
 {
-  explicit SourceChannel(const Source* s) : source(*s) {}
+  struct Params
+  {
+    typedef apf::fixed_matrix<sample_type>::slice_iterator iterator;
+
+    Params(const Source& s) : source(s) {}
+
+    size_t block_size;
+    iterator first;
+    iterator last;
+    const Source& source;
+  };
+
+  explicit SourceChannel(const Params& p);
 
   // out-of-class definition because of cyclic dependencies with Source
   void update();
@@ -73,41 +88,90 @@ struct GenericRenderer::SourceChannel : _base::SourceChannel
 
   const Source& source;
 
-  std::auto_ptr<apf::StaticConvolver> convolver;
+  Convolver::StaticFilter filter;
+  Convolver::Output output;
 };
 
-class GenericRenderer::Source : public _base::Source
+struct GenericRenderer::_source_initializer
+{
+  typedef apf::fixed_matrix<sample_type> matrix_t;
+
+  class _init_function
+  {
+    public:
+      typedef SourceChannel::Params result_type;
+
+      _init_function(size_t block_size, const Source& source)
+        : _block_size(block_size)
+        , _source(&source)
+      {}
+
+      result_type operator()(const matrix_t::Slice& slice)
+      {
+        SourceChannel::Params p(*_source);
+        p.block_size = _block_size;
+        p.first = slice.begin();
+        p.last = slice.end();
+        return p;
+      }
+
+    private:
+      size_t _block_size;
+      const Source* _source;
+  };
+
+  _source_initializer(const std::string& filename, const GenericRenderer* parent
+      , const Source& source)
+    // Dummy-initialization, will be overwritten later!
+    : _init_begin(matrix_t::slices_iterator(matrix_t::channel_iterator(), 0, 0)
+        , _init_function(0, source))
+    , _init_end(_init_begin)
+  {
+    if (parent == 0) throw std::logic_error("Bug: parent == 0!");
+
+    SndfileHandle ir_data = apf::load_sndfile( filename, parent->sample_rate()
+        , parent->get_output_list().size());
+
+    size_t size = ir_data.frames();
+
+    _init_ir_data.reset(new matrix_t(size, ir_data.channels()));
+
+    // TODO: check return value?
+    ir_data.readf(_init_ir_data->begin(), size);
+
+    _init_block_size = parent->block_size();
+    _init_partitions = Convolver::min_partitions(_init_block_size, size);
+
+    _init_begin = apf::make_transform_iterator(_init_ir_data->slices.begin()
+        , _init_function(_init_block_size, source));
+    _init_end = apf::make_transform_iterator(_init_ir_data->slices.end()
+        , _init_function(_init_block_size, source));
+  }
+
+  // _init_ir_data may only be used in the Source constructor!
+  std::auto_ptr<matrix_t> _init_ir_data;
+
+  size_t _init_block_size;
+  size_t _init_partitions;
+
+  apf::transform_iterator<matrix_t::slices_iterator, _init_function>
+    _init_begin, _init_end;
+};
+
+class GenericRenderer::Source : private _source_initializer
+                              , public Convolver::Input
+                              , public _base::Source
 {
   public:
     Source(const Params& p)
-      : _base::Source(p
-          // We cannot create a std::pair of a reference, so we use a pointer:
-          , std::make_pair(p.parent->get_output_list().size(), this))
+      : _source_initializer(p.get<std::string>("properties_file"), p.parent
+          , *this)
+      , Convolver::Input(_init_block_size, _init_partitions)
+      , _base::Source(p, _init_begin, _init_end)
       , _new_weighting_factor()
       , _old_weighting_factor()
     {
-      SndfileHandle ir_data = apf::load_sndfile(
-          p.get<std::string>("properties_file"), this->parent.sample_rate()
-          , this->parent.get_output_list().size());
-
-      size_t size = ir_data.frames();
-
-      apf::fixed_matrix<sample_type> ir_matrix(size, ir_data.channels());
-
-      size = ir_data.readf(ir_matrix.begin(), size);
-
-      // TODO: warning if size changed?
-
-      apf::fixed_matrix<sample_type>::slices_iterator slice
-        = ir_matrix.slices.begin();
-      for (sourcechannels_t::iterator it = this->sourcechannels.begin()
-          ; it != this->sourcechannels.end()
-          ; ++it, ++slice)
-      {
-        it->convolver.reset(new apf::StaticConvolver(this->parent.block_size()
-              , slice->begin(), slice->end()));
-      }
-      assert(slice == ir_matrix.slices.end());
+      _init_ir_data.reset();  // free memory in _source_initializer
     }
 
     APF_PROCESS(Source, _base::Source)
@@ -115,17 +179,17 @@ class GenericRenderer::Source : public _base::Source
       _old_weighting_factor = _new_weighting_factor;
       _new_weighting_factor = this->weighting_factor;
 
-      for (sourcechannels_t::iterator it = this->sourcechannels.begin()
-          ; it != this->sourcechannels.end()
-          ; ++it)
-      {
-        // TODO: check if convolver == 0?
-        it->convolver->add_input_block(_input.begin());
-      }
+      this->add_block(_input.begin());
     }
 
     sample_type _new_weighting_factor, _old_weighting_factor;
 };
+
+GenericRenderer::SourceChannel::SourceChannel(const Params& p)
+  : source(p.source)
+  , filter(p.block_size, p.first, p.last)
+  , output(this->source, this->filter)
+{}
 
 void GenericRenderer::SourceChannel::update()
 {
@@ -135,8 +199,8 @@ void GenericRenderer::SourceChannel::update()
 void GenericRenderer::SourceChannel::convolve(sample_type weight)
 {
   // TODO: check if convolver == 0?
-  _begin = this->convolver->convolve_signal(weight);
-  _end = _begin + this->source.parent.block_size();
+  _begin = this->output.convolve(weight);
+  _end = _begin + this->source.block_size();
 }
 
 struct GenericRenderer::RenderFunction

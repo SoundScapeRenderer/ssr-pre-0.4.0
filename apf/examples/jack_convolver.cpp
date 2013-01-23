@@ -55,18 +55,18 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
     APF_PROCESS(MyProcessor, MimoProcessorBase)
     {
       _convolver_in.add_block(_input->begin());
-      _convolver_out.rotate_queues();  // TODO: check if necessary?
+      _convolver_filter.rotate_queues();  // TODO: check if necessary?
       if (this->reverb() != _old_reverb)
       {
         if (this->reverb())
         {
-          _convolver_out.set_filter(_filter_partitions);
+          _convolver_filter.set_filter(_filter_partitions);
         }
         else
         {
           // Load Dirac
           float one = 1.0f;
-          _convolver_out.set_filter(&one, (&one)+1);
+          _convolver_filter.set_filter(&one, (&one)+1);
           // One could prepare frequency domain version to avoid repeated FFTs
         }
         _old_reverb = this->reverb();
@@ -91,6 +91,7 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
     size_t _partitions;
 
     apf::conv::Input _convolver_in;
+    apf::conv::Filter _convolver_filter;
     apf::conv::Output _convolver_out;
 
     apf::conv::filter_t _filter_partitions;
@@ -104,7 +105,8 @@ MyProcessor::MyProcessor(In first, In last)
   , _partitions((std::distance(first, last) + this->block_size() - 1)
       / this->block_size())
   , _convolver_in(this->block_size(), _partitions)
-  , _convolver_out(_convolver_in)
+  , _convolver_filter(this->block_size(), _partitions)
+  , _convolver_out(_convolver_in, _convolver_filter)
   , _filter_partitions(std::make_pair(_partitions, this->block_size() * 2))
 {
   _convolver_in.prepare_filter(first, last, _filter_partitions);

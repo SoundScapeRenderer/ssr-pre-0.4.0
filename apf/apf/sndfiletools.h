@@ -52,7 +52,12 @@ inline SndfileHandle load_sndfile(const std::string& name, size_t sample_rate
 
   SndfileHandle handle(name, SFM_READ);
 
+#if 0
+  // rawHandle() is available since libsndfile version 1.0.24
   if (!handle.rawHandle())
+#else
+  if (!handle.channels())
+#endif
   {
     throw std::logic_error(
         "apf::load_sndfile(): \"" + name + "\" couldn't be loaded!");

@@ -103,23 +103,20 @@ class WfsRenderer::Input : public _base::Input
 
     Input(const Params& p)
       : _base::Input(p)
-      , _convolver_in(this->parent.block_size()
-          // TODO: check if _pre_filter != 0!
-          , this->parent._pre_filter->partitions())
-      , _convolver_out(_convolver_in, *this->parent._pre_filter)
+      // TODO: check if _pre_filter != 0!
+      , _convolver(*this->parent._pre_filter)
       , _delayline(this->parent.block_size(), this->parent._max_delay
           , this->parent._initial_delay)
     {}
 
     APF_PROCESS(Input, _base::Input)
     {
-      _convolver_in.add_block(this->buffer.begin());
-      _delayline.write_block(_convolver_out.convolve());
+      _convolver.add_block(this->buffer.begin());
+      _delayline.write_block(_convolver.convolve());
     }
 
   private:
-    Convolver::Input _convolver_in;
-    Convolver::Output _convolver_out;
+    Convolver::InputOutput _convolver;
     apf::NonCausalBlockDelayLine<sample_type> _delayline;
 };
 

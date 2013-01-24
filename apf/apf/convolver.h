@@ -135,6 +135,8 @@ class TransformBase
   protected:
     explicit TransformBase(size_t block_size_);
 
+    ~TransformBase() { fftw<float>::destroy_plan(_fft_plan); }
+
     fftw<float>::plan _create_plan(float* array) const;
 
     /// In-place FFT
@@ -154,7 +156,8 @@ class TransformBase
 };
 
 TransformBase::TransformBase(size_t block_size_)
-  : _block_size(block_size_)
+  : _fft_plan(0)
+  , _block_size(block_size_)
   , _partition_size(2 * _block_size)
 {
   // TODO: check for multiple of 8! Raise an exception?
@@ -272,8 +275,6 @@ struct Transform : TransformBase
     fft_node planning_space(this->partition_size());
     _fft_plan = _create_plan(planning_space.begin());
   }
-
-  ~Transform() { fftw<float>::destroy_plan(_fft_plan); }
 };
 
 /** %Input stage of convolution.
@@ -292,8 +293,6 @@ struct Input : TransformBase
 
     _fft_plan = _create_plan(spectra.front().begin());
   }
-
-  ~Input() { fftw<float>::destroy_plan(_fft_plan); }
 
   template<typename In>
   void add_block(In first);
@@ -384,8 +383,6 @@ struct FilterBase : TransformBase
 
     _fft_plan = _create_plan(this->spectra.front().front().begin());
   }
-
-  ~FilterBase() { fftw<float>::destroy_plan(_fft_plan); }
 
   template<typename In>
   void set_filter(In first, In last);

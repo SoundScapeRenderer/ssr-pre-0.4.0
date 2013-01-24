@@ -853,6 +853,15 @@ struct StaticFilterOutput : StaticFilter, Output
   // TODO: constructor from frequency domain data?
 };
 
+/// Combination of Input and Output
+struct InputOutput : Input, Output
+{
+  InputOutput(const FilterBase& filter)
+    : Input(filter.block_size(), filter.partitions())
+    , Output(*this, filter)
+  {}
+};
+
 /// Combination of Input and FilterOutput
 struct Convolver : Input, FilterOutput
 {

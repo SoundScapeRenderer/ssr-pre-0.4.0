@@ -178,6 +178,9 @@ SECTION("combinations", "")
 
   c::StaticFilterOutput sfo(conv_input, filter, filter + 16);
 
+  c::StaticFilter io_filter(8, filter, filter + 16, partitions);
+  c::InputOutput io(io_filter);
+
   c::Convolver conv(8, partitions);
   conv.set_filter(filter, filter + 16);
   conv.rotate_queues();
@@ -189,12 +192,15 @@ SECTION("combinations", "")
 
   input[1] = 1.0f;
   conv_input.add_block(input);
+  io.add_block(input);
   conv.add_block(input);
   sconv.add_block(input);
 
   result = fo.convolve();
   CHECK_RANGE(result, zeros, 8);
   result = sfo.convolve();
+  CHECK_RANGE(result, zeros, 8);
+  result = io.convolve();
   CHECK_RANGE(result, zeros, 8);
   result = conv.convolve();
   CHECK_RANGE(result, zeros, 8);
@@ -203,6 +209,7 @@ SECTION("combinations", "")
 
   input[1] = 2.0f;
   conv_input.add_block(input);
+  io.add_block(input);
   conv.add_block(input);
   sconv.add_block(input);
 
@@ -215,6 +222,8 @@ SECTION("combinations", "")
   CHECK_RANGE(result, expected, 8);
   result = sfo.convolve();
   CHECK_RANGE(result, expected, 8);
+  result = io.convolve();
+  CHECK_RANGE(result, expected, 8);
   result = conv.convolve();
   CHECK_RANGE(result, expected, 8);
   result = sconv.convolve();
@@ -222,6 +231,7 @@ SECTION("combinations", "")
 
   input[1] = 0.0f;
   conv_input.add_block(input);
+  io.add_block(input);
   conv.add_block(input);
   sconv.add_block(input);
 
@@ -233,18 +243,23 @@ SECTION("combinations", "")
   CHECK_RANGE(result, expected, 8);
   result = sfo.convolve();
   CHECK_RANGE(result, expected, 8);
+  result = io.convolve();
+  CHECK_RANGE(result, expected, 8);
   result = conv.convolve();
   CHECK_RANGE(result, expected, 8);
   result = sconv.convolve();
   CHECK_RANGE(result, expected, 8);
 
   conv_input.add_block(input);
+  io.add_block(input);
   conv.add_block(input);
   sconv.add_block(input);
 
   result = fo.convolve();
   CHECK_RANGE(result, zeros, 8);
   result = sfo.convolve();
+  CHECK_RANGE(result, zeros, 8);
+  result = io.convolve();
   CHECK_RANGE(result, zeros, 8);
   result = conv.convolve();
   CHECK_RANGE(result, zeros, 8);

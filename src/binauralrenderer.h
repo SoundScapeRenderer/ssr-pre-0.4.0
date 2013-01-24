@@ -149,16 +149,12 @@ BinauralRenderer::_load_hrtfs(const std::string& filename, size_t size)
 
   size = hrir_file.readf(transpose.begin(), size);
 
-  // round up:
-  _partitions = (size + this->block_size() - 1) / (this->block_size());
+  _partitions = Convolver::min_partitions(this->block_size(), size);
 
-  const size_t partition_size = 2 * this->block_size();
+  Convolver::Transform temp(this->block_size());
 
   _hrtfs.reset(new hrtf_set_t(std::make_pair(no_of_channels
-          , std::make_pair(_partitions, partition_size))));
-
-  // prepare filters
-  Convolver::Transform temp(this->block_size());
+          , std::make_pair(_partitions, temp.partition_size()))));
 
   hrtf_set_t::iterator target = _hrtfs->begin();
   for (apf::fixed_matrix<float>::slices_iterator it = transpose.slices.begin()
@@ -183,7 +179,7 @@ BinauralRenderer::_load_hrtfs(const std::string& filename, size_t size)
   impulse.back() = 1;
 
   _neutral_filter.reset(new Convolver::filter_t(std::make_pair(partitions
-          , partition_size)));
+          , temp.partition_size())));
   temp.prepare_filter(impulse.begin(), impulse.end(), *_neutral_filter);
 }
 

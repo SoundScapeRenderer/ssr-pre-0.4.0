@@ -511,6 +511,11 @@ struct SourceToOutput : Base<Derived>
     typedef typename Base<Derived>::Source::Params Params;
     typedef apf::fixed_vector<typename Derived::SourceChannel> sourcechannels_t;
 
+    Source(const Params& p)
+      : Base<Derived>::Source(p)
+      , sourcechannels()
+    {}
+
     template<typename Arg>
     Source(const Params& p, const Arg& arg)
       : Base<Derived>::Source(p)

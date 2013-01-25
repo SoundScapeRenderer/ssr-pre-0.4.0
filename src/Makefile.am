@@ -6,10 +6,10 @@
 ## to Makefile), comments with ## are dropped.
 
 ## TODO: make optional
-bin_PROGRAMS = ssr-binaural ssr-wfs ssr-generic
+bin_PROGRAMS = ssr-binaural ssr-wfs ssr-generic ssr-brs
 
 ## All possible optional programs must be listed here
-EXTRA_PROGRAMS = ssr-binaural ssr-wfs ssr-generic
+EXTRA_PROGRAMS = ssr-binaural ssr-wfs ssr-generic ssr-brs
 
 ## CPPFLAGS: preprocessor flags, e.g. -I and -D
 ## -I., -I$(srcdir), and a -I pointing to the directory holding config.h
@@ -60,6 +60,11 @@ ssr_generic_SOURCES = ssr_generic.cpp genericrenderer.h \
 	$(SSRSOURCES)
 
 nodist_ssr_generic_SOURCES = $(SSRMOCFILES)
+
+ssr_brs_SOURCES = ssr_brs.cpp brsrenderer.h \
+	$(SSRSOURCES)
+
+nodist_ssr_brs_SOURCES = $(SSRMOCFILES)
 
 LOUDSPEAKERSOURCES = \
 	loudspeakerrenderer.h \

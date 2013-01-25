@@ -42,6 +42,12 @@ class NonCopyable
 TEST_CASE("fixed_vector", "Test fixed_vector")
 {
 
+SECTION("default constructor", "")
+{
+  apf::fixed_vector<int> fv;
+  CHECK(fv.size() == 0);
+}
+
 SECTION("first constructor", "")
 {
   apf::fixed_vector<int> fv(3);
@@ -84,6 +90,22 @@ SECTION("empty()", "not really useful ...")
 {
   apf::fixed_vector<int> fv(0);
   CHECK(fv.empty());
+}
+
+SECTION("reset(), emplace_back()", "")
+{
+  apf::fixed_vector<int> fv;
+  CHECK(fv.empty());
+  fv.reset(2);
+  CHECK(fv.empty());
+  fv.emplace_back(1);
+  CHECK(fv.size() == 1);
+  CHECK(fv[0] == 1);
+  fv.emplace_back(2);
+  CHECK(fv[1] == 2);
+  fv.reset();
+  CHECK(fv.empty());
+  CHECK_THROWS_AS(fv.emplace_back(666), std::out_of_range);
 }
 
 SECTION("fixed_vector<NonCopyable>", "")

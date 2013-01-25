@@ -41,25 +41,27 @@
 namespace apf
 {
 
-/** Similar to std::vector, but without memory re-allocation.
+/** Similar to std::vector, but without implicit memory re-allocation.
  * Contrary to std::vector, an apf::fixed_vector can be used with non-copyable
  * types.
  *
  * Properties:
  * - contiguous memory
- * - no re-allocations, memory locations don't change
+ * - no re-allocations, memory locations don't change (except on reset())
  * - non-copyable types can be used
  *
  * Main API differences to std::vector:
- * - no default constructor
  * - a different constructor with given size (no default content)
  *   - contained type needs to have default constructor!
  * - a different constructor from sequence
  *   - no copy but construction from given argument
  * - no copy constructor
  * - no assignment operator, no assign(), no swap()
- * - no functions to change size and related stuff
+ * - no functions to change size except emplace_back() and reset()
  * - no at() (just because of laziness, could be added easily)
+ *
+ * Iterator invalidation: All iterators are invalidated on reset(). Iterators
+ * from end() and rbegin() are invalidated on emplace_back().
  **/
 template<typename T, typename Allocator = std::allocator<T> >
 class fixed_vector
@@ -82,10 +84,22 @@ class fixed_vector
     typedef std::reverse_iterator<iterator> reverse_iterator;
     typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
+    /// Default constructor.
+    /// Create a fixed_vector of size 0 and reserve 0 memory.
+    /// The only useful thing to do after that is reset().
+    fixed_vector()
+      : _allocator(Allocator())
+      , _capacity(0)
+      , _size(_capacity)
+      , _data(_allocator.allocate(_capacity))
+    {}
+
+    /// Allocate memory for @p n items and default-construct them.
     explicit fixed_vector(size_type n, const Allocator& a = Allocator())
       : _allocator(a)
-      , _size(n)
-      , _data(_allocator.allocate(_size))
+      , _capacity(n)
+      , _size(_capacity)
+      , _data(_allocator.allocate(_capacity))
     {
       // Allocator::construct() is not used because it would require T to have
       // a copy ctor.
@@ -95,12 +109,15 @@ class fixed_vector
       }
     }
 
+    /// Allocate memory for @p arg.first items and construct them using @p
+    /// arg.second.
     template<typename Size, typename Initializer>
     explicit fixed_vector(const std::pair<Size, Initializer>& arg
         , const Allocator& a = Allocator())
       : _allocator(a)
-      , _size(arg.first)
-      , _data(_allocator.allocate(_size))
+      , _capacity(arg.first)
+      , _size(_capacity)
+      , _data(_allocator.allocate(_capacity))
     {
       for (size_type i = 0; i < _size; ++i)
       {
@@ -108,11 +125,13 @@ class fixed_vector
       }
     }
 
+    /// Constructor from sequence.
     template<typename In>
     fixed_vector(In first, In last, const Allocator& a = Allocator())
       : _allocator(a)
-      , _size(std::distance(first, last))
-      , _data(_allocator.allocate(_size))
+      , _capacity(std::distance(first, last))
+      , _size(_capacity)
+      , _data(_allocator.allocate(_capacity))
     {
       for (size_type i = 0; i < _size; ++i)
       {
@@ -122,12 +141,73 @@ class fixed_vector
 
     ~fixed_vector()
     {
-      // Allocator::destroy() is not used for symmetry
-      for (size_type i = 0; i < _size; ++i)
+      _destroy_and_deallocate();
+    }
+
+    /// Destroy all content and reserve new memory.
+    /// The memory will be uninitialized and the size() will be 0. Use
+    /// emplace_back() to construct content.
+    void reset(size_type n = 0)
+    {
+      _destroy_and_deallocate();
+      _size = 0;
+      _capacity = n;
+      _data = _allocator.allocate(_capacity);
+    }
+
+    /// Initialize one item if reserved memory is available.
+    /// Use reset() to reserve memory.
+    /// @param arg Argument passed to the constructor of @p T.
+    /// @throw std::out_of_range if not enough memory was reserved.
+    template<typename Arg>
+    void emplace_back(const Arg& arg)
+    {
+      if (_size < _capacity)
       {
-        (_data + i)->~T();  // call destructor
+        new (_data + _size) T(arg);
+        ++_size;
       }
-      _allocator.deallocate(_data, _size);
+      else
+      {
+        throw std::out_of_range(
+            "fixed_vector::emplace_back(): capacity exceeded!");
+      }
+    }
+
+    // TODO: emplace_back() with 2 arguments (or variadic template version)
+
+#if 0
+    // in C++11 this can be simplified with variadic templates:
+
+    template<typename... Args>
+    void emplace_back(Args&&... args)
+    {
+      if (_size < _capacity)
+      {
+        new (_data + _size) T(args...);
+        ++_size;
+      }
+      else
+      {
+        throw std::out_of_range(
+            "fixed_vector::emplace_back(): capacity exceeded!");
+      }
+    }
+#endif
+
+    template<typename Arg1, typename Arg2, typename Arg3>
+    void emplace_back(const Arg1& arg1, const Arg2& arg2, const Arg3& arg3)
+    {
+      if (_size < _capacity)
+      {
+        new (_data + _size) T(arg1, arg2, arg3);
+        ++_size;
+      }
+      else
+      {
+        throw std::out_of_range(
+            "fixed_vector::emplace_back(): capacity exceeded!");
+      }
     }
 
     iterator begin() { return _data; };
@@ -140,6 +220,8 @@ class fixed_vector
     const_reverse_iterator rbegin() const { return reverse_iterator(_data + _size); };
     const_reverse_iterator rend() const { return reverse_iterator(_data); };
 
+    /// Size of initialized (and usable) items. If more memory was reserved with
+    /// reset(), it can be initialized with emplace_back().
     size_type size() const { return _size; };
     bool empty() const { return _size == 0; };
 
@@ -157,9 +239,20 @@ class fixed_vector
     fixed_vector(const fixed_vector&);  // deactivated
     fixed_vector& operator=(const fixed_vector&);  // deactivated
 
+    void _destroy_and_deallocate()
+    {
+      // Allocator::destroy() is not used for symmetry
+      for (size_type i = 0; i < _size; ++i)
+      {
+        (_data + i)->~T();  // call destructor
+      }
+      _allocator.deallocate(_data, _size);
+    }
+
     allocator_type _allocator;
-    const size_type _size;
-    pointer const _data;
+    size_type _capacity;
+    size_type _size;
+    pointer _data;
 };
 
 /** Vaguely similar to std::list, but without re-sizing.

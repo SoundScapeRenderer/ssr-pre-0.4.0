@@ -2,9 +2,11 @@
 # Example configuration file for the SoundScape Renderer (SSR)                 #
 #                                                                              #
 # Configuration files are processed in this order:                             #
-# 1) /etc/ssr.conf                                                             #
-# 2) $(HOME)/.ssr/ssr.conf                                                     #
-# 3) anything specified on the command line with "ssr -c my_conf.file"         #
+# 1) /Library/SoundScapeRenderer/ssr.conf                                      #
+# 2) /etc/ssr.conf                                                             #
+# 3) $HOME/Library/SoundScapeRenderer/ssr.conf                                 #
+# 4) $HOME/.ssr/ssr.conf                                                       #
+# 5) anything specified on the command line with "ssr --config=my_conf.file"   #
 #                                                                              #
 # If a parameter is specified more than once, the last occurrence counts!      #
 ################################################################################

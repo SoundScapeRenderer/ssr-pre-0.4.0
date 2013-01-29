@@ -1,6 +1,6 @@
 # You can use this file if you run the SSR locally (without installation)
 #
-# It is automatically used if you start ./local_ssr.sh
+# It is automatically used if you start ./ssr-* within the data/ directory.
 #
 # See ssr.conf.example for a more extensive configuration file.
 

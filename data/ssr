@@ -3,7 +3,7 @@
 # default executable
 SSR_EXECUTABLE=ssr-binaural
 
-# add all except -psn* to $OPTIONS:
+# add all options except renderer type to $OPTIONS:
 while [[ $1 ]]; do
   case "$1" in
     --binaural)

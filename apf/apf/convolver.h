@@ -79,17 +79,12 @@ struct fft_node : fixed_vector<float, fftw_allocator<float> >
   explicit fft_node(size_t n)
     : fixed_vector<float, fftw_allocator<float> >(n)
     , zero(true)
-    , valid(false)
   {}
 
   fft_node& operator=(const fft_node& rhs)
   {
     assert(this->size() == rhs.size());
 
-    // 'valid' is sometimes ignored ...
-    this->valid = rhs.valid;
-
-    // ... 'zero' may never be ignored!
     if (rhs.zero)
     {
       this->zero = true;
@@ -102,14 +97,12 @@ struct fft_node : fixed_vector<float, fftw_allocator<float> >
     return *this;
   }
 
-  // WARNING: These flags allow saving computation power, but they also
-  // raise the risk of programming errors! Handle with care!
+  // WARNING: The 'zero' flag allows saving computation power, but it also
+  // raises the risk of programming errors! Handle with care!
 
   /// To avoid unnecessary FFTs and filling buffers with zeros.
   /// @note If zero == true, the buffer itself is not necessarily all zeros!
   bool zero;
-  /// Only used for filter queues, otherwise ignored!
-  bool valid;
 };
 
 /// Container holding a number of FFT blocks.
@@ -225,7 +218,6 @@ TransformBase::prepare_partition(In first, In last, fft_node& partition) const
     _fft(partition.begin());
     partition.zero = false;
   }
-  partition.valid = true;
   return first + chunk;
 }
 
@@ -313,8 +305,6 @@ template<typename In>
 void
 Input::add_block(In first)
 {
-  // NOTE: 'valid' is ignored for this->spectra, they are assumed to be valid.
-
   In last = first;
   std::advance(last, this->block_size());
 
@@ -365,86 +355,41 @@ Input::add_block(In first)
 }
 
 /// Container of filter queues (one for each partition).
-struct FilterBase : TransformBase
+class FilterBase : public TransformBase
 {
-  /// Constructor. Initially, all partitions are filled with zeros
-  template<typename InitFunction>
-  FilterBase(InitFunction init_func, size_t block_size_, size_t partitions_)
-    : TransformBase(block_size_)
-    , spectra(make_transform_iterator(make_index_iterator(1ul)
-          , init_func)
-        , make_transform_iterator(make_index_iterator(partitions_+1)
-          , init_func))
-  {
-    assert(partitions_ > 0);
+  public:
+    /// Constructor. Initially, all partitions are filled with zeros
+    template<typename InitFunction>
+    FilterBase(InitFunction init_func, size_t block_size_, size_t partitions_)
+      : TransformBase(block_size_)
+      , spectra(make_transform_iterator(make_index_iterator(1ul)
+            , init_func)
+          , make_transform_iterator(make_index_iterator(partitions_+1)
+            , init_func))
+    {
+      assert(partitions_ > 0);
 
-    // Note: In the beginning, all filter spectra are marked as "not valid",
-    // however, this is ignored for the first item of each queue.
+      _fft_plan = _create_plan(this->spectra.front().front().begin());
+    }
 
-    _fft_plan = _create_plan(this->spectra.front().front().begin());
-  }
+    size_t partitions() const { return spectra.size(); }
 
-  template<typename In>
-  void set_filter(In first, In last);
-  void set_filter(const filter_t& filter);
+    /// Internal representation of the filter
+    filter_queues_t spectra;
 
-  size_t partitions() const { return spectra.size(); }
-
-  /// Internal representation of the filter
-  filter_queues_t spectra;
+  protected:
+    template<typename In>
+    void _set_filter(In first, In last)
+    {
+      for (filter_queues_t::iterator it = this->spectra.begin()
+          ; it != this->spectra.end()
+          ; ++it)
+      {
+        // The new filter partition starts its journey at the end of the queue
+        first = this->prepare_partition(first, last, it->back());
+      }
+    }
 };
-
-/** Set a new filter (time domain).
- * The first filter partition is updated immediately, the later partitions are
- * updated with rotate_queues().  The length of the impulse response is
- * arbitrary. Zero padding is automatically performed if necessary.  If the
- * given IR is too long, it is trimmed.  If you already have the partitioned
- * transfer function of the filter in halfcomplex format, you should use
- * set_filter(const filter_t&) instead. 
- * @param first Iterator to first time-domain sample
- * @param last Past-the-end iterator
- **/
-template<typename In>
-void
-FilterBase::set_filter(In first, In last)
-{
-  for (filter_queues_t::iterator it = this->spectra.begin()
-      ; it != this->spectra.end()
-      ; ++it)
-  {
-    // The new filter partition starts its journey at the end of the queue
-    first = this->prepare_partition(first, last, it->back());
-  }
-}
-
-/** Set a new filter (frequency domain).
- * The first filter partition is updated immediately, the later partitions are
- * updated with rotate_queues().
- * @param filter Container holding the transfer functions of the zero padded 
- * filter partitions in halfcomplex format (see also FFTW documentation).
- * If too few partitions are given, the rest is set to zero, if too many are
- * given, they are ignored.
- **/
-void
-FilterBase::set_filter(const filter_t& filter)
-{
-  filter_t::const_iterator source = filter.begin();
-  filter_queues_t::iterator queue = this->spectra.begin();
-
-  for (
-      ; source != filter.end() && queue != this->spectra.end()
-      ; ++source, ++queue)
-  {
-    queue->back() = *source;
-  }
-  for (; queue != this->spectra.end(); ++queue)
-  {
-    // If less partitions are given, the rest is set to zero
-    queue->back().zero = true;
-    queue->back().valid = true;
-  }
-  // If further partitions are given, they are ignored
-}
 
 namespace internal
 {
@@ -478,13 +423,102 @@ class Filter: public FilterBase
   public:
     Filter(size_t block_size_, size_t partitions_)
       : FilterBase(internal::InitQueues(block_size_), block_size_, partitions_)
+      // Note: In the beginning, there are no valid queue elements
+      , _valid_indices(0)
+      , _validity_flags((partitions_ > 2) ? partitions_ - 2 : 0)
     {}
+
+    template<typename In>
+    void set_filter(In first, In last);
+    void set_filter(const filter_t& filter);
 
     bool queues_empty() const;
     void rotate_queues();
 
   private:
+    void _set_last_partition_valid()
+    {
+      // With only 1 partition, there are never valid queues
+      if (this->partitions() < 2) return;
+
+      // With 2 partitions, _validity_flags are not used
+      if (this->partitions() == 2)
+      {
+        _valid_indices = 1;
+        return;
+      }
+
+      fixed_vector<char>::iterator first = _validity_flags.begin();
+      if (_valid_indices > 0)
+      {
+        first += _valid_indices - 1;
+        // Implicit value must be made explicit because _valid_indices changes
+        *first++ = true;
+      }
+      // Previously unused values are set to 'false'
+      std::fill(first, _validity_flags.end(), false);
+      _valid_indices = this->partitions() - 1;
+      // The last partition is now implicitly valid
+    }
+
+    // How many potentially valid partitions are in the (longest) queue?
+    // The the last one of these is implicitly always true and its value
+    // is not stored in _validity_flags!
+    // All following indices are implicitly invalid.
+    size_t _valid_indices;
+
+    // List of valid partitions (1/0 = true/false). Only the first
+    // '_valid_indices - 1' elements are considered.
+    fixed_vector<char> _validity_flags;
 };
+
+/** Set a new filter (time domain).
+ * The first filter partition is updated immediately, the later partitions are
+ * updated with rotate_queues().  The length of the impulse response is
+ * arbitrary. Zero padding is automatically performed if necessary.  If the
+ * given IR is too long, it is trimmed.  If you already have the partitioned
+ * transfer function of the filter in halfcomplex format, you should use
+ * set_filter(const filter_t&) instead. 
+ * @param first Iterator to first time-domain sample
+ * @param last Past-the-end iterator
+ **/
+template<typename In>
+void
+Filter::set_filter(In first, In last)
+{
+  _set_filter(first, last);
+  _set_last_partition_valid();
+}
+
+/** Set a new filter (frequency domain).
+ * The first filter partition is updated immediately, the later partitions are
+ * updated with rotate_queues().
+ * @param filter Container holding the transfer functions of the zero padded 
+ * filter partitions in halfcomplex format (see also FFTW documentation).
+ * If too few partitions are given, the rest is set to zero, if too many are
+ * given, they are ignored.
+ **/
+void
+Filter::set_filter(const filter_t& filter)
+{
+  filter_t::const_iterator source = filter.begin();
+  filter_queues_t::iterator queue = this->spectra.begin();
+
+  for (
+      ; source != filter.end() && queue != this->spectra.end()
+      ; ++source, ++queue)
+  {
+    queue->back() = *source;
+  }
+  for (; queue != this->spectra.end(); ++queue)
+  {
+    // If less partitions are given, the rest is set to zero
+    queue->back().zero = true;
+  }
+  // If further partitions are given, they are ignored
+
+  _set_last_partition_valid();
+}
 
 /** Check if there are still valid partitions in the queues.
  * If this function returns @b false, rotate_queues() should be called.
@@ -495,21 +529,7 @@ class Filter: public FilterBase
 bool
 Filter::queues_empty() const
 {
-  // Start from the end, more likely to find valid spectra
-  for (filter_queues_t::const_reverse_iterator queue = this->spectra.rbegin()
-      ; queue != this->spectra.rend()
-      ; ++queue)
-  {
-    if (queue->size() < 2) continue;
-
-    for (filter_queue_t::const_iterator it = ++(queue->begin())
-        ; it != queue->end()
-        ; ++it)
-    {
-      if (it->valid) return false;
-    }
-  }
-  return true;
+  return _valid_indices == 0;
 }
 
 /** Update filter queues.
@@ -519,25 +539,36 @@ Filter::queues_empty() const
 void
 Filter::rotate_queues()
 {
-  for (filter_queues_t::iterator queue = this->spectra.begin()
-      ; queue != this->spectra.end()
-      ; ++queue)
+  if (_valid_indices == 0) return;
+
+  size_t total = this->partitions();
+
+  assert(_valid_indices <= total);
+
+  filter_queues_t::iterator queue = &spectra[total - _valid_indices];
+
+  // Second element of queue is valid
+  queue->move(queue->begin(), queue->end());
+
+  for (size_t i = total + 1 - _valid_indices; i < total; ++i)
   {
-    if (queue->size() < 2) continue;
-
-    filter_queue_t::iterator second = ++(queue->begin());
-
-    if (second->valid)
+    queue = &spectra[i];
+    if (_validity_flags[total - i] == true)
     {
-      queue->front().valid = false;
+      // Second element of queue is valid
       queue->move(queue->begin(), queue->end());
     }
     else
     {
-      // Keep current first element
-      queue->move(second, queue->end());
+      // Second element is invalid, keep current first element
+      queue->move(++(queue->begin()), queue->end());
     }
   }
+
+  // rotate 'valid' flags
+  std::copy(&_validity_flags[1], &_validity_flags[_valid_indices]
+      , &_validity_flags[0]);
+  --_valid_indices;
 }
 
 class StaticFilter : public FilterBase
@@ -553,10 +584,8 @@ class StaticFilter : public FilterBase
           , partitions_ ? partitions_
           : min_partitions(block_size_, std::distance(first, last)))
     {
-      this->set_filter(first, last);
+      _set_filter(first, last);
     }
-
-    // TODO: constructor from frequency domain data?
 };
 
 /** Convolution engine (output part).
@@ -925,7 +954,6 @@ void transform_nested(const filter_t& in1, const filter_t& in2, filter_t& out
         it3->zero = false;
       }
     }
-    it3->valid = true;
     if (it1 != in1.end()) ++it1;
     if (it2 != in2.end()) ++it2;
   }
@@ -943,7 +971,6 @@ inline void copy_nested(const filter_t& in, filter_t& out)
     if (source == in.end())
     {
       target->zero = true;
-      target->valid = true;
     }
     else
     {

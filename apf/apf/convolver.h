@@ -141,8 +141,10 @@ TransformBase::TransformBase(size_t block_size_)
   , _block_size(block_size_)
   , _partition_size(2 * _block_size)
 {
-  // TODO: check for multiple of 8! Raise an exception?
-  assert(_block_size >= 8);
+  if (_block_size % 8 != 0)
+  {
+    throw std::logic_error("Convolver: block size must be a multiple of 8!");
+  }
 }
 
 fftw<float>::plan

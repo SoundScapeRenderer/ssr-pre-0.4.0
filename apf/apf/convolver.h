@@ -56,23 +56,6 @@ static size_t min_partitions(size_t block_size, size_t filter_size)
   return (filter_size + block_size - 1) / block_size;
 }
 
-#ifdef __SSE__
-/// typedef needed by SIMD instructions
-typedef float v4sf __attribute__ ((vector_size(16)));
-
-//union f4vector
-//{
-//  v4sf* v;
-//  float* f;
-//};
-
-union f4vector2
-{
-  v4sf v;
-  float f[4];
-};
-#endif
-
 /// Two blocks of time-domain or FFT (half-complex) data.
 struct fft_node : fixed_vector<float, fftw_allocator<float> >
 {
@@ -707,70 +690,38 @@ Output::_multiply_partition_cpp(const float* signal, const float* filter)
 void
 Output::_multiply_partition_simd(const float* signal, const float* filter)
 {
-  //  f4vector2 tmp1, tmp2;//, tmp3;
-  f4vector2 sigr, sigi, filtr, filti, out;
-  // f4vector signalr, filterr;
-  // f4vector signali, filteri;
-
-  //  f4vector outputr, outputi;
+  typedef float v4sf __attribute__ ((vector_size(16)));
 
   float dc = _output_buffer[0] + signal[0] * filter[0];
   float ny = _output_buffer[4] + signal[4] * filter[4];
 
-  for(size_t i = 0; i < _partition_size; i+=8)
+  for(size_t i = 0; i < _partition_size; i += 8)
   {
-    // real parts
-    //signalr.f = signal + i;    
-    //filterr.f = filter + i;    
-    //outputr.f = _output_buffer.data() + i;
-    sigr.v  = __builtin_ia32_loadups(signal+i);
-    filtr.v = __builtin_ia32_loadups(filter+i);
+    // load real and imaginary parts of signal and filter
+    v4sf sigr = __builtin_ia32_loadups(signal + i);
+    v4sf sigi = __builtin_ia32_loadups(signal + i + 4);
+    v4sf filtr = __builtin_ia32_loadups(filter + i);
+    v4sf filti = __builtin_ia32_loadups(filter + i + 4);
 
-    // imag
-    //signalr.f = signal + i + 4;    
-    //filterr.f = filter + i + 4;
-    //outputi.f = _output_buffer.data() + i + 4;  
-    sigi.v  = __builtin_ia32_loadups(signal+i+4);
-    filti.v = __builtin_ia32_loadups(filter+i+4);
+    // multiply and subtract
+    v4sf res1 = __builtin_ia32_subps(__builtin_ia32_mulps(sigr, filtr),
+                                     __builtin_ia32_mulps(sigi, filti));
 
-    //tmp1.v = __builtin_ia32_mulps(*signalr.v, *filterr.v);
-    //tmp2.v = __builtin_ia32_mulps(*signali.v, *filteri.v);
+    // multiply and add
+    v4sf res2 = __builtin_ia32_addps(__builtin_ia32_mulps(sigr, filti),
+                                     __builtin_ia32_mulps(sigi, filtr));
 
-    //tmp1.v = __builtin_ia32_mulps(sigr.v, filtr.v);
-    //tmp2.v = __builtin_ia32_mulps(sigi.v, filti.v);
+    // load output data for accumulation
+    v4sf acc1 = __builtin_ia32_loadups(_output_buffer.begin() + i);
+    v4sf acc2 = __builtin_ia32_loadups(_output_buffer.begin() + i + 4);
 
-    //*(outputr.v) += __builtin_ia32_subps(tmp1.v, tmp2.v); 
-    //out.v = __builtin_ia32_subps(tmp1.v, tmp2.v);
-    out.v = __builtin_ia32_subps(__builtin_ia32_mulps(sigr.v, filtr.v),
-                                 __builtin_ia32_mulps(sigi.v, filti.v));
+    // accumulate
+    acc1 = __builtin_ia32_addps(acc1, res1);
+    acc2 = __builtin_ia32_addps(acc2, res2);
 
-    // TODO: replace by SIMD instruction?
-    _output_buffer[0+i] += out.f[0];
-    _output_buffer[1+i] += out.f[1];
-    _output_buffer[2+i] += out.f[2];
-    _output_buffer[3+i] += out.f[3];
-
-    //tmp3.v = __builtin_ia32_subps(tmp1.v, tmp2.v);
-    //__builtin_ia32_storeups(outputr.f, tmp3.v);
-
-    //tmp1.v = __builtin_ia32_mulps(*signalr.v, *filteri.v);
-    //tmp2.v = __builtin_ia32_mulps(*signali.v, *filterr.v);
-
-    //tmp1.v = __builtin_ia32_mulps(sigr.v, filti.v);
-    //tmp2.v = __builtin_ia32_mulps(sigi.v, filtr.v);
-
-    //*(outputi.v) += __builtin_ia32_addps(tmp1.v, tmp2.v);
-    //out.v = __builtin_ia32_addps(tmp1.v, tmp2.v);
-    out.v = __builtin_ia32_addps(__builtin_ia32_mulps(sigr.v, filti.v),
-                                 __builtin_ia32_mulps(sigi.v, filtr.v));
-
-    //tmp3.v = __builtin_ia32_addps(tmp1.v, tmp2.v);
-    //__builtin_ia32_storeups(outputi.f, tmp3.v);
-
-    _output_buffer[4+i] += out.f[0];
-    _output_buffer[5+i] += out.f[1];
-    _output_buffer[6+i] += out.f[2];
-    _output_buffer[7+i] += out.f[3];
+    // store output data
+    __builtin_ia32_storeups(_output_buffer.begin() + i, acc1);
+    __builtin_ia32_storeups(_output_buffer.begin() + i + 4, acc2);
   }
 
   _output_buffer[0] = dc;

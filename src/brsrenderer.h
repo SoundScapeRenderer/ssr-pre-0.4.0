@@ -94,9 +94,17 @@ class BrsRenderer::Source : public _base::Source
 
       SndfileHandle ir_file
         = apf::load_sndfile(p.get<std::string>("properties_file")
-            , this->parent.sample_rate(), 720);
+            , this->parent.sample_rate(), 0);
 
       size_t no_of_channels = ir_file.channels();
+
+      if (no_of_channels % 2 != 0)
+      {
+        throw std::logic_error(
+            "Number of channels in BRIR file must be a multiple of 2!");
+      }
+
+      _angles = no_of_channels / 2;
 
       size_t size = ir_file.frames();
 
@@ -142,11 +150,15 @@ class BrsRenderer::Source : public _base::Source
 
       _old_brtf_index = _brtf_index;
 
+      float azi = this->parent.state.reference_orientation().azimuth;
+
       // TODO: get reference offset!
 
-      // get orientation of listener (source positions are NOT considered!)
-      _brtf_index = int(this->parent.state.reference_orientation().azimuth
-          + 270 + 0.5f) % 360;
+      // get BRTF index from listener orientation
+      // (source positions are NOT considered!)
+      // 90 degree is in the middle of index 0
+      _brtf_index = size_t(apf::math::wrap(
+          (azi - 90.0f) * float(_angles) / 360.0f + 0.5f, float(_angles)));
 
       int crossfade_mode;
 
@@ -198,6 +210,8 @@ class BrsRenderer::Source : public _base::Source
     size_t _brtf_index, _old_brtf_index;
 
     std::auto_ptr<Convolver::Input> _convolver_input;
+
+    size_t _angles;  // Number of angles in BRIR file
 };
 
 void BrsRenderer::SourceChannel::update()

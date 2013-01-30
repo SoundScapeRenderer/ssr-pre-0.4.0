@@ -90,8 +90,6 @@ class BrsRenderer::Source : public _base::Source
       , _brtf_index(-1)
       , _old_brtf_index(-1)
     {
-      // TODO: allow any number of channels (multiple of 2)
-
       SndfileHandle ir_file
         = apf::load_sndfile(p.get<std::string>("properties_file")
             , this->parent.sample_rate(), 0);

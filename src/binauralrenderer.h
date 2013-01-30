@@ -75,6 +75,7 @@ class BinauralRenderer : public SourceToOutput<BinauralRenderer, RendererBase>
 
     apf::raised_cosine_fade<sample_type> _fade;
     size_t _partitions;
+    size_t _angles;  // Number of angles in HRIR file
     std::auto_ptr<hrtf_set_t> _hrtfs;
     std::auto_ptr<Convolver::filter_t> _neutral_filter;
 };
@@ -133,15 +134,21 @@ class BinauralRenderer::SourceChannel : public Convolver::Filter
 void
 BinauralRenderer::_load_hrtfs(const std::string& filename, size_t size)
 {
-  // TODO: arbitrary number of channels (but mod 2!)
-  SndfileHandle hrir_file = apf::load_sndfile(filename, this->sample_rate()
-      , 720);
+  SndfileHandle hrir_file = apf::load_sndfile(filename, this->sample_rate(), 0);
+
+  const size_t no_of_channels = hrir_file.channels();
+
+  if (no_of_channels % 2 != 0)
+  {
+    throw std::logic_error(
+        "Number of channels in HRIR file must be a multiple of 2!");
+  }
+
+  _angles = no_of_channels / 2;
 
   // TODO: handle size > hrir_file.frames()
 
   if (size == 0) size = hrir_file.frames();
-
-  const size_t no_of_channels = hrir_file.channels();
 
   // Deinterleave channels and transform to FFT domain
 
@@ -328,9 +335,12 @@ void BinauralRenderer::Source::_process()
     _gain = 0;
   }
 
+  float angles = _input.parent._angles;
+
   // calculate relative orientation of sound source
   Orientation rel_ori = (this->position()-ref_pos).orientation() - ref_ori;
-  _hrtf_index = apf::math::wrap(rel_ori.azimuth, 360.0f);
+  _hrtf_index = size_t(apf::math::wrap(
+      rel_ori.azimuth * angles / 360.0f + 0.5f, angles));
 
   typedef Convolver::filter_t filter;
 

@@ -97,6 +97,12 @@ class BinauralRenderer::SourceChannel : public Convolver::Filter
       , _old_interp_factor(-1.0f)
     {}
 
+    void convolve_and_more(sample_type weight)
+    {
+      _begin = this->convolve(weight);
+      _end = _begin + _block_size;
+    }
+
     void update()
     {
       this->rotate_queues();
@@ -107,16 +113,11 @@ class BinauralRenderer::SourceChannel : public Convolver::Filter
         this->set_filter(this->hrtf);
       }
 
-      _begin = this->convolve(this->gain);
-      _end = _begin + _block_size;
+      this->convolve_and_more(this->gain);
 
       _old_hrtf_index = this->hrtf_index;
       _old_interp_factor = this->interp_factor;
     }
-
-    // (hopefully) temporary, shouldn't be public:
-    using apf::has_begin_and_end<float*>::_begin;
-    using apf::has_begin_and_end<float*>::_end;
 
     size_t hrtf_index;
     sample_type gain, interp_factor;
@@ -395,10 +396,7 @@ void BinauralRenderer::Source::_process()
   {
     if (crossfade_mode != 0)
     {
-      this->sourcechannels[i]._begin
-        = this->sourcechannels[i].convolve(_old_gain);
-      this->sourcechannels[i]._end
-        = this->sourcechannels[i]._begin + _input.parent.block_size();
+      this->sourcechannels[i].convolve_and_more(_old_gain);
     }
 
     this->sourcechannels[i].crossfade_mode = crossfade_mode;

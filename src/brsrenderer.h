@@ -66,10 +66,10 @@ class BrsRenderer : public SourceToOutput<BrsRenderer, RendererBase>
 };
 
 struct BrsRenderer::SourceChannel : apf::has_begin_and_end<sample_type*>
-                                  , Convolver::FilterOutput
+                                  , Convolver::Output
 {
   explicit SourceChannel(const Convolver::Input& in)
-    : Convolver::FilterOutput(in)
+    : Convolver::Output(in)
   {}
 
   // out-of-class definition because of cyclic dependencies with Source
@@ -160,10 +160,12 @@ class BrsRenderer::Source : public _base::Source
 
       int crossfade_mode;
 
-      if (_new_weighting_factor == _old_weighting_factor
-          && _brtf_index == _old_brtf_index
-          && this->sourcechannels[0].queues_empty()
-          && this->sourcechannels[1].queues_empty())
+      // Check on one channel only, filters are always changed in parallel
+      bool queues_empty = this->sourcechannels[0].queues_empty();
+
+      if (queues_empty
+          && _new_weighting_factor == _old_weighting_factor
+          && _brtf_index == _old_brtf_index)
       {
         if (_new_weighting_factor == 0)
         {
@@ -186,8 +188,7 @@ class BrsRenderer::Source : public _base::Source
           this->sourcechannels[i].convolve_and_more(_old_weighting_factor);
         }
 
-        // TODO: check if queues are empty?
-        this->sourcechannels[i].rotate_queues();
+        if (!queues_empty) this->sourcechannels[i].rotate_queues();
 
         if (_brtf_index != _old_brtf_index)
         {
@@ -201,7 +202,7 @@ class BrsRenderer::Source : public _base::Source
     }
 
   private:
-    typedef apf::fixed_vector<Convolver::filter_t> brtf_set_t;
+    typedef apf::fixed_vector<Convolver::Filter> brtf_set_t;
     std::auto_ptr<brtf_set_t> _brtf_set;
 
     sample_type _new_weighting_factor, _old_weighting_factor;

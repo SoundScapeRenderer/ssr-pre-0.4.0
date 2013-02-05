@@ -77,7 +77,7 @@ struct GenericRenderer::SourceChannel : apf::has_begin_and_end<sample_type*>
 
   const Source& source;
 
-  Convolver::StaticFilterOutput convolver;
+  Convolver::StaticOutput convolver;
 };
 
 class GenericRenderer::Source : public _base::Source

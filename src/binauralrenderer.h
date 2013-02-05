@@ -64,7 +64,7 @@ class BinauralRenderer : public SourceToOutput<BinauralRenderer, RendererBase>
     void load_reproduction_setup();
 
   private:
-    typedef apf::fixed_vector<Convolver::filter_t> hrtf_set_t;
+    typedef apf::fixed_vector<Convolver::Filter> hrtf_set_t;
 
     void _load_hrtfs(const std::string& filename, size_t size);
 
@@ -77,24 +77,18 @@ class BinauralRenderer : public SourceToOutput<BinauralRenderer, RendererBase>
     size_t _partitions;
     size_t _angles;  // Number of angles in HRIR file
     std::auto_ptr<hrtf_set_t> _hrtfs;
-    std::auto_ptr<Convolver::filter_t> _neutral_filter;
+    std::auto_ptr<Convolver::Filter> _neutral_filter;
 };
 
-class BinauralRenderer::SourceChannel : public Convolver::Filter
-                                      , public Convolver::Output
+class BinauralRenderer::SourceChannel : public Convolver::Output
                                       , public apf::has_begin_and_end<float*>
 {
   public:
-    // first: block size, second: number of partitions
-    // A single argument must be used because of the fixed_vector constructor.
     explicit SourceChannel(const Convolver::Input* input)
       // TODO: assert that input != 0?
-      : Convolver::Filter(input->block_size(), input->partitions())
-      , Convolver::Output(*input, *this)
-      , hrtf(std::make_pair(input->partitions(), input->partition_size()))
+      : Convolver::Output(*input)
+      , temporary_hrtf(input->block_size(), input->partitions())
       , _block_size(input->block_size())
-      , _old_hrtf_index(-1)
-      , _old_interp_factor(-1.0f)
     {}
 
     void convolve_and_more(sample_type weight)
@@ -105,31 +99,16 @@ class BinauralRenderer::SourceChannel : public Convolver::Filter
 
     void update()
     {
-      this->rotate_queues();
-
-      if (this->hrtf_index != _old_hrtf_index
-          || this->interp_factor != _old_interp_factor)
-      {
-        this->set_filter(this->hrtf);
-      }
-
-      this->convolve_and_more(this->gain);
-
-      _old_hrtf_index = this->hrtf_index;
-      _old_interp_factor = this->interp_factor;
+      this->convolve_and_more(this->weight);
     }
 
-    size_t hrtf_index;
-    sample_type gain, interp_factor;
+    Convolver::Filter temporary_hrtf;
 
-    Convolver::filter_t hrtf;
-
+    sample_type weight;
     int crossfade_mode;
 
   private:
     const size_t _block_size;
-    size_t _old_hrtf_index;
-    sample_type _old_interp_factor;
 };
 
 void
@@ -181,14 +160,12 @@ BinauralRenderer::_load_hrtfs(const std::string& filename, size_t size)
 
   int index = std::distance(transpose.slices.begin()->begin(), maximum);
 
-  int partitions = (index/this->block_size()) + 1;
-
   apf::fixed_vector<sample_type> impulse(index);
   impulse.back() = 1;
 
-  _neutral_filter.reset(new Convolver::filter_t(std::make_pair(partitions
-          , temp.partition_size())));
-  temp.prepare_filter(impulse.begin(), impulse.end(), *_neutral_filter);
+  _neutral_filter.reset(new Convolver::Filter(this->block_size()
+        , impulse.begin(), impulse.end()));
+  // Number of partitions may be different from _hrtfs!
 }
 
 struct BinauralRenderer::RenderFunction
@@ -248,7 +225,10 @@ class BinauralRenderer::Source : public Convolver::Input, public _base::Source
     Source(const Params& p)
       // TODO: assert that p.parent != 0?
       : Convolver::Input(p.parent->block_size(), p.parent->_partitions)
-      , _base::Source(p, std::make_pair(2, this))
+      , _base::Source(p, std::make_pair(2ul, this))
+      , _hrtf_index(-1)
+      , _interp_factor(-1)
+      , _weight(0)
     {}
 
     APF_PROCESS(Source, _base::Source)
@@ -281,12 +261,12 @@ class BinauralRenderer::Source : public Convolver::Input, public _base::Source
 
     size_t _hrtf_index, _old_hrtf_index;
     float _interp_factor, _old_interp_factor;
-    float _gain, _old_gain;
+    float _weight, _old_weight;
 };
 
 void BinauralRenderer::Source::_process()
 {
-  _old_gain = _gain;
+  _old_weight = _weight;
   _old_hrtf_index = _hrtf_index;
   _old_interp_factor = _interp_factor;
   _interp_factor = 0.0f;
@@ -300,16 +280,16 @@ void BinauralRenderer::Source::_process()
 
   if (this->weighting_factor != 0)
   {
-    _gain = 1;
+    _weight = 1;
 
     if (this->model() == ::Source::plane)
     {
       // no distance attenuation for plane waves 
       // 1/r:
-      _gain *= 0.5f / _input.parent.state.amplitude_reference_distance();
+      _weight *= 0.5f / _input.parent.state.amplitude_reference_distance();
 
       // 1/sqrt(r):
-      //_gain *= 0.25f / sqrt(
+      //_weight *= 0.25f / sqrt(
       //    _input.parent.state.amplitude_reference_distance());
     }
     else
@@ -325,15 +305,15 @@ void BinauralRenderer::Source::_process()
       // no volume increase for sources closer than 0.5m
       source_distance = std::max(source_distance, 0.5f);
 
-      _gain *= 0.5f / source_distance; // 1/r
-      // _gain *= 0.25f / sqrt(source_distance); // 1/sqrt(r)
+      _weight *= 0.5f / source_distance; // 1/r
+      // _weight *= 0.25f / sqrt(source_distance); // 1/sqrt(r)
     }
 
-    _gain *= this->weighting_factor;
+    _weight *= this->weighting_factor;
   }
   else
   {
-    _gain = 0;
+    _weight = 0;
   }
 
   float angles = _input.parent._angles;
@@ -343,42 +323,19 @@ void BinauralRenderer::Source::_process()
   _hrtf_index = size_t(apf::math::wrap(
       rel_ori.azimuth * angles / 360.0f + 0.5f, angles));
 
-  typedef Convolver::filter_t filter;
-
-  for (size_t i = 0; i < 2; ++i)
-  {
-    if (_hrtf_index != _old_hrtf_index || _interp_factor != _old_interp_factor)
-    {
-      // left and right channels are interleaved
-      filter& filter_data
-        = (*_input.parent._hrtfs)[2 * _hrtf_index + i];
-
-      if (_interp_factor == 0)
-      {
-        apf::conv::copy_nested(filter_data, this->sourcechannels[i].hrtf);
-      }
-      else
-      {
-        apf::conv::transform_nested(filter_data, *_input.parent._neutral_filter
-            , this->sourcechannels[i].hrtf
-            , _interpolate(_interp_factor));
-      }
-    }
-
-    this->sourcechannels[i].hrtf_index = _hrtf_index;
-    this->sourcechannels[i].interp_factor = _interp_factor;
-    this->sourcechannels[i].gain = _gain;
-  }
-
   int crossfade_mode;
 
-  if (this->sourcechannels[0].queues_empty()
-      && this->sourcechannels[1].queues_empty()
-      && _gain == _old_gain
-      && _hrtf_index == _old_hrtf_index
-      && _interp_factor == _old_interp_factor)
+  // Check on one channel only, filters are always changed in parallel
+  bool queues_empty = this->sourcechannels[0].queues_empty();
+
+  bool hrtf_changed = _hrtf_index != _old_hrtf_index
+      || _interp_factor != _old_interp_factor;
+
+  if (queues_empty
+      && _weight == _old_weight
+      && !hrtf_changed)
   {
-    if (_gain == 0)
+    if (_weight == 0)
     {
       crossfade_mode = 0;
     }
@@ -394,12 +351,37 @@ void BinauralRenderer::Source::_process()
 
   for (size_t i = 0; i < 2; ++i)
   {
+    SourceChannel& channel = this->sourcechannels[i];
+
     if (crossfade_mode != 0)
     {
-      this->sourcechannels[i].convolve_and_more(_old_gain);
+      channel.convolve_and_more(_old_weight);
+
+      if (!queues_empty) channel.rotate_queues();
+
+      if (hrtf_changed)
+      {
+        // left and right channels are interleaved
+        Convolver::Filter& hrtf
+          = (*_input.parent._hrtfs)[2 * _hrtf_index + i];
+
+        if (_interp_factor == 0)
+        {
+          channel.set_filter(hrtf);
+        }
+        else
+        {
+          // Interpolate between selected HRTF and neutral filter (Dirac)
+          apf::conv::transform_nested(hrtf
+              , *_input.parent._neutral_filter, channel.temporary_hrtf
+              , _interpolate(_interp_factor));
+          this->sourcechannels[i].set_filter(channel.temporary_hrtf);
+        }
+      }
     }
 
-    this->sourcechannels[i].crossfade_mode = crossfade_mode;
+    channel.crossfade_mode = crossfade_mode;
+    channel.weight = _weight;
   }
 }
 

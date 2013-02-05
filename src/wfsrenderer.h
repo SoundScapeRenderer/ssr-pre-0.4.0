@@ -85,13 +85,13 @@ class WfsRenderer : public SourceToOutput<WfsRenderer, LoudspeakerRenderer>
       // TODO: warning if size changed?
       // TODO: warning if size == 0?
 
-      _pre_filter.reset(new Convolver::StaticFilter(this->block_size()
+      _pre_filter.reset(new Convolver::Filter(this->block_size()
             , ir.begin(), ir.end()));
     }
 
   private:
     apf::raised_cosine_fade<sample_type> _fade;
-    std::auto_ptr<Convolver::StaticFilter> _pre_filter;
+    std::auto_ptr<Convolver::Filter> _pre_filter;
 
     size_t _max_delay, _initial_delay;
 };
@@ -116,7 +116,7 @@ class WfsRenderer::Input : public _base::Input
     }
 
   private:
-    Convolver::InputOutput _convolver;
+    Convolver::StaticConvolver _convolver;
     apf::NonCausalBlockDelayLine<sample_type> _delayline;
 };
 

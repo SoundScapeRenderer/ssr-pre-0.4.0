@@ -31,6 +31,10 @@
 #include <algorithm>  // for std::transform()
 #include <cassert>
 
+#ifdef __SSE__
+#include <xmmintrin.h>  // for SSE instrinsics
+#endif
+
 #include "apf/math.h"
 #include "apf/fftwtools.h"  // for fftw_allocator and fftw traits
 #include "apf/container.h"  // for fixed_vector, fixed_list
@@ -501,7 +505,11 @@ OutputBase::_multiply_partition_cpp(const float* signal, const float* filter)
 void
 OutputBase::_multiply_partition_simd(const float* signal, const float* filter)
 {
-  typedef float v4sf __attribute__ ((vector_size(16)));
+  // Check for 16 byte alignment, without it _mm_loadu_ps() must be used.
+  // Alignment should be correct because fftwf_malloc() is used.
+  assert((uintptr_t(signal) & 0xF) == 0);
+  assert((uintptr_t(filter) & 0xF) == 0);
+  assert((uintptr_t(&_output_buffer[0]) & 0xF) == 0);
 
   float dc = _output_buffer[0] + signal[0] * filter[0];
   float ny = _output_buffer[4] + signal[4] * filter[4];
@@ -509,30 +517,28 @@ OutputBase::_multiply_partition_simd(const float* signal, const float* filter)
   for(size_t i = 0; i < _partition_size; i += 8)
   {
     // load real and imaginary parts of signal and filter
-    v4sf sigr = __builtin_ia32_loadups(signal + i);
-    v4sf sigi = __builtin_ia32_loadups(signal + i + 4);
-    v4sf filtr = __builtin_ia32_loadups(filter + i);
-    v4sf filti = __builtin_ia32_loadups(filter + i + 4);
+    __m128 sigr = _mm_load_ps(signal + i);
+    __m128 sigi = _mm_load_ps(signal + i + 4);
+    __m128 filtr = _mm_load_ps(filter + i);
+    __m128 filti = _mm_load_ps(filter + i + 4);
 
     // multiply and subtract
-    v4sf res1 = __builtin_ia32_subps(__builtin_ia32_mulps(sigr, filtr),
-                                     __builtin_ia32_mulps(sigi, filti));
+    __m128 res1 = _mm_sub_ps(_mm_mul_ps(sigr, filtr), _mm_mul_ps(sigi, filti));
 
     // multiply and add
-    v4sf res2 = __builtin_ia32_addps(__builtin_ia32_mulps(sigr, filti),
-                                     __builtin_ia32_mulps(sigi, filtr));
+    __m128 res2 = _mm_add_ps(_mm_mul_ps(sigr, filti), _mm_mul_ps(sigi, filtr));
 
     // load output data for accumulation
-    v4sf acc1 = __builtin_ia32_loadups(_output_buffer.begin() + i);
-    v4sf acc2 = __builtin_ia32_loadups(_output_buffer.begin() + i + 4);
+    __m128 acc1 = _mm_load_ps(&_output_buffer[i]);
+    __m128 acc2 = _mm_load_ps(&_output_buffer[i + 4]);
 
     // accumulate
-    acc1 = __builtin_ia32_addps(acc1, res1);
-    acc2 = __builtin_ia32_addps(acc2, res2);
+    acc1 = _mm_add_ps(acc1, res1);
+    acc2 = _mm_add_ps(acc2, res2);
 
     // store output data
-    __builtin_ia32_storeups(_output_buffer.begin() + i, acc1);
-    __builtin_ia32_storeups(_output_buffer.begin() + i + 4, acc2);
+    _mm_store_ps(&_output_buffer[i], acc1);
+    _mm_store_ps(&_output_buffer[i + 4], acc2);
   }
 
   _output_buffer[0] = dc;

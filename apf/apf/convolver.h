@@ -500,11 +500,8 @@ OutputBase::_multiply_partition_cpp(const float* signal, const float* filter)
 void
 OutputBase::_multiply_partition_simd(const float* signal, const float* filter)
 {
-  // Check for 16 byte alignment, without it _mm_loadu_ps() must be used.
-  // Alignment should be correct because fftwf_malloc() is used.
-  assert((uintptr_t(signal) & 0xF) == 0);
-  assert((uintptr_t(filter) & 0xF) == 0);
-  assert((uintptr_t(&_output_buffer[0]) & 0xF) == 0);
+  // 16 byte alignment is needed for _mm_load_ps()!
+  // This should be the case anyway because fftwf_malloc() is used.
 
   float dc = _output_buffer[0] + signal[0] * filter[0];
   float ny = _output_buffer[4] + signal[4] * filter[4];

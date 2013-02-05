@@ -109,10 +109,25 @@ class fixed_vector
       }
     }
 
-    /// Allocate memory for @p arg.first items and construct them using @p
-    /// arg.second.
-    template<typename Size, typename Initializer>
-    explicit fixed_vector(const std::pair<Size, Initializer>& arg
+    /// Allocate memory for @p n items and construct them using @p arg.
+    template<typename Initializer>
+    fixed_vector(size_type n, const Initializer& arg
+        , const Allocator& a = Allocator())
+      : _allocator(a)
+      , _capacity(n)
+      , _size(_capacity)
+      , _data(_allocator.allocate(_capacity))
+    {
+      for (size_type i = 0; i < _size; ++i)
+      {
+        new (_data + i) T(arg);  // placement new
+      }
+    }
+
+    /// Allocate memory for @p arg.first items and construct them using
+    /// @p arg.second.
+    template<typename Initializer>
+    explicit fixed_vector(const std::pair<size_type, Initializer>& arg
         , const Allocator& a = Allocator())
       : _allocator(a)
       , _capacity(arg.first)

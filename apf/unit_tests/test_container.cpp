@@ -56,7 +56,7 @@ SECTION("first constructor", "")
 
 SECTION("second constructor", "")
 {
-  apf::fixed_vector<int> fv(std::make_pair(3, 99));
+  apf::fixed_vector<int> fv(std::make_pair(3ul, 99));
 
   CHECK(fv[2] == 99);
 }
@@ -129,7 +129,7 @@ SECTION("first constructor", "")
 
 SECTION("second constructor", "")
 {
-  apf::fixed_list<int> fl(std::make_pair(3, 99));
+  apf::fixed_list<int> fl(std::make_pair(3ul, 99));
   CHECK(fl.size() == 3);
   CHECK(fl.front() == 99);
   CHECK(fl.back() == 99);

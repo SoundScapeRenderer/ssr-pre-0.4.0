@@ -67,36 +67,31 @@ struct fft_node : fixed_vector<float, fftw_allocator<float> >
 {
   explicit fft_node(size_t n)
     : fixed_vector<float, fftw_allocator<float> >(n)
-    , _zero(true)
+    , zero(true)
   {}
 
   fft_node& operator=(const fft_node& rhs)
   {
     assert(this->size() == rhs.size());
 
-    if (rhs.zero())
+    if (rhs.zero)
     {
-      this->set_zero();
+      this->zero = true;
     }
     else
     {
       std::copy(rhs.begin(), rhs.end(), this->begin());
-      this->set_non_zero();
+      this->zero = false;
     }
     return *this;
   }
 
-  void set_zero() { _zero = true; }
-  void set_non_zero() { _zero = false; }
-  bool zero() const { return _zero; }
-
   // WARNING: The 'zero' flag allows saving computation power, but it also
   // raises the risk of programming errors! Handle with care!
 
-  private:
   /// To avoid unnecessary FFTs and filling buffers with zeros.
-  /// @note If _zero == true, the buffer itself is not necessarily all zeros!
-  bool _zero;
+  /// @note If zero == true, the buffer itself is not necessarily all zeros!
+  bool zero;
 };
 
 /// Container holding a number of FFT blocks.
@@ -225,7 +220,7 @@ TransformBase::prepare_partition(In first, In last, fft_node& partition) const
 
   if (chunk == 0)
   {
-    partition.set_zero();
+    partition.zero = true;
     // No FFT has to be done (FFT of zero is also zero)
   }
   else
@@ -233,7 +228,7 @@ TransformBase::prepare_partition(In first, In last, fft_node& partition) const
     std::copy(first, first + chunk, partition.begin());
     std::fill(partition.begin() + chunk, partition.end(), 0.0f); // zero padding
     _fft(partition.begin());
-    partition.set_non_zero();
+    partition.zero = false;
   }
   return first + chunk;
 }
@@ -344,9 +339,9 @@ Input::add_block(In first)
 
   if (math::has_only_zeros(first, last))
   {
-    next.set_zero();
+    next.zero = true;
 
-    if (current.zero())
+    if (current.zero)
     {
       // Nothing to be done, actual data is ignored
     }
@@ -358,7 +353,7 @@ Input::add_block(In first)
   }
   else
   {
-    if (current.zero())
+    if (current.zero)
     {
       // First half must be actually filled with zeros
       std::fill(current.begin(), current.begin() + this->block_size(), 0.0f);
@@ -366,13 +361,13 @@ Input::add_block(In first)
 
     // Copy data to second half of the current partition
     std::copy(first, last, current.begin() + this->block_size());
-    current.set_non_zero();
+    current.zero = false;
     // Copy data to first half of the upcoming partition
     std::copy(first, last, next.begin());
-    next.set_non_zero();
+    next.zero = false;
   }
 
-  if (current.zero())
+  if (current.zero)
   {
     // Nothing to be done, FFT of zero is also zero
   }
@@ -448,7 +443,7 @@ OutputBase::convolve(float weight)
   // The first half will be discarded
   float* second_half = _output_buffer.begin() + _input.block_size();
 
-  if (_output_buffer.zero())
+  if (_output_buffer.zero)
   {
     // Nothing to be done, IFFT of zero is also zero.
     // _output_buffer was already reset to zero in _multiply_spectra().
@@ -552,7 +547,7 @@ OutputBase::_multiply_spectra()
 {
   // Clear IFFT buffer
   std::fill(_output_buffer.begin(), _output_buffer.end(), 0.0f);
-  _output_buffer.set_zero();
+  _output_buffer.zero = true;
 
   fixed_list<fft_node>::const_iterator input = _input.spectra.begin();
 
@@ -564,7 +559,7 @@ OutputBase::_multiply_spectra()
 
     assert(filter != 0);
 
-    if (input->zero() || filter->zero()) continue;
+    if (input->zero || filter->zero) continue;
 
 #ifdef __SSE__
     _multiply_partition_simd(input->begin(), filter->begin());
@@ -572,7 +567,7 @@ OutputBase::_multiply_spectra()
     _multiply_partition_cpp(input->begin(), filter->begin());
 #endif
 
-    _output_buffer.set_non_zero();
+    _output_buffer.zero = false;
   }
 }
 
@@ -789,35 +784,35 @@ void transform_nested(const Filter& in1, const Filter& in2, Filter& out
       ; it3 != out.end()
       ; ++it3)
   {
-    if (it1 == in1.end() || it1->zero())
+    if (it1 == in1.end() || it1->zero)
     {
-      if (it2 == in2.end() || it2->zero())
+      if (it2 == in2.end() || it2->zero)
       {
-        it3->set_zero();
+        it3->zero = true;
       }
       else
       {
         assert(it2->size() == it3->size());
         std::transform(it2->begin(), it2->end(), it3->begin()
             , std::bind1st(f, 0));
-        it3->set_non_zero();
+        it3->zero = false;
       }
     }
     else
     {
-      if (it2 == in2.end() || it2->zero())
+      if (it2 == in2.end() || it2->zero)
       {
         assert(it1->size() == it3->size());
         std::transform(it1->begin(), it1->end(), it3->begin()
             , std::bind2nd(f, 0));
-        it3->set_non_zero();
+        it3->zero = false;
       }
       else
       {
         assert(it1->size() == it2->size());
         assert(it1->size() == it3->size());
         std::transform(it1->begin(), it1->end(), it2->begin(), it3->begin(), f);
-        it3->set_non_zero();
+        it3->zero = false;
       }
     }
     if (it1 != in1.end()) ++it1;

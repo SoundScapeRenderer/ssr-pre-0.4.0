@@ -69,6 +69,8 @@ dmg:
 endif
 .PHONY: dmg
 
+.NOTPARALLEL: install
+
 # remove pkgdatadir and docdir (if empty)
 uninstall-hook:
 	-rmdir $(DESTDIR)$(pkgdatadir)

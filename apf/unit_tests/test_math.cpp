@@ -190,13 +190,16 @@ SECTION("linear_interpolator", "")
 
 SECTION("linear_interpolator, integer index", "")
 {
+  linear_interpolator<double, int> in(5.0, 6.0, 2);
+  CHECK(in(0) == 5.0);
+  CHECK(in(1) == 5.5);
+}
+
+SECTION("linear_interpolator, integer index converted to double", "")
+{
   linear_interpolator<double> in(1.0, 2.0, 4);
   CHECK(in(0) == 1.0);
   CHECK(in(1) == 1.25);
-
-  in = make_linear_interpolator(5.0, 6.0, 2);
-  CHECK(in(0) == 5.0);
-  CHECK(in(1) == 5.5);
 }
 
 SECTION("identity", "")

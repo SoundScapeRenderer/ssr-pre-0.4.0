@@ -336,12 +336,11 @@ make_linear_interpolator(T first, T last)
 }
 
 /// Helper function for automatic template type deduction
-/// @note Automatic conversion is used to convert @p length from @p T to @p U.
 template<typename T, typename U>
-linear_interpolator<T>
+linear_interpolator<T, U>
 make_linear_interpolator(T first, T last, U length)
 {
-  return linear_interpolator<T>(first, last, length);
+  return linear_interpolator<T, U>(first, last, length);
 }
 
 /// Identity function object. Function call returns a const reference to input.

@@ -314,7 +314,7 @@ class linear_interpolator
     void set(T first, T last, U length = U(1))
     {
       _first = first;
-      _increment = (last - first) / T(length);
+      _increment = (last - first) / length;
     }
 
     /// Function call operator

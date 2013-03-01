@@ -196,7 +196,7 @@ void BinauralRenderer::load_reproduction_setup()
 {
   // TODO: read settings from proper reproduction system
 
-  _load_hrtfs(this->params["hrir_file"], this->params.get("hrir_size", 0ul));
+  _load_hrtfs(this->params["hrir_file"], this->params.get("hrir_size", 0));
 
   Output::Params params;
 
@@ -225,7 +225,7 @@ class BinauralRenderer::Source : public Convolver::Input, public _base::Source
     Source(const Params& p)
       // TODO: assert that p.parent != 0?
       : Convolver::Input(p.parent->block_size(), p.parent->_partitions)
-      , _base::Source(p, std::make_pair(2ul, this))
+      , _base::Source(p, std::make_pair(size_t(2), this))
       , _hrtf_index(-1)
       , _interp_factor(-1)
       , _weight(0)

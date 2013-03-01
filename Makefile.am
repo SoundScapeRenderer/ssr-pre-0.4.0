@@ -48,8 +48,9 @@ ACLOCAL_AMFLAGS = -I autotools/m4
 
 # copy and rename (include version) the user manual on "make dist".
 # $(SSR_MANUAL_DIST) has to be in dist_doc_DATA!
+# If the PDF file doesn't exist, an empty dummy file is created!
 $(SSR_MANUAL_DIST): $(SSR_MANUAL_ORIG)
-	@test -f "$<" && cp "$<" "$@" || true
+	@test -f "$<" && cp "$<" "$@" || touch "$@"
 
 # show warning message (if missing), the file must be created by the maintainer:
 $(SSR_MANUAL_ORIG):

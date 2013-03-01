@@ -617,7 +617,7 @@ class Output : public OutputBase
   public:
     Output(const Input& input)
       : OutputBase(input)
-      , _queues(apf::make_index_iterator(1ul)
+      , _queues(apf::make_index_iterator(size_t(1))
               , apf::make_index_iterator(input.partitions()))
     {}
 

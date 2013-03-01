@@ -115,7 +115,7 @@ BlockDelayLine<T>::BlockDelayLine(size_type block_size, size_type max_delay)
   // equal and the read...() functions wouldn't work.
   // But anyway, who wants a delay line with no delay? Kind of useless ...
   , _number_of_blocks(
-      std::max(2ul, (_max_delay + 2 * _block_size - 1) / _block_size))
+      std::max(size_type(2), (_max_delay + 2 * _block_size - 1) / _block_size))
   , _data(_number_of_blocks * _block_size)  // initialized with default ctor T()
   , _data_circulator(_data.begin(), _data.end())
   , _block_circulator(_data_circulator, _block_size)

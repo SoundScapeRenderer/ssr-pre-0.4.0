@@ -21,9 +21,7 @@
  *                                 http://AudioProcessingFramework.github.com *
  ******************************************************************************/
 
-// Tests for fixed_vector, fixed_list
-
-// TODO: Tests for fixed_matrix
+// Tests for fixed_vector, fixed_list, fixed_matrix
 
 #include "apf/container.h"
 
@@ -56,12 +54,19 @@ SECTION("first constructor", "")
 
 SECTION("second constructor", "")
 {
+  apf::fixed_vector<int> fv(3ul, 99);
+
+  CHECK(fv[2] == 99);
+}
+
+SECTION("another constructor", "")
+{
   apf::fixed_vector<int> fv(std::make_pair(3ul, 99));
 
   CHECK(fv[2] == 99);
 }
 
-SECTION("third constructor and more", "")
+SECTION("yet another constructor and more", "")
 {
   int data[] = { 1, 2, 3, 4 };
   apf::fixed_vector<int> fv(data, data+4);
@@ -92,20 +97,42 @@ SECTION("empty()", "not really useful ...")
   CHECK(fv.empty());
 }
 
-SECTION("reset(), emplace_back()", "")
+SECTION("reserve(), emplace_back()", "")
 {
   apf::fixed_vector<int> fv;
   CHECK(fv.empty());
-  fv.reset(2);
+  fv.reserve(2);
   CHECK(fv.empty());
   fv.emplace_back(1);
   CHECK(fv.size() == 1);
   CHECK(fv[0] == 1);
   fv.emplace_back(2);
   CHECK(fv[1] == 2);
-  fv.reset();
+  fv.reserve(0);
   CHECK(fv.empty());
   CHECK_THROWS_AS(fv.emplace_back(666), std::out_of_range);
+}
+
+SECTION("reset()", "")
+{
+  apf::fixed_vector<int> fv(3);
+  CHECK(fv.size() == 3);
+  fv.reset(5);
+  CHECK(fv.size() == 5);
+  fv.reset(0);
+  CHECK(fv.size() == 0);
+  fv.reset(2ul, 4);
+  CHECK(fv.size() == 2);
+  CHECK(fv[0] == 4);
+  CHECK(fv[1] == 4);
+
+  int data[] = { 1, 2, 3, 4 };
+  fv.reset(data, data + 4);
+  CHECK(fv.size() == 4);
+  CHECK(fv[0] == 1);
+  CHECK(fv[1] == 2);
+  CHECK(fv[2] == 3);
+  CHECK(fv[3] == 4);
 }
 
 SECTION("fixed_vector<NonCopyable>", "")
@@ -205,6 +232,46 @@ SECTION("fixed_list<NonCopyable>", "")
 }
 
 } // TEST_CASE fixed_list
+
+typedef apf::fixed_matrix<int> fm;
+
+TEST_CASE("fixed_matrix", "Test fixed_matrix")
+{
+
+SECTION("default constructor", "... and reset()")
+{
+  fm matrix;
+  CHECK(matrix.empty());
+  CHECK(matrix.channels.begin() == matrix.channels.end());
+  CHECK(matrix.slices.begin() == matrix.slices.end());
+
+  matrix.reset(2, 3);
+  CHECK_FALSE(matrix.empty());
+  CHECK(std::distance(matrix.channels.begin(), matrix.channels.end()) == 2);
+  CHECK(std::distance(matrix.slices.begin(), matrix.slices.end()) == 3);
+}
+
+SECTION("the normal constructor and more", "")
+{
+  fm matrix(3, 2);
+  CHECK_FALSE(matrix.empty());
+  CHECK(std::distance(matrix.channels.begin(), matrix.channels.end()) == 3);
+  CHECK(std::distance(matrix.slices.begin(), matrix.slices.end()) == 2);
+
+  matrix.channels[2][0] = 42;
+
+  fm matrix2(2, 3);
+  matrix2.set_channels(matrix.slices);
+
+  CHECK(matrix2.channels[0][2] == 42);
+  CHECK(matrix2.slices[2][0] == 42);
+
+  CHECK(matrix2.get_channel_ptrs()[0][2] == 42);
+}
+
+// TODO: check channels_iterator and slices_iterator
+
+} // TEST_CASE fixed_matrix
 
 #include <list>
 

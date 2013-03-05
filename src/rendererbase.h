@@ -300,7 +300,7 @@ int RendererBase<Derived>::add_source(const apf::parameter_map& p)
   // This cannot be done in the Derived::Source constructor because then the
   // connections to the Outputs are active before the Source is properly added
   // to the source list:
-  src->connect(*static_cast<Derived*>(this));
+  src->connect();
 
   _source_map[id] = src;
   return id;
@@ -320,8 +320,7 @@ void RendererBase<Derived>::rem_source(Source* source)
   _source_map.erase(delinquent);
 
   assert(dynamic_cast<typename Derived::Source*>(source));
-  static_cast<typename Derived::Source*>(source)->disconnect(
-      *static_cast<Derived*>(this));
+  static_cast<typename Derived::Source*>(source)->disconnect();
 
   Input* input = const_cast<Input*>(&source->_input);
   _source_list.rem(source);
@@ -529,22 +528,20 @@ struct SourceToOutput : Base<Derived>
       , sourcechannels(first, last)
     {}
 
-    void connect(SourceToOutput& parent)
+    void connect()
     {
       std::list<typename Derived::SourceChannel*> temp;
       apf::append_pointers(this->sourcechannels, temp);
-      parent.add_to_sublist(temp
-         , apf::make_cast_proxy<Output>(parent.get_non_const_output_list())
-         , &Output::sourcechannels);
+      this->parent.add_to_sublist(temp, apf::make_cast_proxy<Output>(
+            this->parent.get_non_const_output_list()), &Output::sourcechannels);
     }
 
-    void disconnect(SourceToOutput& parent)
+    void disconnect()
     {
       std::list<typename Derived::SourceChannel*> temp;
       apf::append_pointers(this->sourcechannels, temp);
-      parent.rem_from_sublist(temp
-          , apf::make_cast_proxy<Output>(parent.get_non_const_output_list())
-          , &Output::sourcechannels);
+      this->parent.rem_from_sublist(temp, apf::make_cast_proxy<Output>(
+            this->parent.get_non_const_output_list()), &Output::sourcechannels);
     }
 
     sourcechannels_t sourcechannels;

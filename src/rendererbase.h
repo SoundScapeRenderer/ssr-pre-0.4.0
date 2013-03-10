@@ -140,7 +140,8 @@ class RendererBase : public apf::MimoProcessor<Derived
     class RemFromSublistCommand : public apf::CommandQueue::Command
     {
       public:
-        RemFromSublistCommand(L input, ListProxy output, DataMember member)
+        RemFromSublistCommand(const L& input, ListProxy output
+            , DataMember member)
           : _input(input)
           , _output(output)
           , _member(member)
@@ -157,10 +158,10 @@ class RendererBase : public apf::MimoProcessor<Derived
         }
 
       private:
-        L _input;
+        const L& _input;
         ListProxy _output;
         DataMember _member;
-        L _garbage;
+        typename std::tr1::remove_const<L>::type _garbage;
     };
 
     template<typename L, typename ListProxy, typename DataMember>
@@ -407,19 +408,19 @@ class RendererBase<Derived>::Source
       this->_begin = _input.begin();
       this->_end = _input.end();
 
-      old_weighting_factor = weighting_factor;
+      this->old_weighting_factor = this->weighting_factor;
 
       if (!_input.parent.state.processing() || mute())
       {
-        weighting_factor = 0.0;
+        this->weighting_factor = 0.0;
       }
       else
       {
-        weighting_factor = gain();
+        this->weighting_factor = gain();
         // If the renderer does something nonlinear, the master volume should
         // be applied to the output signal ... TODO: shall we care?
-        weighting_factor *= _input.parent.state.master_volume();
-        weighting_factor *= _input.parent.master_volume_correction;
+        this->weighting_factor *= _input.parent.state.master_volume();
+        this->weighting_factor *= _input.parent.master_volume_correction;
       }
 
       _level_helper(_input.parent);
@@ -432,8 +433,8 @@ class RendererBase<Derived>::Source
 
 #if 0
     // TODO: check if all renderers implement this. If not, provide default.
-    void connect(RendererBase&) {}
-    void disconnect(RendererBase&) {}
+    void connect() {}
+    void disconnect() {}
 #endif
 
     Derived& parent;

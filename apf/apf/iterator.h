@@ -378,6 +378,7 @@ class iterator_proxy
 {
   public:
     typedef I iterator;
+    typedef std::reverse_iterator<iterator> reverse_iterator;
     typedef typename Container::size_type size_type;
     typedef typename std::iterator_traits<I>::value_type value_type;
 
@@ -386,6 +387,10 @@ class iterator_proxy
 
     iterator begin() const { return iterator(_l.begin()); }
     iterator end() const { return iterator(_l.end()); }
+    reverse_iterator
+    rbegin() const { return reverse_iterator(iterator(_l.end())); }
+    reverse_iterator
+    rend() const { return reverse_iterator(iterator(_l.begin())); }
     size_type size() const { return _l.size(); }
 
   private:
@@ -399,6 +404,7 @@ class iterator_proxy_const
 {
   public:
     typedef I iterator;
+    typedef std::reverse_iterator<iterator> reverse_iterator;
     typedef typename Container::size_type size_type;
     typedef typename std::iterator_traits<I>::value_type value_type;
 
@@ -407,6 +413,10 @@ class iterator_proxy_const
 
     iterator begin() const { return iterator(_l.begin()); }
     iterator end() const { return iterator(_l.end()); }
+    reverse_iterator
+    rbegin() const { return reverse_iterator(iterator(_l.end())); }
+    reverse_iterator
+    rend() const { return reverse_iterator(iterator(_l.begin())); }
     size_type size() const { return _l.size(); }
 
   private:
@@ -1142,6 +1152,204 @@ class stride_iterator
     I _iter; ///< Base iterator
     // this could be const, except then the iterator wouldn't be copyable:
     difference_type _step; ///< Iterator increment
+};
+
+/** Iterate over two iterators at once.
+ * For now, the dual_iterator has the features of a forward iterator, but it
+ * could be upgraded if need should arise.
+ *
+ * dual_iterator has some special features (see output_proxy):
+ * - on dereferenciation and assignment, the value is assigned to both iterators
+ * - if a @c std::pair is assigned, the two values are assigned to the two
+ *   iterators, respectively.
+ * - The @c += operator can also be used with similar behaviour
+ * - a dual_iterator can be dereferenced and assigned to a @c std::pair (if the
+ *   @c value_type%s are convertible).
+ * @ingroup apf_iterators
+ **/
+template<typename I1, typename I2 = I1>
+class dual_iterator
+{
+  private:
+    typedef dual_iterator self;
+
+  public:
+    // TODO: what if I1 or I2 are only input or output iterators?
+    // TODO: some witty metaprogram to find the greatest common denominator?
+    typedef std::forward_iterator_tag iterator_category;
+
+    typedef std::pair<typename std::iterator_traits<I1>::value_type
+                    , typename std::iterator_traits<I2>::value_type> value_type;
+
+    class output_proxy;  // For implementation see below
+    typedef output_proxy reference;
+
+    typedef std::ptrdiff_t difference_type;
+    typedef void pointer;
+
+    /// Default constructor
+    dual_iterator() {}
+
+    /// Constructor from two iterators
+    dual_iterator(I1 i1, I2 i2) : _i1(i1), _i2(i2) {}
+
+    /// Dereference operator.
+    /// @return a temporary object of type output_proxy
+    reference operator*()
+    {
+      assert(no_nullptr(_i1) && no_nullptr(_i2));
+      return reference(_i1, _i2);
+    }
+
+    // operator-> doesn't really make sense
+
+    /// Pre-increment operator
+    self& operator++()
+    {
+      assert(no_nullptr(_i1) && no_nullptr(_i2));
+      ++_i1;
+      ++_i2;
+      return *this;
+    }
+
+    /// Equality operator
+    bool operator==(const self& rhs) const
+    {
+      return (_i1 == rhs._i1) && (_i2 == rhs._i2);
+    }
+
+    APF_ITERATOR_FORWARD_POSTINCREMENT
+    APF_ITERATOR_FORWARD_UNEQUAL
+
+  private:
+    I1 _i1;
+    I2 _i2;
+};
+
+/// Helper class for dual_iterator
+template<typename I1, typename I2>
+class dual_iterator<I1, I2>::output_proxy
+{
+  public:
+    explicit output_proxy(I1& i1, I2& i2) : _i1(i1), _i2(i2) {}
+
+    /// Conversion operator to std::pair.
+    /// @note @p T1 and @p T2 must be convertible to @c I1::value_type and
+    ///   @c I2::value_type, respectively!
+    template<typename T1, typename T2>
+    operator std::pair<T1, T2>()
+    {
+      return std::pair<T1, T2>(*_i1, *_i2);
+    }
+
+    /// Special assignment operator for std::pair
+    template<typename T1, typename T2>
+    output_proxy& operator=(const std::pair<T1, T2>& rhs)
+    {
+      *_i1 = rhs.first;
+      *_i2 = rhs.second;
+      return *this;
+    }
+
+    /// Default assignment operator
+    template<typename T>
+    output_proxy& operator=(const T& rhs)
+    {
+      *_i1 = rhs;
+      *_i2 = rhs;
+      return *this;
+    }
+
+    /// Special addition and assignment operator for std::pair
+    template<typename T1, typename T2>
+    output_proxy& operator+=(const std::pair<T1, T2>& rhs)
+    {
+      *_i1 += rhs.first;
+      *_i2 += rhs.second;
+      return *this;
+    }
+
+    /// Default addition and assignment operator
+    template<typename T>
+    output_proxy& operator+=(const T& rhs)
+    {
+      *_i1 += rhs;
+      *_i2 += rhs;
+      return *this;
+    }
+
+  private:
+    I1& _i1;
+    I2& _i2;
+};
+
+/** Helper function to create an dual_iterator.
+ * The template parameters are optional because they can be inferred from the
+ * parameters @p i1 and @p i2. Example:
+ * @code apf::make_dual_iterator(some_iterator, some_other_iterator) @endcode
+ * @param i1 one base iterator
+ * @param i2 another base iterator
+ * @return a dual_iterator
+ * @ingroup apf_iterators
+ **/
+template<typename I1, typename I2>
+dual_iterator<I1, I2>
+make_dual_iterator(I1 i1, I2 i2)
+{
+  return dual_iterator<I1, I2>(i1, i2);
+}
+
+/** An iterator which does nothing.
+ * The discard_iterator has the features of an output iterator, but
+ * additionally, the += operator can be used.
+ * Two discard_iterator%s can be compared with @c == and @c !=, but they are
+ * always equal!
+ * - on dereferenciation and assignment, the assigned value is discarded.
+ * - The @c += operator can also be used with similar behaviour
+ *
+ * @see output_proxy
+ * @ingroup apf_iterators
+ **/
+class discard_iterator
+{
+  private:
+    typedef discard_iterator self;
+
+  public:
+    typedef std::output_iterator_tag iterator_category;
+    typedef void                     value_type;
+    typedef void                     difference_type;
+    typedef void                     pointer;
+
+    /// Helper class for discard_iterator
+    struct output_proxy
+    {
+      /// Assignment operator (does nothing!)
+      template<typename T>
+      output_proxy& operator=(const T&) { return *this; }
+
+      /// Addition and assignment operator (does nothing!)
+      template<typename T>
+      output_proxy& operator+=(const T&) { return *this; }
+    };
+
+    typedef output_proxy reference;
+
+    /// Dereference operator.
+    /// @return a temporary object of type output_proxy
+    reference operator*()
+    {
+      return reference();
+    }
+
+    /// Pre-increment operator (does nothing!)
+    self& operator++() { return *this; }
+
+    /// Equality operator -- always true!
+    bool operator==(const self&) const { return true; }
+
+    APF_ITERATOR_OUTPUT_POSTINCREMENT
+    APF_ITERATOR_FORWARD_UNEQUAL
 };
 
 }  // namespace apf

@@ -27,10 +27,11 @@
 #ifndef APF_BIQUAD_H
 #define APF_BIQUAD_H
 
+#include <iosfwd>  // for std::ostream
 #include <cmath>  // for pow(), tan(), sqrt(), ...
 #include <complex>
 #include <vector>
-#include <cassert>
+#include <cassert>  // for assert()
 
 #include "apf/denormalprevention.h"
 #include "apf/math.h"
@@ -38,7 +39,11 @@
 namespace apf
 {
 
-/// Coefficients of digital recursive filter.
+// TODO: make macros for trivial operators (see iterator.h)
+// TODO: combine SosCoefficients and LaplaceCoefficients in common class
+// template and use typedef with dummy template arguments.
+
+/// Coefficients of digital recursive filter (second order section).
 /// @tparam T Internal data type
 template<typename T>
 struct SosCoefficients
@@ -51,6 +56,67 @@ struct SosCoefficients
 
   T b0, b1, b2;
   T     a1, a2;
+
+  SosCoefficients& operator+=(const SosCoefficients& rhs)
+  {
+    b0 += rhs.b0; b1 += rhs.b1; b2 += rhs.b2;
+                  a1 += rhs.a1; a2 += rhs.a2;
+    return *this;
+  }
+
+  SosCoefficients operator+(const SosCoefficients& rhs) const
+  {
+    SosCoefficients tmp(*this);
+    return tmp += rhs;
+  }
+
+  SosCoefficients& operator*=(T rhs)
+  {
+    b0 *= rhs; b1 *= rhs; b2 *= rhs;
+               a1 *= rhs; a2 *= rhs;
+    return *this;
+  }
+
+  SosCoefficients operator*(T rhs) const
+  {
+    SosCoefficients tmp(*this);
+    return tmp *= rhs;
+  }
+
+  SosCoefficients& operator/=(T rhs)
+  {
+    b0 /= rhs; b1 /= rhs; b2 /= rhs;
+               a1 /= rhs; a2 /= rhs;
+    return *this;
+  }
+
+  SosCoefficients operator/(T rhs) const
+  {
+    SosCoefficients tmp(*this);
+    return tmp /= rhs;
+  }
+
+  friend SosCoefficients operator*(T lhs, const SosCoefficients& rhs)
+  {
+    SosCoefficients temp(rhs);
+    return temp *= lhs;
+  }
+
+  friend SosCoefficients
+  operator-(const SosCoefficients& lhs, const SosCoefficients& rhs)
+  {
+    return SosCoefficients(lhs.b0 - rhs.b0
+        , lhs.b1 - rhs.b1, lhs.b2 - rhs.b2
+        , lhs.a1 - rhs.a1, lhs.a2 - rhs.a2);
+  }
+
+  friend std::ostream&
+  operator<<(std::ostream& stream, const SosCoefficients& c)
+  {
+    stream << "b0: " << c.b0 << ", b1: " << c.b1 << ", b2: " << c.b2
+                             << ", a1: " << c.a1 << ", a2: " << c.a2;
+    return stream;
+  }
 };
 
 /// Coefficients of analog recursive filter.
@@ -128,20 +194,11 @@ class Cascade
     /// @param first Begin iterator
     /// @param last End iterator
     template<typename I>
-    void change(I first, I last)
+    void set(I first, I last)
     {
-      assert(_sections.size()==static_cast<size_t>(std::distance(first, last)));
+      assert(_sections.size() == size_t(std::distance(first, last)));
 
       std::copy(first, last, _sections.begin());
-    }
-
-    /// Overwrite all sections with new content.
-    /// @tparam X Content type (e.g. SosCoefficients)
-    /// @param x New content
-    template<typename X>
-    void change(const X& x)
-    {
-      std::fill(_sections.begin(), _sections.end(), x);
     }
 
     /// Process all sections on single sample.

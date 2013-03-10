@@ -716,6 +716,7 @@ class fixed_matrix<T, Allocator>::slices_iterator
 };
 
 /// Append pointers to the elements of the first list to the second list.
+/// @note @c L2::value_type must be a pointer to @c L1::value_type!
 template<typename L1, typename L2>
 void append_pointers(L1& source, L2& target)
 {
@@ -727,6 +728,8 @@ void append_pointers(L1& source, L2& target)
   }
 }
 
+/// Const-version of append_pointers()
+/// @note @c L2::value_type must be a pointer to @b const @c L1::value_type!
 template<typename L1, typename L2>
 void append_pointers(const L1& source, L2& target)
 {
@@ -739,6 +742,10 @@ void append_pointers(const L1& source, L2& target)
 }
 
 /// Splice list elements from @p source to member lists of @p target.
+/// @param source Elements of this list are distributed to the corresponding
+///   @p member lists of @p target. This must have the same type as @p member.
+/// @param target Each element of this list receives one element of @p source.
+/// @param member The distributed elements are appended at @c member.end().
 /// @note Lists must have the same size. If not, an exception is thrown.
 /// @note There is no const version, both lists are modified.
 /// @post @p source will be empty
@@ -761,27 +768,35 @@ void distribute_list(L1& source, L2& target, DataMember member)
   }
 }
 
-/// The opposite of distribute_list().
-/// @note (For now,) there is no const version of this function. That means
-///   @p source must be non-const although it is not actually modified.
+/// The opposite of distribute_list() -- sorry for the strange name!
+/// @param source Container of items which will be removed from @p member of the
+///   corresponding @p target elements.
+/// @param target Container of elements which have a @p member.
+/// @param member Member container from which elements will be removed. Must
+///   have a splice() member function (like @c std::list).
+/// @param garbage Removed elements are appended to this list. Must have the
+///   same type as @p member.
+/// @throw std::logic_error If any element isn't found in the corresponding
+///   @p member.
 /// @attention If a list element is not found, an exception is thrown and the
 ///   original state is @b not restored!
 // TODO: better name?
-template<typename L1, typename L2, typename DataMember>
-void undistribute_list(L1& source, L2& target, DataMember member, L1& garbage)
+template<typename L1, typename L2, typename DataMember, typename L3>
+void
+undistribute_list(const L1& source, L2& target, DataMember member, L3& garbage)
 {
   if (source.size() != target.size())
   {
     throw std::logic_error("undistribute_list(): Different sizes!");
   }
 
-  typename L1::iterator in = source.begin();
+  typename L1::const_iterator in = source.begin();
 
   for (typename L2::iterator out = target.begin()
       ; out != target.end()
       ; ++out)
   {
-    typename L1::iterator delinquent
+    typename L3::iterator delinquent
       = std::find(((*out).*member).begin(), ((*out).*member).end(), *in++);
     if (delinquent == ((*out).*member).end())
     {

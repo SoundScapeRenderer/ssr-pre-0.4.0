@@ -326,30 +326,43 @@ SECTION("distribute_list()", "... and undistribute_list()")
   CHECK(out[2].sublist.front() == 3);
   CHECK(out[2].sublist.back() == 6);
 
-  in.push_back(1);
-  in.push_back(2);
-  in.push_back(3);
+  CHECK(in.size() == 0);  // 'in' is empty again ...
+
+  // For undistribute_list(), the first argument can be a different type:
+  apf::fixed_vector<int> in2(3);
+  in2[0] = 1;
+  in2[1] = 2;
+  in2[2] = 3;
 
   std::list<int> garbage;
 
-  undistribute_list(in, out, &ClassWithSublist::sublist, garbage);
+  undistribute_list(in2, out, &ClassWithSublist::sublist, garbage);
 
   CHECK(garbage.size() == 3);
-  CHECK(in.size() == 3);
+  CHECK(in2.size() == 3);
   CHECK(out[2].sublist.size() == 1);
   CHECK(out[2].sublist.front() == 6);
-
-  in.front() = 666;
-
-  // list item is not found -> exception:
-  CHECK_THROWS_AS(undistribute_list(in, out, &ClassWithSublist::sublist
-        , garbage), std::logic_error);
 
   in.push_back(666);
 
   // in and out have different size -> exception:
   CHECK_THROWS_AS(undistribute_list(in, out, &ClassWithSublist::sublist
         , garbage), std::logic_error);
+
+  CHECK(in.size() == 1);
+
+  in.push_back(5);
+  in.push_back(6);
+
+  // list item is not found -> exception:
+  CHECK_THROWS_AS(undistribute_list(in, out, &ClassWithSublist::sublist
+        , garbage), std::logic_error);
+
+  CHECK(in.size() == 3);
+
+  in.front() = 4;
+
+  CHECK_NOTHROW(undistribute_list(in, out, &ClassWithSublist::sublist,garbage));
 }
 
 } // TEST_CASE misc

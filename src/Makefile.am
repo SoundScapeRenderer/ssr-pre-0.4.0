@@ -67,6 +67,9 @@ ssr_brs_SOURCES = ssr_brs.cpp brsrenderer.h \
 nodist_ssr_brs_SOURCES = $(SSRMOCFILES)
 
 ssr_nfc_hoa_SOURCES = ssr_nfc_hoa.cpp nfchoarenderer.h \
+	hoacoefficients.h laplace_coeffs_double.h laplace_coeffs_float.h \
+	../apf/apf/biquad.h \
+	../apf/apf/denormalprevention.h \
 	$(LOUDSPEAKERSOURCES) \
 	$(SSRSOURCES)
 

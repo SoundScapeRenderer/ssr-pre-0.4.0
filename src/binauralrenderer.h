@@ -160,7 +160,7 @@ BinauralRenderer::_load_hrtfs(const std::string& filename, size_t size)
 
   int index = std::distance(transpose.slices.begin()->begin(), maximum);
 
-  apf::fixed_vector<sample_type> impulse(index);
+  apf::fixed_vector<sample_type> impulse(index + 1);
   impulse.back() = 1;
 
   _neutral_filter.reset(new Convolver::Filter(this->block_size()

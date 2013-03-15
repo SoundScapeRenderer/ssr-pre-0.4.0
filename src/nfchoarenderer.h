@@ -154,6 +154,8 @@ class NfcHoaRenderer::Source : public _base::Source
   private:
     // Pointers to Mode objects for (dis-)connecting
     std::list<const Mode*> _modes;
+    // Pointers to ModePair objects for removing when Source is deleted
+    std::list<ModePair*> _mode_pairs;
 };
 
 class NfcHoaRenderer::Mode : public ProcessItem<Mode>
@@ -470,17 +472,15 @@ NfcHoaRenderer::Source::connect()
 
   // create ModePair objects
 
-  typedef std::list<ModePair*> temp_list_t;
-  temp_list_t temp;
   for (size_t mode_number = 0; mode_number <= order / 2; ++mode_number)
   {
-    temp.push_back(new ModePair(mode_number, order, *this));
+    _mode_pairs.push_back(new ModePair(mode_number, order, *this));
   }
 
   // create list of pointers to Mode objects
 
-  typedef apf::cast_proxy<ModePair, temp_list_t> proxy_list_t;
-  proxy_list_t pairs(temp);
+  typedef apf::cast_proxy<ModePair, std::list<ModePair*> > proxy_list_t;
+  proxy_list_t pairs(_mode_pairs);
   for (proxy_list_t::reverse_iterator pair = pairs.rbegin()
       ; pair != pairs.rend()
       ; ++pair)
@@ -489,9 +489,9 @@ NfcHoaRenderer::Source::connect()
     _modes.push_back(pair->second_ptr());
   }
 
-  // add temporary list to _mode_pair_list
+  // add _mode_pairs to _mode_pair_list
 
-  this->parent._mode_pair_list.add(temp.begin(), temp.end());
+  this->parent._mode_pair_list.add(_mode_pairs.begin(), _mode_pairs.end());
 
   // connect modes with ModeAccumulator
 
@@ -504,12 +504,18 @@ NfcHoaRenderer::Source::connect()
 void
 NfcHoaRenderer::Source::disconnect()
 {
+  // Note: everything is done in reverse order of connect()
+
   this->parent.rem_from_sublist(_modes
       , apf::make_cast_proxy<ModeAccumulatorBase>(
         this->parent._mode_accumulator_list)
       , &ModeAccumulatorBase::mode_pointers);
 
-  // TODO: delete ModePair objects!
+  // The objects are actually deleted here (via the _fifo):
+  this->parent._mode_pair_list.rem(_mode_pairs.begin(), _mode_pairs.end());
+
+  _modes.clear();
+  _mode_pairs.clear();
 }
 
 class NfcHoaRenderer::FftProcessor : public ProcessItem<FftProcessor>

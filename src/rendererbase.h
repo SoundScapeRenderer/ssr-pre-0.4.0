@@ -140,7 +140,7 @@ class RendererBase : public apf::MimoProcessor<Derived
     class RemFromSublistCommand : public apf::CommandQueue::Command
     {
       public:
-        RemFromSublistCommand(const L& input, ListProxy output
+        RemFromSublistCommand(const L input, ListProxy output
             , DataMember member)
           : _input(input)
           , _output(output)
@@ -158,7 +158,7 @@ class RendererBase : public apf::MimoProcessor<Derived
         }
 
       private:
-        const L& _input;
+        const L _input;
         ListProxy _output;
         DataMember _member;
         typename std::tr1::remove_const<L>::type _garbage;

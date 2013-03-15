@@ -16,13 +16,13 @@ dnl initialize autoconf, this should be the first thing in configure.ac
 dnl arguments: full package name, version, email address for bug reports,
 dnl tarball name, homepage
 AC_INIT([SoundScape Renderer (SSR)],
-        [0.4.0-pre2],
+        [0.4.0-pre3],
         [ssr@spatialaudio.net],
         [ssr],
         [http://SoundScapeRenderer.github.com/])
 
 dnl make sure to use the NICKNAME matching the specified SSR version:
-NICKNAME="Clavichord preview 2"
+NICKNAME="Clavichord preview 3"
 AC_DEFINE_UNQUOTED([NICKNAME], ["$NICKNAME"],
                    [see https://dev.qu.tu-berlin.de/projects/ssr/wiki/Releases])
 

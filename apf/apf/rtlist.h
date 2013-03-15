@@ -92,7 +92,7 @@ class RtList<T*> : NonCopyable
     template<typename X>
     X* add(X* item)
     {
-      _fifo.push(new AddCommand(&_the_actual_list, item));
+      _fifo.push(new AddCommand(_the_actual_list, item));
       return item;
     }
 
@@ -103,13 +103,13 @@ class RtList<T*> : NonCopyable
     template<typename ForwardIterator>
     void add(ForwardIterator first, ForwardIterator last)
     {
-      _fifo.push(new AddCommand(&_the_actual_list, first, last));
+      _fifo.push(new AddCommand(_the_actual_list, first, last));
     }
 
     /// Remove an element from the list.
     void rem(T* to_rem)
     {
-      _fifo.push(new RemCommand(&_the_actual_list, to_rem));
+      _fifo.push(new RemCommand(_the_actual_list, to_rem));
     }
 
     /// Remove a range of elements from the list.
@@ -118,13 +118,13 @@ class RtList<T*> : NonCopyable
     template<typename ForwardIterator>
     void rem(ForwardIterator first, ForwardIterator last)
     {
-      _fifo.push(new RemCommand(&_the_actual_list, first, last));
+      _fifo.push(new RemCommand(_the_actual_list, first, last));
     }
 
     /// Remove all elements from the list.
     void clear()
     {
-      _fifo.push(new ClearCommand(&_the_actual_list));
+      _fifo.push(new ClearCommand(_the_actual_list));
     }
 
     void splice(iterator position, RtList& x)
@@ -162,12 +162,11 @@ class RtList<T*>::AddCommand : public CommandQueue::Command
     /// Constructor to add a single item.
     /// @param dst_list Ptr to the list to which the element will be added.
     /// @param element Ptr to the element that will be added.
-    AddCommand(list_t* dst_list, T* element)
+    AddCommand(list_t& dst_list, T* element)
       : _splice_list(1, element) // make list with one element
       , _dst_list(dst_list)
     {
       assert(element != 0);
-      assert(_dst_list != 0);
     }
 
     /// Constructor to add a bunch of items at once.
@@ -175,16 +174,14 @@ class RtList<T*>::AddCommand : public CommandQueue::Command
     /// @param first Begin of range to be added.
     /// @param last End of range to be added.
     template<typename InputIterator>
-    AddCommand(list_t* dst_list, InputIterator first, InputIterator last)
+    AddCommand(list_t& dst_list, InputIterator first, InputIterator last)
       : _splice_list(first, last)
       , _dst_list(dst_list)
-    {
-      assert(_dst_list != 0);
-    }
+    {}
 
     virtual void execute()
     {
-      _dst_list->splice(_dst_list->end(), _splice_list);
+      _dst_list.splice(_dst_list.end(), _splice_list);
     }
 
     // Empty function, because no cleanup is necessary. 
@@ -195,7 +192,7 @@ class RtList<T*>::AddCommand : public CommandQueue::Command
     list_t _splice_list;
 
     /// Destination list.
-    list_t* const _dst_list;
+    list_t& _dst_list;
 };
 
 /// Command to remove an element from a list.
@@ -206,24 +203,20 @@ class RtList<T*>::RemCommand : public CommandQueue::Command
     /// Constructor to remove a single item.
     /// @param dst_list List from which the item will be removed.
     /// @param delinquent Pointer to the item which will be removed.
-    RemCommand(list_t* dst_list, T* delinquent)
+    RemCommand(list_t& dst_list, T* delinquent)
       : _dst_list(dst_list)
       , _delinquents(1, delinquent)
-    {
-      assert(_dst_list != 0);
-    }
+    {}
 
     /// Constructor to remove a bunch of items at once.
     /// @param dst_list Ptr to the list from which the elements will be removed.
     /// @param first Iterator to first item to be removed.
     /// @param last Past-the-end iterator.
     template<typename InputIterator>
-    RemCommand(list_t* dst_list, InputIterator first, InputIterator last)
+    RemCommand(list_t& dst_list, InputIterator first, InputIterator last)
       : _dst_list(dst_list)
       , _delinquents(first, last)
-    {
-      assert(_dst_list != 0);
-    }
+    {}
 
     /// Move pointers to a separate list for destruction.
     /// @throw std::logic_error if item(s) is/are not found.
@@ -231,11 +224,11 @@ class RtList<T*>::RemCommand : public CommandQueue::Command
     {
       for (iterator i = _delinquents.begin(); i != _delinquents.end(); ++i)
       {
-        iterator delinquent = std::find(_dst_list->begin(), _dst_list->end(), *i);
-        if (delinquent != _dst_list->end())
+        iterator delinquent = std::find(_dst_list.begin(), _dst_list.end(), *i);
+        if (delinquent != _dst_list.end())
         {
           // Note: destruction order is reverse.
-          _splice_list.splice(_splice_list.begin(), *_dst_list, delinquent);
+          _splice_list.splice(_splice_list.begin(), _dst_list, delinquent);
         }
         else
         {
@@ -259,7 +252,7 @@ class RtList<T*>::RemCommand : public CommandQueue::Command
   private:
     /// List of elements (it may be only one element) to be removed.
     list_t _splice_list;
-    list_t* const _dst_list;  ///< Destination list
+    list_t& _dst_list;  ///< Destination list
     list_t _delinquents;  ///< Temporary list of elements to be removed
 };
 
@@ -270,15 +263,13 @@ class RtList<T*>::ClearCommand : public CommandQueue::Command
   public:
     /// Constructor.
     /// @param dst_list List from which all elements will be removed.
-    ClearCommand(list_t* dst_list)
+    ClearCommand(list_t& dst_list)
       : _dst_list(dst_list)
-    {
-      assert(_dst_list != 0);
-    }
+    {}
 
     virtual void execute()
     {
-      _delinquents.swap(*_dst_list);
+      _delinquents.swap(_dst_list);
     }
 
     virtual void cleanup()
@@ -292,7 +283,7 @@ class RtList<T*>::ClearCommand : public CommandQueue::Command
 
   private:
     list_t _delinquents;  ///< List of elements to be removed
-    list_t* const _dst_list;  ///< Destination list
+    list_t& _dst_list;  ///< Destination list
 };
 
 }  // namespace apf

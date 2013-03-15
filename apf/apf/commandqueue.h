@@ -49,11 +49,11 @@ class CommandQueue : NonCopyable
     /// after execution back to the non-realtime thread for cleanup.
     struct Command : NonCopyable
     {
-      /// dtor.
+      /// Empty virtual destructor.
       virtual ~Command() {}
 
-      /// The actual command. This is called from the realtime thread.
-      /// Overwritten in the derived class.
+      /// The actual implementation of the command. This is called from the
+      /// realtime thread. Overwritten in the derived class.
       virtual void execute() = 0;
 
       /// Cleanup of resources. This is called from the non-realtime thread.
@@ -65,6 +65,7 @@ class CommandQueue : NonCopyable
     class WaitCommand : public Command
     {
       public:
+        /// Constructor. @param done is set to @b true when cleanup() is called.
         WaitCommand(bool& done) : _done(done) {}
 
       private:
@@ -73,6 +74,10 @@ class CommandQueue : NonCopyable
 
         bool& _done;
     };
+
+    /// @name Functions to be called from the non-realtime thread
+    /// If there are multiple non-realtime threads, access has to be locked!
+    //@{
 
     /// Constructor.
     /// @param size maximum number of commands in queue.
@@ -91,10 +96,6 @@ class CommandQueue : NonCopyable
       // TODO: warning if process queue is not empty?
       // TODO: if inactive -> process commands (if active -> ???)
     }
-
-    /// @name Functions to be called from the non-realtime thread
-    /// If there are multiple non-realtime threads, access has to be locked!
-    //@{
 
     inline void push(Command* cmd);
 

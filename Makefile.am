@@ -11,7 +11,7 @@ SUBDIRS = src data
 ##DIST_SUBDIRS = $(SUBDIRS) another_dir
 
 # user manual from SVN (not distributed)
-SSR_MANUAL_ORIG = doc/manual/SoundScapeRenderer.pdf
+SSR_MANUAL_ORIG = $(srcdir)/doc/manual/SoundScapeRenderer.pdf
 # distributed version of the user manual
 SSR_MANUAL_DIST = doc/SoundScapeRenderer-@PACKAGE_VERSION@-manual.pdf
 

@@ -23,20 +23,6 @@ endif
 ## stuff that will end up in $prefix/share/ssr/
 nobase_dist_pkgdata_DATA = \
 	asdf.xsd \
-	reproduction_setups/2.0.asd \
-	reproduction_setups/2.1.asd \
-	reproduction_setups/5.1.asd \
-	reproduction_setups/rounded_rectangle.asd \
-	reproduction_setups/circle.asd \
-	reproduction_setups/loudspeaker_setup_with_nearly_all_features.asd \
-	reproduction_setups/asdf2html.xsl \
-	impulse_responses/hrirs/hrirs_fabian.wav \
-	impulse_responses/hrirs/hrirs_fabian_documentation.pdf \
-	impulse_responses/wfs_prefilters/wfs_prefilter_120_1500_44100.wav \
-	impulse_responses/wfs_prefilters/wfs_prefilter_100_1300_44100.wav \
-	impulse_responses/wfs_prefilters/wfs_prefilter_100_1300_48000.wav \
-	impulse_responses/wfs_prefilters/wfs_prefilter_100_1800_44100.wav \
-	impulse_responses/wfs_prefilters/wfs_prefilter_100_1800_48000.wav \
 	images/listener_background.png \
 	images/listener.png \
 	images/listener_shadow.png \
@@ -62,6 +48,7 @@ nobase_dist_extras_DATA = \
 	reproduction_setups/rounded_rectangle.asd \
 	reproduction_setups/circle.asd \
 	reproduction_setups/loudspeaker_setup_with_nearly_all_features.asd \
+	reproduction_setups/asdf2html.xsl \
 	impulse_responses/hrirs/hrirs_fabian.wav \
 	impulse_responses/hrirs/hrirs_fabian_documentation.pdf \
 	impulse_responses/wfs_prefilters/wfs_prefilter_120_1500_44100.wav \
@@ -97,24 +84,28 @@ dist_noinst_SCRIPTS = local_ssr.sh
 ##	...
 
 # compute relative path between $(pkgdatadir) and $(extrasdir)
-REL_LINK_DIR = `\
-	  target="$(extrasdir)"; \
-	  common_part="$(pkgdatadir)"; \
+REL_LINK_DIR = $(shell \
+	  target="${extrasdir}"; \
+	  common_part="${pkgdatadir}"; \
 	  if test "x$$target" = "x$$common_part"; then echo .; exit; fi; \
 	  back= ; \
 	  while test "x$${target\#$$common_part}" = "x$$target"; do \
-	    common_part="$$(dirname "$$common_part")"; \
+	    common_part="`dirname "$$common_part"`"; \
 	    back="../$$back" ; \
 	  done; \
-	  echo "$${back}$${target\#$$common_part/}"`
+	  echo "$${back}$${target\#$$common_part/}")
 
-# create symbolic links in the install directory (for default files)
+# create symbolic links in the install directory (for default files) and
+# before that, remove old symbolic links
 install-data-hook:
 	-cd $(DESTDIR)$(pkgdatadir) \
+	  && test '!' -L default_hrirs.wav || $(RM) default_hrirs.wav \
 	  && $(LN_S) $(REL_LINK_DIR)/impulse_responses/hrirs/hrirs_fabian.wav default_hrirs.wav
 	-cd $(DESTDIR)$(pkgdatadir) \
+	  && test '!' -L default_setup.asd || $(RM) default_setup.asd \
 	  && $(LN_S) $(REL_LINK_DIR)/reproduction_setups/rounded_rectangle.asd default_setup.asd
 	-cd $(DESTDIR)$(pkgdatadir) \
+	  && test '!' -L default_wfs_prefilter.wav || $(RM) default_wfs_prefilter.wav \
 	  && $(LN_S) $(REL_LINK_DIR)/impulse_responses/wfs_prefilters/wfs_prefilter_120_1500_44100.wav default_wfs_prefilter.wav
 
 # remove the symlinks, UNINSTALL_DIRS (if empty)

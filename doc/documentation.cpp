@@ -50,7 +50,7 @@ apf::JackClient
 - Miscellaneous stuff: misc.h
 
 
-Copyright (c) 2012      Institut für Nachrichtentechnik, Universität Rostock
+Copyright (c) 2012-2013 Institut für Nachrichtentechnik, Universität Rostock
 
 Copyright (c) 2006-2012 Quality & Usability Lab,
                         Deutsche Telekom Laboratories, TU Berlin

@@ -118,13 +118,7 @@ LoudspeakerRenderer<Derived>::load_reproduction_setup()
         + _reproduction_setup + "\"!");
   }
 
-  if (_xml_schema == "")
-  {
-    throw std::runtime_error("No XML Schema file specified!");
-    // TODO: continue anyway?
-  }
-
-  if (!setup_file->validate(_xml_schema))
+  if (_xml_schema != "" && !setup_file->validate(_xml_schema))
   {
     throw std::runtime_error("Error validating \""
         + _reproduction_setup + "\" with schema file \"" + _xml_schema + "\"!");

@@ -75,6 +75,7 @@
 #include "trackerrazor.h"
 #endif
 
+#include "scene.h"  // for Scene
 #include "rendersubscriber.h"
 
 #include "posixpathtools.h"

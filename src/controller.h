@@ -1379,7 +1379,7 @@ Controller<Renderer>::transport_stop()
 
 /** Skips the scene to a specified instant of time
  * @ param frame instant of time in sec to locate 
- */
+ **/
 template<typename Renderer>
 bool
 Controller<Renderer>::transport_locate(float time)

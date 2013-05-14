@@ -157,7 +157,7 @@ LoudspeakerRenderer<Derived>::load_reproduction_setup()
     }
     else if (node == "skip")
     {
-      int number;
+      int number = 1;
 
       if (!apf::str::S2A(node.get_attribute("number"), number) || (number < 1))
       {

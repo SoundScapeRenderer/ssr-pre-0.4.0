@@ -34,6 +34,7 @@
 #include "apf/fftwtools.h"  // for apf::fftw, apf::fftw_allocator
 #include "apf/iterator.h"  // for apf::dual_iterator, apf::discard_iterator, ...
 
+#include "ssr_global.h"  // for ssr::c
 #include "loudspeakerrenderer.h"
 #include "hoacoefficients.h"
 

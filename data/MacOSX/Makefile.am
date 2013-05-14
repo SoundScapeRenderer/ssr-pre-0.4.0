@@ -39,7 +39,8 @@ install-exec-hook:
 		--overwrite-dir --bundle-deps \
 		--fix-file $(DESTDIR)$(bindir)/$$exec \
 		--dest-dir $(DESTDIR)$(contentsdir)/Libraries \
-		--install-path @executable_path/../Libraries
+		--install-path @executable_path/../Libraries \
+	; done
 	cp `which ecasound` $(DESTDIR)$(bindir)
 
 install-data-hook:

@@ -85,7 +85,7 @@ class RendererBase : public apf::MimoProcessor<Derived
         , reference_orientation(fifo)
         , reference_offset_position(fifo)
         , reference_offset_orientation(fifo)
-        , master_volume(fifo)
+        , master_volume(fifo, 1)
         , processing(fifo, true)
         , amplitude_reference_distance(fifo, 3)
       {}

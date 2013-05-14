@@ -93,6 +93,7 @@ clean:
 	$(RM) ssr_nfc_hoa.mexa64
 	$(RM) ssr_nfc_hoa.mexglx
 	$(RM) ssr_nfc_hoa.mexmaci
+	$(RM) ssr_nfc_hoa.mexmaci64
 	$(RM) ssr_nfc_hoa.mex
 	$(RM) *.o
 	$(RM) .*.stamp

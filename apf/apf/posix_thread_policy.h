@@ -31,17 +31,32 @@
 #error You need to compile with _REENTRANT defined since this uses threads!
 #endif
 
+#ifndef APF_MIMOPROCESSOR_THREAD_POLICY
+#define APF_MIMOPROCESSOR_THREAD_POLICY apf::posix_thread_policy
+#endif
+
+// Unnamed semaphores are not implemented on Mac OS X, so we use named
+// semaphores with an auto-generated name.
+// That's a hack.
+// But it was easier than to use some OSX-specific stuff.
+// If you want to use proper unnamed semaphores, define APF_UNNAMED_SEMAPHORES
+// TODO: proper synchronisation for OSX, go back to unnamed for Linux.
+#ifndef APF_UNNAMED_SEMAPHORES
+#define APF_PSEUDO_UNNAMED_SEMAPHORES
+#endif
+
 #include <stdexcept>  // for std::runtime_error
 #include <cstring>  // for std::strerror()
 #include <pthread.h>
 #include <semaphore.h>
 #include <unistd.h>  // for usleep()
 
-#include "apf/misc.h"  // for NonCopyable
-
-#ifndef APF_MIMOPROCESSOR_THREAD_POLICY
-#define APF_MIMOPROCESSOR_THREAD_POLICY apf::posix_thread_policy
+#ifdef APF_PSEUDO_UNNAMED_SEMAPHORES
+#include <fcntl.h>  // for O_CREAT, O_EXCL
+#include "apf/stringtools.h"  // for apf::str::A2S()
 #endif
+
+#include "apf/misc.h"  // for NonCopyable
 
 namespace apf
 {
@@ -191,21 +206,42 @@ class posix_thread_policy::Semaphore : NonCopyable
     typedef unsigned int value_type;
 
     explicit Semaphore(value_type value = 0)
+#ifdef APF_PSEUDO_UNNAMED_SEMAPHORES
+      // Create a unique dummy name from object pointer
+      : _name("/apf_" + apf::str::A2S(this))
+      , _sem_ptr(sem_open(_name.c_str(), O_CREAT | O_EXCL, 0600, value))
     {
-      if (sem_init(&_semaphore, 0, value))
+      if (!_sem_ptr)
+#else
+      : _sem_ptr(&_semaphore)
+    {
+      if (sem_init(_sem_ptr, 0, value))
+#endif
       {
         throw std::runtime_error("Error initializing Semaphore! ("
             + std::string(std::strerror(errno)) + ")");
       }
     }
 
-    ~Semaphore() { sem_destroy(&_semaphore); }
+    ~Semaphore()
+    {
+#ifdef APF_PSEUDO_UNNAMED_SEMAPHORES
+      sem_unlink(_name.c_str());  // Only for named semaphores
+#else
+      sem_destroy(_sem_ptr);  // Only for unnamed semaphores
+#endif
+    }
 
-    bool post() { return sem_post(&_semaphore) == 0; }
-    bool wait() { return sem_wait(&_semaphore) == 0; }
+    bool post() { return sem_post(_sem_ptr) == 0; }
+    bool wait() { return sem_wait(_sem_ptr) == 0; }
 
   private:
+#ifdef APF_PSEUDO_UNNAMED_SEMAPHORES
+    const std::string _name;
+#else
     sem_t _semaphore;
+#endif
+    sem_t* const _sem_ptr;
 };
 
 }  // namespace apf

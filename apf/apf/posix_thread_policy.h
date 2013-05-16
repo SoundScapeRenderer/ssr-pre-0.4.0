@@ -32,6 +32,7 @@
 #endif
 
 #include <stdexcept>  // for std::runtime_error
+#include <cstring>  // for std::strerror()
 #include <pthread.h>
 #include <semaphore.h>
 #include <unistd.h>  // for usleep()
@@ -193,7 +194,8 @@ class posix_thread_policy::Semaphore : NonCopyable
     {
       if (sem_init(&_semaphore, 0, value))
       {
-        throw std::runtime_error("Error initializing Semaphore!");
+        throw std::runtime_error("Error initializing Semaphore! ("
+            + std::string(std::strerror(errno)) + ")");
       }
     }
 

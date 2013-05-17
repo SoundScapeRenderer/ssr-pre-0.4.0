@@ -1339,7 +1339,7 @@ void ssr::QUserInterface::_show_about_window()
 {
   const std::string about_string =
     "<B>" PACKAGE_NAME "</B><BR>"
-    "&nbsp;version " PACKAGE_VERSION ", <EM>aka</EM> &quot;" NICKNAME "&quot;"
+    "&nbsp;version " PACKAGE_VERSION
     "<BR><BR>"
     SSR_AUTHORS_QT
     "<BR><BR>"

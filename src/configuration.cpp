@@ -63,7 +63,7 @@ namespace // anonymous
 #ifndef NDEBUG
       ", compiled in debug mode!"
 #endif
-      "\n              version " PACKAGE_VERSION ", aka \"" NICKNAME "\""
+      "\n              version " PACKAGE_VERSION
       "\n Following compile-time features are activated:\n"
       " new renderer"
 #ifdef ENABLE_GUI

@@ -12,6 +12,6 @@
   <key>CFBundleName</key>
   <string>SoundScape Renderer</string>
   <key>CFBundleVersion</key>
-  <string>@PACKAGE_VERSION@ aka &quot;@NICKNAME@&quot;</string>
+  <string>@PACKAGE_VERSION@</string>
 </dict>
 </plist>

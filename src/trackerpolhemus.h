@@ -40,7 +40,7 @@
 namespace ssr
 {
 
-class Publisher; // forward declaration
+struct Publisher; // forward declaration
 
 /// Polhemus Fastrack tracker 
 class TrackerPolhemus : public Tracker

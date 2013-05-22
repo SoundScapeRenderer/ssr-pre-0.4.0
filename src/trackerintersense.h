@@ -41,7 +41,7 @@
 namespace ssr
 {
 
-class Publisher;
+struct Publisher;
 
 /// Intersense InertiaCube3 head tracker 
 class TrackerInterSense : public Tracker

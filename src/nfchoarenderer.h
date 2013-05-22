@@ -62,7 +62,7 @@ class NfcHoaRenderer : public LoudspeakerRenderer<NfcHoaRenderer>
     template<typename I1, typename I2> class ModeAccumulator;
     class FftProcessor;
     class RenderFunction;
-    class Output;
+    struct Output;
 
     NfcHoaRenderer(const apf::parameter_map& params)
       : _base(params)

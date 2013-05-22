@@ -44,7 +44,7 @@
 namespace ssr
 {
 
-class Publisher;
+struct Publisher;
 
 /// Server class. 
 class Server

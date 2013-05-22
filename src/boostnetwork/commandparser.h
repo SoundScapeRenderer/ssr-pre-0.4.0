@@ -40,7 +40,7 @@
 namespace ssr
 {
 
-class Publisher;
+struct Publisher;
 
 /** Parses a XML string and maps to Controller.
  * This class is the bridge between the network interface and the Controller.

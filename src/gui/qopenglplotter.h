@@ -93,7 +93,7 @@ class QOpenGLPlotter : public QGLWidget
     // TODO: Discriminate between GLfloat and float etc.
 
   protected:
-    class SourceCopy;      // nested class, defined later
+    struct SourceCopy;      // nested class, defined later
 
 ////////////////////////////////////////////////////////////////////////////////
 // Declaration of the nested class SourceCopy

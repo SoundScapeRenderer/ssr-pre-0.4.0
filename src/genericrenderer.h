@@ -51,9 +51,9 @@ class GenericRenderer : public SourceToOutput<GenericRenderer
 
     typedef _base::DefaultInput Input;
     class Source;
-    class SourceChannel;
+    struct SourceChannel;
     class Output;
-    class RenderFunction;
+    struct RenderFunction;
 
     GenericRenderer(const apf::parameter_map& params)
       : _base(params)

@@ -44,7 +44,7 @@
 namespace ssr
 {
 
-class Publisher;
+struct Publisher;
 
 /// Connection class.
 class Connection : public boost::enable_shared_from_this<Connection>

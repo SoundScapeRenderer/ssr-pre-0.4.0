@@ -41,7 +41,7 @@ namespace ssr
 namespace internal
 {
 
-template<typename T> class LaplaceCoeffsBase;  // no implementation!
+template<typename T> struct LaplaceCoeffsBase;  // no implementation!
 template<>
 struct LaplaceCoeffsBase<double> { static const double laplace_coeffs[][2]; };
 template<>

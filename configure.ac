@@ -695,6 +695,8 @@ dnl usage with arguments, e.g. AC_OUTPUT(Makefile src/Makefile), is deprecated!
 AC_OUTPUT
 
 echo
+echo CXX: $CXX
+echo
 echo CFLAGS: $CFLAGS
 echo
 echo CXXFLAGS: $CXXFLAGS

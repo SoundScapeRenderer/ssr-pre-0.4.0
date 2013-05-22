@@ -144,9 +144,11 @@ class CommandQueue : NonCopyable
       while ((cmd = _in_fifo.pop()) != 0)
       {
         cmd->execute();
-        _out_fifo.push(cmd);  // ignore return value
+        bool result;
+        result = _out_fifo.push(cmd);
         // If _out_fifo is full, cmd is not cleaned up!
         // This is very unlikely to happen (if not impossible).
+        assert(result && "Error in _out_fifo.push()!");
       }
     }
 
@@ -200,6 +202,9 @@ void CommandQueue::push(Command* cmd)
   // Now push the command on _in_fifo; if the FIFO is full: retry, retry, ...
   while (!_in_fifo.push(cmd))
   {
+    // We don't really know if that ever happens, so we abort in debug-mode:
+    assert(false && "Error in _in_fifo.push()!");
+    // TODO: avoid this usleep()?
     usleep(50);
   }
 }
@@ -212,8 +217,10 @@ void CommandQueue::wait()
   bool done = false;
   this->push(new WaitCommand(done));
 
+  this->cleanup_commands();
   while (!done)
   {
+    // TODO: avoid this usleep()?
     usleep(50);
     this->cleanup_commands();
   }

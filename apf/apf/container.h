@@ -529,36 +529,8 @@ class fixed_matrix : public fixed_vector<T, Allocator>
       _init_channel_ptrs();
     }
 
-    /** Copy channels from another matrix.
-     * @param ch channels (or slices) to copy from another fixed_matrix
-     * @note A plain copy may be faster with @c std::copy() from
-     *   fixed_matrix::begin() to fixed_matrix::end().
-     * @note Anyway, a plain copy of a fixed_matrix is rarely needed, the main
-     *   reason for this function is that if you use slices instead of channels,
-     *   you'll get a transposed matrix.
-     * @warning The dimensions of the fixed_matrix are not changed, they must be
-     *   correct beforehand!
-     **/
     template<typename Ch>
-    void set_channels(const Ch& ch)
-    {
-      assert(std::distance(ch.begin(), ch.end())
-          == std::distance(this->channels.begin(), this->channels.end()));
-      assert((ch.begin() == ch.end()) ? true :
-          std::distance(ch.begin()->begin(), ch.begin()->end()) ==
-          std::distance(this->channels.begin()->begin()
-                      , this->channels.begin()->end()));
-
-      channels_iterator target = this->channels.begin();
-
-      for (typename Ch::iterator it = ch.begin()
-          ; it != ch.end()
-          ; ++it)
-      {
-        std::copy(it->begin(), it->end(), target->begin());
-        ++target;
-      }
-    }
+    void set_channels(const Ch& ch);
 
     /// Get array of pointers to the channels. This can be useful to interact
     /// with functions which use plain pointers instead of iterators.
@@ -570,16 +542,7 @@ class fixed_matrix : public fixed_vector<T, Allocator>
     has_begin_and_end<slices_iterator>   slices;
 
   private:
-    void _init_channel_ptrs()
-    {
-      size_type i = 0;
-      for (channels_iterator it = this->channels.begin()
-          ; it != this->channels.end()
-          ; ++it)
-      {
-        _channel_ptrs[i++] = it->begin();
-      }
-    }
+    void _init_channel_ptrs();
 
     fixed_vector<pointer> _channel_ptrs;
 };
@@ -714,6 +677,52 @@ class fixed_matrix<T, Allocator>::slices_iterator
     size_type _max_channels;
     size_type _max_slices;
 };
+
+/** Copy channels from another matrix.
+ * @param ch channels (or slices) to copy from another fixed_matrix
+ * @note A plain copy may be faster with @c std::copy() from
+ *   fixed_matrix::begin() to fixed_matrix::end().
+ * @note Anyway, a plain copy of a fixed_matrix is rarely needed, the main
+ *   reason for this function is that if you use slices instead of channels,
+ *   you'll get a transposed matrix.
+ * @warning The dimensions of the fixed_matrix are not changed, they must be
+ *   correct beforehand!
+ **/
+template<typename T, typename Allocator>
+template<typename Ch>
+void
+fixed_matrix<T, Allocator>::set_channels(const Ch& ch)
+{
+  assert(std::distance(ch.begin(), ch.end())
+      == std::distance(this->channels.begin(), this->channels.end()));
+  assert((ch.begin() == ch.end()) ? true :
+      std::distance(ch.begin()->begin(), ch.begin()->end()) ==
+      std::distance(this->channels.begin()->begin()
+                  , this->channels.begin()->end()));
+
+  channels_iterator target = this->channels.begin();
+
+  for (typename Ch::iterator it = ch.begin()
+      ; it != ch.end()
+      ; ++it)
+  {
+    std::copy(it->begin(), it->end(), target->begin());
+    ++target;
+  }
+}
+
+template<typename T, typename Allocator>
+void
+fixed_matrix<T, Allocator>::_init_channel_ptrs()
+{
+  size_type i = 0;
+  for (channels_iterator it = this->channels.begin()
+      ; it != this->channels.end()
+      ; ++it)
+  {
+    _channel_ptrs[i++] = it->begin();
+  }
+}
 
 /// Append pointers to the elements of the first list to the second list.
 /// @note @c L2::value_type must be a pointer to @c L1::value_type!

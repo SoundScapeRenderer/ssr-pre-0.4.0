@@ -39,6 +39,8 @@
 
 using ptrtools::is_null; using ptrtools::destroy; using maptools::get_item;
 
+ECA_CONTROL_INTERFACE AudioPlayer::Soundfile::_eca;
+
 /// delete the file map.
 AudioPlayer::~AudioPlayer()
 {
@@ -112,6 +114,73 @@ long int AudioPlayer::get_file_length(const std::string& audio_file_name) const
   return file ? file->get_length() : 0;
 }
 
+std::string
+AudioPlayer::Soundfile::get_format(const std::string& filename
+    , size_t& channels, size_t& sample_rate)
+{
+  _eca.command("cs-add dummy_chainsetup");
+  _eca.command("c-add dummy_chain");
+
+  _eca.command("ai-add " + posixpathtools::get_escaped_filename(filename));
+  _eca.command("ao-add null");
+  _eca.command("cs-connect");
+  if (_eca.error())
+  {
+    throw soundfile_error("get_format(): " + _eca.last_error());
+  }
+  _eca.command("ai-index-select 1");
+  _eca.command("ai-get-format");
+  std::string str = _eca.last_string();
+  _eca.command("cs-disconnect");
+  _eca.command("c-remove");
+  _eca.command("cs-remove");
+
+  std::replace(str.begin(), str.end(), ',', ' ');
+  std::istringstream iss(str);
+  std::string format;
+  iss >> format >> channels >> sample_rate;
+  if (iss.fail())
+  {
+    throw soundfile_error("Couldn't convert format string!");
+  }
+  assert(sample_rate >= 1);
+
+  return format;
+}
+
+size_t
+AudioPlayer::Soundfile::_get_jack_sample_rate()
+{
+  _eca.command("cs-add dummy_chainsetup");
+  _eca.command("c-add dummy_chain");
+
+  _eca.command("ai-add jack");
+  _eca.command("ao-add null");
+  _eca.command("cs-connect");
+  if (_eca.error())
+  {
+    throw soundfile_error("_get_jack_sample_rate(): " + _eca.last_error());
+  }
+  _eca.command("ai-get-format");
+  std::string str = _eca.last_string();
+  _eca.command("cs-disconnect");
+  _eca.command("c-remove");
+  _eca.command("cs-remove");
+
+  std::replace(str.begin(), str.end(), ',', ' ');
+  std::istringstream iss(str);
+  std::string format;
+  size_t channels, sample_rate;
+  iss >> format >> channels >> sample_rate;
+  if (iss.fail())
+  {
+    throw soundfile_error("Couldn't convert string for getting sample rate!");
+  }
+  assert(sample_rate >= 1);
+
+  return sample_rate;
+}
+
 /** ctor.
  * @param filename name of soundfile
  * @param loop enable loop mode
@@ -135,54 +204,30 @@ AudioPlayer::Soundfile::Soundfile(const std::string& filename, bool loop,
   _client_name(""),
   _channels(0)
 {
-  // first we have to load the multichannel files to find out
-  // correct number of channels in the chainsetup.
-  // Only then can we make another chainsetup with the correct number of
-  // channels.
-  // If you know how to avoid this ugly workaround, please tell me!
-
-  _eca.command("cs-add dummy_chainsetup_for_getting_number_of_channels");
-  _eca.command("c-add dummy_chain");
-
-  _eca.command("ao-add jack"); // with "null" this doesn't work.
-  _eca.command("ai-add " + _escaped_filename);
-  _eca.command("cs-connect");
-  if (_eca.error())
-  {
-    throw soundfile_error("AudioPlayer::Soundfile: " + _eca.last_error());
-  }
-  // file is loaded just to get its format.
-  _eca.command("ai-get-format");
-  std::string input_format = _eca.last_string();
-  _eca.command("cs-disconnect");
-  _eca.command("c-remove");
-  _eca.command("cs-remove");
-
-  // we have to extract the number of channels of the input file:
-
-  // parse input_format to find number of channels
-  // (between commas: "bits,channels,samplerate")
-
-  std::string str(input_format);                  // make a copy of input_format
-  std::replace(str.begin(), str.end(), ',', ' '); // replace commas with spaces
-  std::istringstream iss(str);                    // convert to string stream
-  // save format, number of channels and sample rate in member variables
-  iss >> _sample_format >> _channels >> _sample_rate;
-  if (iss.fail())
-  {
-    throw soundfile_error("Couldn't convert string to integer "
-        "for channel count");
-  }
-  assert(_sample_rate >= 1);
-// end of ugly work-around. ////////////////////////////////////////////////////
+  _sample_format = get_format(_escaped_filename, _channels, _sample_rate);
+  size_t jack_sample_rate = _get_jack_sample_rate();
 
   _eca.command("cs-add real_chainsetup");
   _eca.command("c-add real_chain");
-  // apply the format of the input file to the chain setup
-  _eca.command("cs-set-audio-format " + input_format);
+  _eca.command("cs-set-audio-format ,"
+      + apf::str::A2S(_channels) + "," + apf::str::A2S(jack_sample_rate));
 
-  if (loop) _eca.command("ai-add audioloop," + _escaped_filename);
-  else      _eca.command("ai-add "           + _escaped_filename);
+  std::string ai_add = "ai-add ";
+  if (loop)
+  {
+    ai_add += "audioloop,";
+  }
+
+  if (_sample_rate != jack_sample_rate)
+  {
+    WARNING("'" + _escaped_filename
+        + "' has a different sample rate than JACK!");
+    ai_add += "resample-hq,auto,";
+  }
+
+  ai_add += _escaped_filename;
+
+  _eca.command(ai_add);
   _eca.command("ao-add jack_generic," + this->output_prefix);
 
   // check if filename is too long for a JACK portname.
@@ -236,7 +281,10 @@ AudioPlayer::Soundfile::Soundfile(const std::string& filename, bool loop,
   // This is a little ugly, but I don't know a better way to do it.
   // If you know one, tell me, please!
   usleep(ssr::usleeptime);
-  VERBOSE2("Added '" + _escaped_filename + "', format: '" + input_format + "'.");
+  VERBOSE2("Added '" + _escaped_filename
+      + "', format: '" + apf::str::A2S(_sample_format)
+      + "', channels: " + apf::str::A2S(_channels)
+      + ", sample rate: " + apf::str::A2S(_sample_rate) + ".");
 }
 
 /// disconnects from ecasound.

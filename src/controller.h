@@ -34,8 +34,6 @@
 #include <config.h> // for ENABLE_*, HAVE_*, WITH_*
 #endif
 
-#include <sndfile.hh>  // C++ bindings for libsndfile
-
 // TODO: move these includes to a more suitable location?
 #include "apf/jack_policy.h"
 #include "apf/posix_thread_policy.h"
@@ -1073,8 +1071,8 @@ Controller<Renderer>::_create_spontaneous_scene(const std::string& audio_file_na
         << "\"! Ecasound was disabled at compile time.");
   return false;
 #else
-  const int no_of_audio_channels
-    = SndfileHandle(audio_file_name, SFM_READ).channels();
+  size_t no_of_audio_channels;
+  AudioPlayer::Soundfile::get_format(audio_file_name, no_of_audio_channels);
 
   if (no_of_audio_channels == 0)
   {
@@ -1155,7 +1153,7 @@ Controller<Renderer>::_create_spontaneous_scene(const std::string& audio_file_na
       int N = 7;
 
       // create one source for each audio channel
-      for (int n = 0; n < no_of_audio_channels; n++)
+      for (size_t n = 0; n < no_of_audio_channels; n++)
       {
         // random positions between -N mrts and N mtrs
         const float pos_x = (static_cast<float>(rand()%(10*(N+1)))

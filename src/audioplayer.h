@@ -91,17 +91,34 @@ class AudioPlayer::Soundfile : apf::NonCopyable
     std::string get_client_name() const; ///< get name of JACK client
     long int get_length() const;         ///< get length (in samples)
 
+    static std::string get_format(const std::string& filename
+        , size_t& channels, size_t& sample_rate);
+
+    static std::string get_format(const std::string& filename, size_t& channels)
+    {
+      size_t dummy;
+      return get_format(filename, channels, dummy);
+    }
+
+    static std::string get_format(const std::string& filename)
+    {
+      size_t dummy;
+      return get_format(filename, dummy);
+    }
+
     /// output prefix used for %Soundfile channels
     const std::string output_prefix;
 
   private:
-    ECA_CONTROL_INTERFACE _eca;           ///< interface to the ecasound library
+    static size_t _get_jack_sample_rate();
+
+    static ECA_CONTROL_INTERFACE _eca;    ///< interface to the ecasound library
     const std::string _filename;          ///< name of input sound file
     const std::string _escaped_filename;  ///< name of input sound file with escaped white spaces
     std::string _client_name;             ///< name of JACK client used by ecasound
     std::string _sample_format;           ///< format of input sound file (e.g. s16_le)
-    int _channels;                        ///< number of channels in input sound file
-    int _sample_rate;                     ///< sample rate of input sound file
+    size_t _channels;                        ///< number of channels in input sound file
+    size_t _sample_rate;                     ///< sample rate of input sound file
     long int _length_samples;             ///< length of soundfile (in samples)
 
     std::string _get_escaped_filename(const std::string& filename);

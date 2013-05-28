@@ -1068,6 +1068,11 @@ template<typename Renderer>
 bool
 Controller<Renderer>::_create_spontaneous_scene(const std::string& audio_file_name)
 {
+#ifndef ENABLE_ECASOUND
+  ERROR("Couldn't create scene from file \"" << audio_file_name
+        << "\"! Ecasound was disabled at compile time.");
+  return false;
+#else
   const int no_of_audio_channels
     = SndfileHandle(audio_file_name, SFM_READ).channels();
 
@@ -1170,6 +1175,7 @@ Controller<Renderer>::_create_spontaneous_scene(const std::string& audio_file_na
       } // for each audio channel
   } // switch
   return true;
+#endif  // ENABLE_ECASOUND
 }
 
 #ifdef ENABLE_GUI

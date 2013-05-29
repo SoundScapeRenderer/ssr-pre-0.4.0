@@ -221,7 +221,9 @@ AudioPlayer::Soundfile::Soundfile(const std::string& filename, bool loop,
   if (_sample_rate != jack_sample_rate)
   {
     WARNING("'" + _escaped_filename
-        + "' has a different sample rate than JACK!");
+        + "' has a different sample rate than JACK! ("
+        + apf::str::A2S(_sample_rate) + " vs. "
+        + apf::str::A2S(jack_sample_rate) + ")");
     ai_add += "resample-hq,auto,";
   }
 

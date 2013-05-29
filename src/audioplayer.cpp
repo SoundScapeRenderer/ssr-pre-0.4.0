@@ -121,7 +121,8 @@ AudioPlayer::Soundfile::get_format(const std::string& filename
   _eca.command("cs-add dummy_chainsetup");
   _eca.command("c-add dummy_chain");
 
-  _eca.command("ai-add " + posixpathtools::get_escaped_filename(filename));
+  _eca.command("ai-add sndfile,"
+      + posixpathtools::get_escaped_filename(filename));
   _eca.command("ao-add null");
   _eca.command("cs-connect");
   if (_eca.error())
@@ -227,6 +228,7 @@ AudioPlayer::Soundfile::Soundfile(const std::string& filename, bool loop,
     ai_add += "resample-hq,auto,";
   }
 
+  ai_add += "sndfile,";
   ai_add += _escaped_filename;
 
   _eca.command(ai_add);

@@ -46,6 +46,8 @@ class AudioPlayer : apf::NonCopyable
   public:
     typedef std::auto_ptr<AudioPlayer> ptr_t; ///< auto_ptr to AudioPlayer
 
+    class Soundfile; // nested class
+
     // using default ctor.
 
     virtual ~AudioPlayer();
@@ -57,8 +59,6 @@ class AudioPlayer : apf::NonCopyable
     long int get_file_length(const std::string& audio_file_name) const;
 
   private:
-    class Soundfile; // nested class
-
     /// map of Soundfiles, indexed by strings.
     typedef std::map<std::string, Soundfile*> soundfile_map_t;
     /// map to associate an ecasound instance with a filename

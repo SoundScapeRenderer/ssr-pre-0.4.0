@@ -112,7 +112,7 @@ class AudioPlayer::Soundfile : apf::NonCopyable
   private:
     static size_t _get_jack_sample_rate();
 
-    static ECA_CONTROL_INTERFACE _eca;    ///< interface to the ecasound library
+    ECA_CONTROL_INTERFACE _eca;    ///< interface to the ecasound library
     const std::string _filename;          ///< name of input sound file
     const std::string _escaped_filename;  ///< name of input sound file with escaped white spaces
     std::string _client_name;             ///< name of JACK client used by ecasound

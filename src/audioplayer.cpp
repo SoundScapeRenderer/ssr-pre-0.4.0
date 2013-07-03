@@ -39,8 +39,6 @@
 
 using ptrtools::is_null; using ptrtools::destroy; using maptools::get_item;
 
-ECA_CONTROL_INTERFACE AudioPlayer::Soundfile::_eca;
-
 /// delete the file map.
 AudioPlayer::~AudioPlayer()
 {
@@ -118,23 +116,24 @@ std::string
 AudioPlayer::Soundfile::get_format(const std::string& filename
     , size_t& channels, size_t& sample_rate)
 {
-  _eca.command("cs-add dummy_chainsetup");
-  _eca.command("c-add dummy_chain");
+  ECA_CONTROL_INTERFACE eca;
+  eca.command("cs-add dummy_chainsetup");
+  eca.command("c-add dummy_chain");
 
-  _eca.command("ai-add sndfile,"
+  eca.command("ai-add sndfile,"
       + posixpathtools::get_escaped_filename(filename));
-  _eca.command("ao-add null");
-  _eca.command("cs-connect");
-  if (_eca.error())
+  eca.command("ao-add null");
+  eca.command("cs-connect");
+  if (eca.error())
   {
-    throw soundfile_error("get_format(): " + _eca.last_error());
+    throw soundfile_error("get_format(): " + eca.last_error());
   }
-  _eca.command("ai-index-select 1");
-  _eca.command("ai-get-format");
-  std::string str = _eca.last_string();
-  _eca.command("cs-disconnect");
-  _eca.command("c-remove");
-  _eca.command("cs-remove");
+  eca.command("ai-index-select 1");
+  eca.command("ai-get-format");
+  std::string str = eca.last_string();
+  eca.command("cs-disconnect");
+  eca.command("c-remove");
+  eca.command("cs-remove");
 
   std::replace(str.begin(), str.end(), ',', ' ');
   std::istringstream iss(str);
@@ -152,21 +151,22 @@ AudioPlayer::Soundfile::get_format(const std::string& filename
 size_t
 AudioPlayer::Soundfile::_get_jack_sample_rate()
 {
-  _eca.command("cs-add dummy_chainsetup");
-  _eca.command("c-add dummy_chain");
+  ECA_CONTROL_INTERFACE eca;
+  eca.command("cs-add dummy_chainsetup");
+  eca.command("c-add dummy_chain");
 
-  _eca.command("ai-add jack");
-  _eca.command("ao-add null");
-  _eca.command("cs-connect");
-  if (_eca.error())
+  eca.command("ai-add jack");
+  eca.command("ao-add null");
+  eca.command("cs-connect");
+  if (eca.error())
   {
-    throw soundfile_error("_get_jack_sample_rate(): " + _eca.last_error());
+    throw soundfile_error("_get_jack_sample_rate(): " + eca.last_error());
   }
-  _eca.command("ai-get-format");
-  std::string str = _eca.last_string();
-  _eca.command("cs-disconnect");
-  _eca.command("c-remove");
-  _eca.command("cs-remove");
+  eca.command("ai-get-format");
+  std::string str = eca.last_string();
+  eca.command("cs-disconnect");
+  eca.command("c-remove");
+  eca.command("cs-remove");
 
   std::replace(str.begin(), str.end(), ',', ' ');
   std::istringstream iss(str);

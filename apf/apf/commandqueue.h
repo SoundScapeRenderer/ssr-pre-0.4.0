@@ -144,11 +144,11 @@ class CommandQueue : NonCopyable
       while ((cmd = _in_fifo.pop()) != 0)
       {
         cmd->execute();
-        bool result;
-        result = _out_fifo.push(cmd);
+        bool result = _out_fifo.push(cmd);
         // If _out_fifo is full, cmd is not cleaned up!
         // This is very unlikely to happen (if not impossible).
         assert(result && "Error in _out_fifo.push()!");
+        (void)result;  // avoid "unused-but-set-variable" warning
       }
     }
 

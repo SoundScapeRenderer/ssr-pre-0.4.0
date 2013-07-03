@@ -49,6 +49,7 @@
 #include <cstring>  // for std::strerror()
 #include <pthread.h>
 #include <semaphore.h>
+#include <cerrno>
 #include <unistd.h>  // for usleep()
 
 #ifdef APF_PSEUDO_UNNAMED_SEMAPHORES

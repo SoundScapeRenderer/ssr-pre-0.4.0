@@ -4,7 +4,7 @@ Prerequisites: 'git subtree' (included in git >= 1.7.11, but only in "contrib")
 
 # adding a remote:
 
-git remote add -f apf https://username@dev.qu.tu-berlin.de/git/apf-internal
+git remote add -f apf https://username@github.com/AudioProcessingFramework/apf.git
 
 # repository setup (only the very first time):
 

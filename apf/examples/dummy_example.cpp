@@ -70,6 +70,8 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
       this->activate();
     }
 
+    ~MyProcessor() { this->deactivate(); }
+
     APF_PROCESS(MyProcessor, MimoProcessorBase)
     {
       // input/output lists are processed automatically before/after this:

@@ -78,6 +78,8 @@ class SimpleProcessor : public apf::MimoProcessor<SimpleProcessor
     class Output;
 
     explicit SimpleProcessor(const apf::parameter_map& p=apf::parameter_map());
+
+    ~SimpleProcessor() { this->deactivate(); }
 };
 
 class SimpleProcessor::Output : public MimoProcessorBase::DefaultOutput

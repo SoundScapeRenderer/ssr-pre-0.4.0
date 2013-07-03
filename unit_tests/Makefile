@@ -14,6 +14,8 @@ TESTS += test_blockdelayline
 TESTS += test_container
 TESTS += test_iterator
 TESTS += test_mimoprocessor
+TESTS += test_dual_iterator
+TESTS += test_discard_iterator
 
 ifneq (,$(findstring $(MAKECMDGOALS), fftw clean))
 TESTS += test_fftwtools

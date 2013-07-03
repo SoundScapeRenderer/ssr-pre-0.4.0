@@ -41,25 +41,32 @@
 namespace apf
 {
 
-/** Similar to std::vector, but without memory re-allocation.
+/** Similar to std::vector, but without implicit memory re-allocation.
  * Contrary to std::vector, an apf::fixed_vector can be used with non-copyable
  * types.
  *
  * Properties:
  * - contiguous memory
  * - no re-allocations, memory locations don't change
+ *   (except on reset() and reserve())
  * - non-copyable types can be used
  *
  * Main API differences to std::vector:
- * - no default constructor
- * - a different constructor with given size (no default content)
- *   - contained type needs to have default constructor!
- * - a different constructor from sequence
- *   - no copy but construction from given argument
+ * - different constructors
  * - no copy constructor
  * - no assignment operator, no assign(), no swap()
- * - no functions to change size and related stuff
+ * - no functions to change size except reset(), reserve() and emplace_back()
  * - no at() (just because of laziness, could be added easily)
+ *
+ * Iterator invalidation: All of them are invalidated on reset() and reserve().
+ * Iterators from end() and rbegin() are invalidated on emplace_back().
+ *
+ * The fixed_vector is meant to be initialized with a fixed size which is never
+ * changed during its lifetime. However, in some situations a fixed_vector
+ * should be constructed when its size is not yet known. Then, it can be
+ * constructed with the default constructor and initialized later with reset().
+ * Alternatively, memory can be allocated with reserve() and the initialization
+ * can be done element by element with emplace_back().
  **/
 template<typename T, typename Allocator = std::allocator<T> >
 class fixed_vector
@@ -82,52 +89,168 @@ class fixed_vector
     typedef std::reverse_iterator<iterator> reverse_iterator;
     typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
+    /// Default constructor.
+    /// Create a fixed_vector of size 0 and reserve 0 memory.
+    /// The only useful thing to do after that is reset() or reserve().
+    explicit fixed_vector(const Allocator& a = Allocator())
+      : _allocator(a)
+      , _size(0)
+      , _capacity(_size)
+      , _data(_allocator.allocate(_capacity))
+    {}
+
+    /// Allocate memory for @p n items and default-construct them.
     explicit fixed_vector(size_type n, const Allocator& a = Allocator())
       : _allocator(a)
-      , _size(n)
-      , _data(_allocator.allocate(_size))
+      , _size(0)
+      , _capacity(n)
+      , _data(_allocator.allocate(_capacity))
     {
-      // Allocator::construct() is not used because it would require T to have
-      // a copy ctor.
-      for (size_type i = 0; i < _size; ++i)
-      {
-        new (_data + i) T();  // placement new; call default constructor
-      }
+      _construct();
     }
 
-    template<typename Size, typename Initializer>
-    explicit fixed_vector(const std::pair<Size, Initializer>& arg
+    /// Allocate memory for @p n items and construct them using @p arg.
+    /// @attention If the first two arguments happen to have the same type,
+    ///   there is an overload resolution conflict with the constructor with the
+    ///   iterators. Try to avoid this.
+    template<typename Initializer>
+    fixed_vector(size_type n, const Initializer& arg
         , const Allocator& a = Allocator())
       : _allocator(a)
-      , _size(arg.first)
-      , _data(_allocator.allocate(_size))
+      , _size(0)
+      , _capacity(n)
+      , _data(_allocator.allocate(_capacity))
     {
-      for (size_type i = 0; i < _size; ++i)
-      {
-        new (_data + i) T(arg.second);  // placement new
-      }
+      _construct(arg);
     }
 
+    /// Allocate memory for @p arg.first items and construct them using
+    /// @p arg.second.
+    /// This constructor is thought for initializing nested fixed_vector%s and
+    /// fixed_list%s.
+    // TODO: in C++11 this can maybe avoided using variadic templates?
+    template<typename Initializer>
+    explicit fixed_vector(const std::pair<size_type, Initializer>& arg
+        , const Allocator& a = Allocator())
+      : _allocator(a)
+      , _size(0)
+      , _capacity(arg.first)
+      , _data(_allocator.allocate(_capacity))
+    {
+      _construct(arg.second);
+    }
+
+    /// Constructor from sequence. The sequence is not copied but rather used as
+    /// constructor arguments for the new Ts.
     template<typename In>
     fixed_vector(In first, In last, const Allocator& a = Allocator())
       : _allocator(a)
-      , _size(std::distance(first, last))
-      , _data(_allocator.allocate(_size))
+      , _size(0)
+      , _capacity(std::distance(first, last))
+      , _data(_allocator.allocate(_capacity))
     {
-      for (size_type i = 0; i < _size; ++i)
-      {
-        new (_data + i) T(*first++);
-      }
+      _construct(first, last);
     }
 
     ~fixed_vector()
     {
-      // Allocator::destroy() is not used for symmetry
-      for (size_type i = 0; i < _size; ++i)
+      _destroy_and_deallocate();
+    }
+
+    /// Destroy all content and reserve new memory.
+    /// The memory will be uninitialized and the size() will be 0. Use
+    /// emplace_back() to construct content.
+    /// @warning Unlike in @c std::vector::reserve(), all content is destroyed!
+    void reserve(size_type n)
+    {
+      _destroy_and_deallocate();
+      _capacity = n;
+      _data = _allocator.allocate(_capacity);
+    }
+
+    /// Initialize one item if reserved memory is available.
+    /// Use reserve() to reserve memory.
+    /// @param arg Argument passed to the constructor of @p T.
+    /// @throw std::out_of_range if not enough memory was reserved.
+    template<typename Arg>
+    void emplace_back(const Arg& arg)
+    {
+      if (_size < _capacity)
       {
-        (_data + i)->~T();  // call destructor
+        new (_data + _size) T(arg);
+        ++_size;
       }
-      _allocator.deallocate(_data, _size);
+      else
+      {
+        throw std::out_of_range(
+            "fixed_vector::emplace_back(): capacity exceeded!");
+      }
+    }
+
+    // TODO: emplace_back() with 2 arguments (or variadic template version)
+
+#if 0
+    // in C++11 this can be simplified with variadic templates:
+
+    template<typename... Args>
+    void emplace_back(Args&&... args)
+    {
+      if (_size < _capacity)
+      {
+        new (_data + _size) T(args...);
+        ++_size;
+      }
+      else
+      {
+        throw std::out_of_range(
+            "fixed_vector::emplace_back(): capacity exceeded!");
+      }
+    }
+#endif
+
+    template<typename Arg1, typename Arg2, typename Arg3>
+    void emplace_back(const Arg1& arg1, const Arg2& arg2, const Arg3& arg3)
+    {
+      if (_size < _capacity)
+      {
+        new (_data + _size) T(arg1, arg2, arg3);
+        ++_size;
+      }
+      else
+      {
+        throw std::out_of_range(
+            "fixed_vector::emplace_back(): capacity exceeded!");
+      }
+    }
+
+    /// Destroy all content and initialize new data with default constructor.
+    /// @param n Number of elements to create.
+    void reset(size_type n)
+    {
+      this->reserve(n);
+      _construct();
+    }
+
+    /// Destroy all content and initialize new data with given argument.
+    /// @param n Number of elements to create.
+    /// @attention If the first two arguments happen to have the same type,
+    //    there is an overload resolution conflict with the version with the
+    //    iterators. Try to avoid this.
+    template<typename Initializer>
+    void reset(size_type n, const Initializer& arg)
+    {
+      this->reserve(n);
+      _construct(arg);
+    }
+
+    /// Destroy all content and initialize new data from sequence.
+    /// @param first Iterator to argument for first element
+    /// @param last Past-the-end iterator
+    template<typename In>
+    void reset(In first, In last)
+    {
+      this->reserve(std::distance(first, last));
+      _construct(first, last);
     }
 
     iterator begin() { return _data; };
@@ -140,6 +263,8 @@ class fixed_vector
     const_reverse_iterator rbegin() const { return reverse_iterator(_data + _size); };
     const_reverse_iterator rend() const { return reverse_iterator(_data); };
 
+    /// Size of initialized (and usable) items. If more memory was reserved with
+    /// reserve(), it can be initialized with emplace_back().
     size_type size() const { return _size; };
     bool empty() const { return _size == 0; };
 
@@ -157,9 +282,43 @@ class fixed_vector
     fixed_vector(const fixed_vector&);  // deactivated
     fixed_vector& operator=(const fixed_vector&);  // deactivated
 
+    void _construct()
+    {
+      // Allocator::construct() is not used because it would require T to have
+      // a copy ctor.
+
+      while (_size < _capacity) new (_data + _size++) T();
+    }
+
+    template<typename Initializer>
+    void _construct(const Initializer& arg)
+    {
+      while (_size < _capacity) new (_data + _size++) T(arg);
+    }
+
+    // Second argument is only used for overload resolution.
+    // WARNING: _capacity must be sufficient!
+    template<typename In>
+    void _construct(In first, In)
+    {
+      while (_size < _capacity) new (_data + _size++) T(*first++);
+    }
+
+    void _destroy_and_deallocate()
+    {
+      // Allocator::destroy() is not used for symmetry
+      while (_size > 0)
+      {
+        --_size;
+        (_data + _size)->~T();  // call destructor
+      }
+      _allocator.deallocate(_data, _capacity);
+      _capacity = 0;
+    }
+
     allocator_type _allocator;
-    const size_type _size;
-    pointer const _data;
+    size_type _size, _capacity;
+    pointer _data;
 };
 
 /** Vaguely similar to std::list, but without re-sizing.
@@ -332,10 +491,17 @@ class fixed_matrix : public fixed_vector<T, Allocator>
     class channels_iterator;
     class slices_iterator;
 
+    /// Default constructor. Only reset() makes sense after this.
+    explicit fixed_matrix(const Allocator& a = Allocator())
+      : fixed_vector<T, Allocator>(0, a)
+      , channels(channels_iterator(this->begin(), 0), 0)
+      , slices(slices_iterator(this->begin(), 0, 0), 0)
+      , _channel_ptrs(0)
+    {}
+
     /** Constructor.
      * @param max_channels Number of Channels
      * @param max_slices Number of Slices
-     * @throw std::bad_alloc if there is not enough memory
      **/
     fixed_matrix(size_type max_channels, size_type max_slices
         , const Allocator& a = Allocator())
@@ -348,17 +514,19 @@ class fixed_matrix : public fixed_vector<T, Allocator>
       assert(max_channels > 0);
       assert(max_slices   > 0);
 
-      size_type i = 0;
-      for (channels_iterator it = channels.begin(); it != channels.end(); ++it)
-      {
-        _channel_ptrs[i++] = it->begin();
-      }
+      _init_channel_ptrs();
     }
 
-    /// Fill whole fixed_matrix with a value (default @b 0)
-    void reset(T value = T())
+    /// Destroy all content and initialize new data with default constructor.
+    void reset(size_type max_channels, size_type max_slices)
     {
-      std::fill(this->begin(), this->end(), value);
+      this->fixed_vector<T, Allocator>::reset(max_channels * max_slices);
+      this->channels = has_begin_and_end<channels_iterator>(
+          channels_iterator(this->begin(), max_slices), max_channels);
+      this->slices = has_begin_and_end<slices_iterator>(
+          slices_iterator(this->begin(), max_channels, max_slices), max_slices);
+      _channel_ptrs.reset(max_channels);
+      _init_channel_ptrs();
     }
 
     /** Copy channels from another matrix.
@@ -392,15 +560,27 @@ class fixed_matrix : public fixed_vector<T, Allocator>
       }
     }
 
-    /// Get array of pointers to the channels
+    /// Get array of pointers to the channels. This can be useful to interact
+    /// with functions which use plain pointers instead of iterators.
     pointer const* get_channel_ptrs() const { return _channel_ptrs.begin(); }
 
     /// Access to Channels; use channels.begin() and channels.end()
-    const has_begin_and_end<channels_iterator> channels;
+    has_begin_and_end<channels_iterator> channels;
     /// Access to Slices; use slices.begin() and slices.end()
-    const has_begin_and_end<slices_iterator>   slices;
+    has_begin_and_end<slices_iterator>   slices;
 
   private:
+    void _init_channel_ptrs()
+    {
+      size_type i = 0;
+      for (channels_iterator it = this->channels.begin()
+          ; it != this->channels.end()
+          ; ++it)
+      {
+        _channel_ptrs[i++] = it->begin();
+      }
+    }
+
     fixed_vector<pointer> _channel_ptrs;
 };
 
@@ -465,7 +645,7 @@ class fixed_matrix<T, Allocator>::channels_iterator
 
   private:
     _base_type _base_iterator;
-    const size_type _size;
+    size_type _size;
 };
 
 /// Iterator over fixed_matrix::Slice%s.
@@ -531,11 +711,12 @@ class fixed_matrix<T, Allocator>::slices_iterator
 
   private:
     channel_iterator _base_iterator;
-    const size_type _max_channels;
-    const size_type _max_slices;
+    size_type _max_channels;
+    size_type _max_slices;
 };
 
 /// Append pointers to the elements of the first list to the second list.
+/// @note @c L2::value_type must be a pointer to @c L1::value_type!
 template<typename L1, typename L2>
 void append_pointers(L1& source, L2& target)
 {
@@ -547,6 +728,8 @@ void append_pointers(L1& source, L2& target)
   }
 }
 
+/// Const-version of append_pointers()
+/// @note @c L2::value_type must be a pointer to @b const @c L1::value_type!
 template<typename L1, typename L2>
 void append_pointers(const L1& source, L2& target)
 {
@@ -559,6 +742,10 @@ void append_pointers(const L1& source, L2& target)
 }
 
 /// Splice list elements from @p source to member lists of @p target.
+/// @param source Elements of this list are distributed to the corresponding
+///   @p member lists of @p target. This must have the same type as @p member.
+/// @param target Each element of this list receives one element of @p source.
+/// @param member The distributed elements are appended at @c member.end().
 /// @note Lists must have the same size. If not, an exception is thrown.
 /// @note There is no const version, both lists are modified.
 /// @post @p source will be empty
@@ -581,27 +768,35 @@ void distribute_list(L1& source, L2& target, DataMember member)
   }
 }
 
-/// The opposite of distribute_list().
-/// @note (For now,) there is no const version of this function. That means
-///   @p source must be non-const although it is not actually modified.
+/// The opposite of distribute_list() -- sorry for the strange name!
+/// @param source Container of items which will be removed from @p member of the
+///   corresponding @p target elements.
+/// @param target Container of elements which have a @p member.
+/// @param member Member container from which elements will be removed. Must
+///   have a splice() member function (like @c std::list).
+/// @param garbage Removed elements are appended to this list. Must have the
+///   same type as @p member.
+/// @throw std::logic_error If any element isn't found in the corresponding
+///   @p member.
 /// @attention If a list element is not found, an exception is thrown and the
 ///   original state is @b not restored!
 // TODO: better name?
-template<typename L1, typename L2, typename DataMember>
-void undistribute_list(L1& source, L2& target, DataMember member, L1& garbage)
+template<typename L1, typename L2, typename DataMember, typename L3>
+void
+undistribute_list(const L1& source, L2& target, DataMember member, L3& garbage)
 {
   if (source.size() != target.size())
   {
     throw std::logic_error("undistribute_list(): Different sizes!");
   }
 
-  typename L1::iterator in = source.begin();
+  typename L1::const_iterator in = source.begin();
 
   for (typename L2::iterator out = target.begin()
       ; out != target.end()
       ; ++out)
   {
-    typename L1::iterator delinquent
+    typename L3::iterator delinquent
       = std::find(((*out).*member).begin(), ((*out).*member).end(), *in++);
     if (delinquent == ((*out).*member).end())
     {

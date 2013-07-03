@@ -112,6 +112,15 @@ class RtList<T*> : NonCopyable
       _fifo.push(new RemCommand(&_the_actual_list, to_rem));
     }
 
+    /// Remove a range of elements from the list.
+    /// @param first Begin of range to be removed.
+    /// @param last Past-the-end iterator.
+    template<typename ForwardIterator>
+    void rem(ForwardIterator first, ForwardIterator last)
+    {
+      _fifo.push(new RemCommand(&_the_actual_list, first, last));
+    }
+
     /// Remove all elements from the list.
     void clear()
     {
@@ -182,7 +191,7 @@ class RtList<T*>::AddCommand : public CommandQueue::Command
     virtual void cleanup() {}
 
   private:
-    /// List of elements (actually, it's only one element) to be added.  
+    /// List of elements (it may be only one element) to be added.  
     list_t _splice_list;
 
     /// Destination list.
@@ -194,25 +203,43 @@ template<typename T>
 class RtList<T*>::RemCommand : public CommandQueue::Command
 {
   public:
-    /// Constructor.
-    /// @param dst_list List from which the element will be removed.
-    /// @param element Element that will be removed.
-    RemCommand(list_t* dst_list, T* element)
+    /// Constructor to remove a single item.
+    /// @param dst_list List from which the item will be removed.
+    /// @param delinquent Pointer to the item which will be removed.
+    RemCommand(list_t* dst_list, T* delinquent)
       : _dst_list(dst_list)
-      , _element_to_remove(element)
+      , _delinquents(1, delinquent)
     {
       assert(_dst_list != 0);
-      assert(_element_to_remove != 0);
     }
 
+    /// Constructor to remove a bunch of items at once.
+    /// @param dst_list Ptr to the list from which the elements will be removed.
+    /// @param first Iterator to first item to be removed.
+    /// @param last Past-the-end iterator.
+    template<typename InputIterator>
+    RemCommand(list_t* dst_list, InputIterator first, InputIterator last)
+      : _dst_list(dst_list)
+      , _delinquents(first, last)
+    {
+      assert(_dst_list != 0);
+    }
+
+    /// Move pointers to a separate list for destruction.
+    /// @throw std::logic_error if item(s) is/are not found.
     virtual void execute()
     {
-      for (iterator i = _dst_list->begin(); i != _dst_list->end(); ++i)
+      for (iterator i = _delinquents.begin(); i != _delinquents.end(); ++i)
       {
-        if (*i == _element_to_remove)
+        iterator delinquent = std::find(_dst_list->begin(), _dst_list->end(), *i);
+        if (delinquent != _dst_list->end())
         {
-          _splice_list.splice(_splice_list.begin(), *_dst_list, i);
-          break;
+          // Note: destruction order is reverse.
+          _splice_list.splice(_splice_list.begin(), *_dst_list, delinquent);
+        }
+        else
+        {
+          throw std::logic_error("RemCommand: Item not found!");
         }
       }
     }
@@ -230,10 +257,10 @@ class RtList<T*>::RemCommand : public CommandQueue::Command
     }
 
   private:
-    /// List of elements (usually, it's only one element) to be removed.
+    /// List of elements (it may be only one element) to be removed.
     list_t _splice_list;
-    list_t* const _dst_list;     ///< Destination list
-    T* const _element_to_remove; ///< self-explanatory
+    list_t* const _dst_list;  ///< Destination list
+    list_t _delinquents;  ///< Temporary list of elements to be removed
 };
 
 /// Command to remove all elements from a list.
@@ -251,22 +278,20 @@ class RtList<T*>::ClearCommand : public CommandQueue::Command
 
     virtual void execute()
     {
-      _delinquent_list.swap(*_dst_list);
+      _delinquents.swap(*_dst_list);
     }
 
     virtual void cleanup()
     {
-      for (iterator i = _delinquent_list.begin()
-          ; i != _delinquent_list.end()
-          ; ++i)
+      for (iterator i = _delinquents.begin(); i != _delinquents.end(); ++i)
       {
         delete *i;
       }
-      _delinquent_list.clear();
+      _delinquents.clear();
     }
 
   private:
-    list_t _delinquent_list;  ///< List of elements to be removed
+    list_t _delinquents;  ///< List of elements to be removed
     list_t* const _dst_list;  ///< Destination list
 };
 

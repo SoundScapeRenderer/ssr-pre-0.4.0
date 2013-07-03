@@ -33,7 +33,6 @@ CXXFLAGS += -Wpointer-arith
 CXXFLAGS += -Wcast-align
 CXXFLAGS += -Wwrite-strings
 CXXFLAGS += -Wredundant-decls
-CXXFLAGS += -Wconversion
 CXXFLAGS += -Wshadow
 CXXFLAGS += -Wold-style-cast
 CXXFLAGS += -Wlong-long

@@ -188,7 +188,7 @@ struct NoisePrevention<float>
 
 /// Set Flush-To-Zero (FTZ).
 /// @note requires SSE support
-void ftz_on()
+inline void ftz_on()
 {
   _mm_setcsr(_mm_getcsr() | 0x8000);
   // This should also work on Intel Macs!
@@ -197,7 +197,7 @@ void ftz_on()
 
 /// Unset Flush-To-Zero (FTZ).
 /// @note requires SSE support
-void ftz_off()
+inline void ftz_off()
 {
   _mm_setcsr(_mm_getcsr() & ~0x8000);
 }

@@ -545,19 +545,19 @@ class MimoProcessor : public interface_policy
      *     }
      * };
      *                                                                  @endcode
+     * Multiple layers of inheritance are possible, but ProcessItem must
+     * be instantiated with the most derived class!
      **/
     template<typename X>
-    class ProcessItem : public Item
+    struct ProcessItem : Item
     {
-      public:
-        struct Process { explicit Process(Item&) {} };
+      struct Process { explicit Process(Item&) {} };
 
-      private:
-        virtual void process()
-        {
-          assert(dynamic_cast<X*>(this));
-          typename X::Process(*static_cast<X*>(this));
-        }
+      virtual void process()
+      {
+        assert(dynamic_cast<X*>(this));
+        typename X::Process(*static_cast<X*>(this));
+      }
     };
 
     typedef RtList<Item*> rtlist_t;

@@ -54,24 +54,23 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
 
     APF_PROCESS(MyProcessor, MimoProcessorBase)
     {
-      _convolver_in.add_block(_input->begin());
-      _convolver_out.rotate_queues();  // TODO: check if necessary?
+      _convolver.add_block(_input->begin());
+
+      if (!_convolver.queues_empty()) _convolver.rotate_queues();
+
       if (this->reverb() != _old_reverb)
       {
         if (this->reverb())
         {
-          _convolver_out.set_filter(_filter_partitions);
+          _convolver.set_filter(_filter);
         }
         else
         {
-          // Load Dirac
-          float one = 1.0f;
-          _convolver_out.set_filter(&one, (&one)+1);
-          // One could prepare frequency domain version to avoid repeated FFTs
+          _convolver.set_filter(_dirac);
         }
         _old_reverb = this->reverb();
       }
-      float* result = _convolver_out.convolve();
+      float* result = _convolver.convolve();
 
       // This is necessary because _output is used before _output_list is
       // processed:
@@ -90,10 +89,10 @@ class MyProcessor : public apf::MimoProcessor<MyProcessor
 
     size_t _partitions;
 
-    apf::conv::Input _convolver_in;
-    apf::conv::Output _convolver_out;
+    apf::conv::Filter _filter;
+    apf::conv::Convolver _convolver;
 
-    apf::conv::filter_t _filter_partitions;
+    apf::conv::Filter _dirac;
 };
 
 template<typename In>
@@ -101,13 +100,13 @@ MyProcessor::MyProcessor(In first, In last)
   : MimoProcessorBase()
   , reverb(_fifo, true)
   , _old_reverb(false)
-  , _partitions((std::distance(first, last) + this->block_size() - 1)
-      / this->block_size())
-  , _convolver_in(this->block_size(), _partitions)
-  , _convolver_out(_convolver_in)
-  , _filter_partitions(std::make_pair(_partitions, this->block_size() * 2))
+  , _filter(this->block_size(), first, last)
+  , _convolver(this->block_size(), _filter.partitions())
+  , _dirac(this->block_size(), 1)
 {
-  _convolver_in.prepare_filter(first, last, _filter_partitions);
+  // Load Dirac
+  float one = 1.0f;
+  _convolver.prepare_filter(&one, (&one)+1, _dirac);
 
   _input = this->add<Input>();
   _output = this->add<Output>();

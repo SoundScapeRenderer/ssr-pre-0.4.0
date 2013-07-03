@@ -303,7 +303,8 @@ class linear_interpolator
 
     /// Constructor with range and optional length.
     /// @see set()
-    linear_interpolator(T first, T last, U length = U(1))
+    linear_interpolator(result_type first, result_type last
+        , argument_type length = argument_type(1))
     {
       this->set(first, last, length);
     }
@@ -311,10 +312,11 @@ class linear_interpolator
     /// Set range and optional length.
     /// @param first output value if input is zero
     /// @param last output value if input is @p length
-    void set(T first, T last, U length = U(1))
+    void set(result_type first, result_type last
+        , argument_type length = argument_type(1))
     {
       _first = first;
-      _increment = (last - first) / T(length);
+      _increment = (last - first) / length;
     }
 
     /// Function call operator
@@ -324,7 +326,7 @@ class linear_interpolator
     }
 
   private:
-    T _first, _increment;
+    result_type _first, _increment;
 };
 
 /// Helper function for automatic template type deduction
@@ -336,12 +338,11 @@ make_linear_interpolator(T first, T last)
 }
 
 /// Helper function for automatic template type deduction
-/// @note Automatic conversion is used to convert @p length from @p T to @p U.
 template<typename T, typename U>
-linear_interpolator<T>
+linear_interpolator<T, U>
 make_linear_interpolator(T first, T last, U length)
 {
-  return linear_interpolator<T>(first, last, length);
+  return linear_interpolator<T, U>(first, last, length);
 }
 
 /// Identity function object. Function call returns a const reference to input.

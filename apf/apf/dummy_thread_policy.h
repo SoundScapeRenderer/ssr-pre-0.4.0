@@ -49,7 +49,7 @@ class dummy_thread_policy
     typedef int useconds_type;
 
     class Thread;
-    template<typename F> struct ScopedThread;  // not implemented
+    template<typename F> struct ScopedThread;
     template<typename F> struct DetachedThread;
     class Lock;
     class Semaphore;
@@ -82,6 +82,15 @@ class dummy_thread_policy::Thread
       APF_DUMMY_THREAD_POLICY_ERROR;
       return -1;
     }
+};
+
+template<typename F>
+struct dummy_thread_policy::ScopedThread : Thread
+{
+  ScopedThread(F, useconds_type)
+  {
+    APF_DUMMY_THREAD_POLICY_ERROR;
+  }
 };
 
 template<typename F>

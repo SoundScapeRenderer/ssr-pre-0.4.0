@@ -51,6 +51,27 @@ std::vector<sample_type*> inputs, outputs;
 
 // TODO: separate file with generic helper functions (maybe apf::mex namespace?)
 
+#define APF_MEX_ERROR_NO_OUTPUT_SUPPORTED(name) \
+(void)plhs; \
+if (nlhs > 0) { \
+  std::string msg("No output parameters are supported for '" \
+      + std::string(name) + "'!"); \
+  mexErrMsgTxt(msg.c_str()); }
+
+#define APF_MEX_ERROR_NO_FURTHER_INPUTS(name) \
+(void)prhs; \
+if (nrhs > 0) { \
+  std::string msg("No further input parameters are supported for '" \
+      + std::string(name) + "'!"); \
+  mexErrMsgTxt(msg.c_str()); }
+
+#define APF_MEX_ERROR_ONLY_ONE_OUTPUT(name) \
+(void)plhs; \
+if (nlhs > 1) { \
+  std::string msg("Only one output parameter is supported for '" \
+      + std::string(name) + "'!"); \
+  mexErrMsgTxt(msg.c_str()); }
+
 namespace mex
 {
 
@@ -131,35 +152,6 @@ void next_optarg(int& n, const mxArray**& p, T& data, const std::string& error)
   if (!next_optarg(n, p, data)) mexErrMsgTxt(error.c_str());
 }
 
-void error_no_further(int nrhs, const mxArray**, const std::string& name)
-{
-  if (nrhs > 0)
-  {
-    std::string msg("No further parameters are supported for '"
-        + name + "'!");
-    mexErrMsgTxt(msg.c_str());
-  }
-}
-
-void error_no_output(int nlhs, mxArray**, const std::string& name)
-{
-  if (nlhs > 0)
-  {
-    std::string msg("No output parameters are supported for '" + name + "'!");
-    mexErrMsgTxt(msg.c_str());
-  }
-}
-
-void error_one_output(int nlhs, mxArray**, const std::string& name)
-{
-  if (nlhs > 1)
-  {
-    std::string msg("Only one output parameter is supported for '"
-        + name + "'!");
-    mexErrMsgTxt(msg.c_str());
-  }
-}
-
 }  // namespace mex
 
 void error_init()
@@ -172,15 +164,15 @@ void error_init()
 
 void help(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-  mex::error_no_output(nlhs, plhs, "help");
-  mex::error_no_further(nrhs, prhs, "help");
+  APF_MEX_ERROR_NO_OUTPUT_SUPPORTED("help");
+  APF_MEX_ERROR_NO_FURTHER_INPUTS("help");
 
   mexPrintf("TODO: write help text!\n");
 }
 
 void init(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-  mex::error_no_output(nlhs, plhs, "init");
+  APF_MEX_ERROR_NO_OUTPUT_SUPPORTED("init");
 
   std::string reproduction_setup;
   mex::next_arg(nrhs, prhs, reproduction_setup, "'init': Second argument "
@@ -199,7 +191,7 @@ void init(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   mex::next_optarg(nrhs, prhs, threads
       , "'init': Sixth argument: number of threads!");
 
-  mex::error_no_further(nrhs, prhs, "init");
+  APF_MEX_ERROR_NO_FURTHER_INPUTS("init");
 
   mexPrintf("Starting ssr_nfc_hoa with following settings:\n"
       " * reproduction setup: %s\n"
@@ -299,7 +291,7 @@ void process(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 void source(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
   error_init();
-  mex::error_no_output(nlhs, plhs, "source");
+  APF_MEX_ERROR_NO_OUTPUT_SUPPORTED("source");
 
   std::string command;
   mex::next_arg(nrhs, prhs, command, "'source': second argument must be a "
@@ -335,7 +327,7 @@ void source(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     double* coordinates = mxGetPr(prhs[0]);
 
     --nrhs; ++prhs;
-    mex::error_no_further(nrhs, prhs, "source");
+    APF_MEX_ERROR_NO_FURTHER_INPUTS("source");
 
     for (size_t i = 0; i < in_channels; ++i)
     {
@@ -387,22 +379,22 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     else if (command == "block_size")
     {
       error_init();
-      mex::error_no_further(nrhs, prhs, "block_size");
-      mex::error_one_output(nlhs, plhs, "block_size");
+      APF_MEX_ERROR_NO_FURTHER_INPUTS("block_size");
+      APF_MEX_ERROR_ONLY_ONE_OUTPUT("block_size");
       plhs[0] = mxCreateDoubleScalar(block_size);
     }
     else if (command == "out_channels")
     {
       error_init();
-      mex::error_no_further(nrhs, prhs, "out_channels");
-      mex::error_one_output(nlhs, plhs, "out_channels");
+      APF_MEX_ERROR_NO_FURTHER_INPUTS("out_channels");
+      APF_MEX_ERROR_ONLY_ONE_OUTPUT("out_channels");
       plhs[0] = mxCreateDoubleScalar(out_channels);
     }
     // Only "clear" shall be documented, the others are hidden features
     else if (command == "free" || command == "delete" || command == "clear")
     {
-      mex::error_no_further(nrhs, prhs, "clear");
-      mex::error_no_output(nlhs, plhs, "clear");
+      APF_MEX_ERROR_NO_FURTHER_INPUTS("clear");
+      APF_MEX_ERROR_NO_OUTPUT_SUPPORTED("clear");
       // This is safe even if engine wasn't initialized before:
       engine.reset();
     }

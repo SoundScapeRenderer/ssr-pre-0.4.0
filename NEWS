@@ -1,5 +1,25 @@
 User-visible changes in the SoundScape Renderer. Recent changes on top.
 
+0.4.0 (?? ??? 2013)
+
+ - the signal processing core of the SSR is now a separate thing and part of the
+   "Audio Processing Framework" (APF, http://audioprocessingframework.github.io)
+
+ - multi-threading support
+
+ - brand new Near-Field-Corrected Higher-Order-Ambisonics (NFC-HOA) renderer
+
+ - WAV, FLAC and OGG playback is now possible via ecasound & libsndfile
+
+ - binaural and BRS renderers now support IR files with arbitrary number of
+   channels (as long as they are divisible by 2)
+
+ - new option "--name" to set the JACK client name
+
+ - compatibility with the "clang" compiler
+
+ - experimental draft for Puredata Externals and Matlab MEX files
+
 0.3.4 a.k.a. "Pianoforte" (13 November 2012)
 
  - several bugfixes and improvements

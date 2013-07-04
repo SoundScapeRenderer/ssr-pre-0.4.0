@@ -19,7 +19,7 @@ AC_INIT([SoundScape Renderer (SSR)],
         [0.4.0-pre4],
         [ssr@spatialaudio.net],
         [ssr],
-        [http://SoundScapeRenderer.github.com/])
+        [http://spatialaudio.net/ssr])
 
 dnl read AUTHORS file and save (reformatted by sed) to SSR_AUTHORS(_QT)
 SSR_AUTHORS=esyscmd([cat AUTHORS | sed -e :a -e '$!N;s/\n/\\n/;ta' -e 's/.*/"&"/'])

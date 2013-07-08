@@ -764,7 +764,7 @@ AS_IF([test x$have_ecasound = xyes -a x$have_ecasound_program != xyes],
 echo
 AS_IF([test x$have_app_bundle = xyes],
 [
-echo 'If everything looks OK, continue with "make dmg".'
+echo 'If everything looks OK, continue with "make" and "make dmg".'
 ],
 [
 echo 'If everything looks OK, continue with "make" and "make install".'

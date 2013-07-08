@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright © 2012      Institut für Nachrichtentechnik, Universität Rostock *
+ * Copyright © 2012-2013 Institut für Nachrichtentechnik, Universität Rostock *
  * Copyright © 2006-2012 Quality & Usability Lab,                             *
  *                       Telekom Innovation Laboratories, TU Berlin           *
  *                                                                            *
@@ -21,7 +21,7 @@
  * The SSR is a tool  for  real-time  spatial audio reproduction  providing a *
  * variety of rendering algorithms.                                           *
  *                                                                            *
- * http://SoundScapeRenderer.github.com                  ssr@spatialaudio.net *
+ * http://spatialaudio.net/ssr                           ssr@spatialaudio.net *
  ******************************************************************************/
 
 /// @file
@@ -1346,8 +1346,7 @@ void ssr::QUserInterface::_show_about_window()
     "<EM>Website</EM>:&nbsp;"PACKAGE_URL"<BR>"
     "<EM>e-Mail</EM>:&nbsp;&nbsp;"PACKAGE_BUGREPORT"<BR>"
     "<BR>"
-    "Copyright &copy; 2012&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "
-    "Institut f&uuml;r Nachrichtentechnik<BR>"
+    "Copyright &copy; 2012-2013 Institut f&uuml;r Nachrichtentechnik<BR>"
     "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
     "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
     "&nbsp;&nbsp;&nbsp;Universit&auml;t Rostock<BR>"

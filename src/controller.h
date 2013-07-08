@@ -50,7 +50,6 @@
 #include "audiorecorder.h"
 #endif
 
-#include "sceneplayer.h"
 #include "xmlparser.h"
 #include "configuration.h"
 
@@ -234,7 +233,6 @@ class Controller : public Publisher
     conf_struct _conf;
 
     Scene _scene;
-    std::auto_ptr<ScenePlayer> _scene_player; ///< scene player
     /// a list of subscribers
     typedef std::vector<Subscriber*> subscriber_list_t;
     /// list of objects that will be notified on all events
@@ -414,8 +412,6 @@ Controller<Renderer>::Controller(int argc, char* argv[])
   // temporary solution:
   this->set_loop_mode(_conf.loop);
 
-  // _scene is always in the subscriber list. Additionally, there can be also
-  // _scene_player, _ip_server and maybe more ...
   _subscribe(&_scene);
 
   this->publish_sample_rate(_renderer.sample_rate());
@@ -618,8 +614,6 @@ bool Controller<Renderer>::run()
   {
     // TODO: check if IP-server is running
     // TODO: wait for shutdown command (run forever)
-
-    // TODO: if no IP-server: start scene player
 
     // TEMPORARY!!!
     this->start_processing();

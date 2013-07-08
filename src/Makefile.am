@@ -115,8 +115,6 @@ SSRSOURCES = \
 	rendererbase.h \
 	scene.cpp \
 	scene.h \
-	sceneplayer.cpp \
-	sceneplayer.h \
 	source.h \
 	ssr_global.cpp \
 	ssr_global.h \

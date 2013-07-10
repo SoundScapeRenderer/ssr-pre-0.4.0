@@ -20,10 +20,6 @@ dist_doc_DATA = AUTHORS COPYING $(SSR_MANUAL_DIST) NEWS
 # files which should be distributed but not installed
 dist_noinst_DATA = INSTALL README
 
-if ENABLE_APP_BUNDLE
-extrasdir = ${bundledir}/Extras
-endif
-
 # these files are deleted on "make maintainer-clean":
 MAINTAINERCLEANFILES = aclocal.m4 stamp-h.in \
                        config.log config.cache config.status

@@ -46,7 +46,8 @@ ACLOCAL_AMFLAGS = -I autotools/m4
 # $(SSR_MANUAL_DIST) has to be in dist_doc_DATA!
 # If the PDF file doesn't exist, an empty dummy file is created!
 $(SSR_MANUAL_DIST): $(SSR_MANUAL_ORIG)
-	@test -f "$<" && cp "$<" "$@" || touch "$@"
+	@test -f "$<" && cp "$<" "$@" \
+		|| mkdir -p "$$(dirname "$@")" && touch "$@"
 
 # show warning message (if missing), the file must be created by the maintainer:
 $(SSR_MANUAL_ORIG):

@@ -83,6 +83,12 @@ namespace // anonymous
 #ifdef ENABLE_POLHEMUS
       ", Polhemus"
 #endif
+      //Change RVDB
+#ifdef ENABLE_VRPN
+      ", VRPN"
+#endif
+      //end Change
+
 #ifdef ENABLE_RAZOR
       ", Razor AHRS"
 #endif
@@ -160,9 +166,11 @@ ssr::conf_struct ssr::configuration(int& argc, char* argv[])
   // for AAP renderer
   conf.ambisonics_order = 0; // "0" means use maximum that makes sense
   conf.in_phase_rendering = false;
-
+// CHANGE RVDB
 #if defined(ENABLE_POLHEMUS)
   conf.tracker = "polhemus";
+#elif defined(ENABLE_VRPN)
+  conf.tracker = "VRPN";
 #elif defined(ENABLE_INTERSENSE)
   conf.tracker = "intersense";
 #elif defined(ENABLE_RAZOR)
@@ -245,10 +253,14 @@ ssr::conf_struct ssr::configuration(int& argc, char* argv[])
 "-g, --gui              Start GUI (not enabled at compile time!)\n"
 "-G, --no-gui           Don't start GUI (default)\n"
 #endif
-#if defined(ENABLE_INTERSENSE) || defined(ENABLE_POLHEMUS) || defined(ENABLE_RAZOR)
+		  //Change RVDB
+#if defined(ENABLE_INTERSENSE) || defined(ENABLE_POLHEMUS) || defined(ENABLE_VRPN) || defined(ENABLE_RAZOR)
 "-t, --tracker=TYPE     Start tracker, possible value(s):"
 #if defined(ENABLE_POLHEMUS)
 " polhemus"
+#endif
+#if defined(ENABLE_VRPN)
+" VRPN"
 #endif
 #if defined(ENABLE_INTERSENSE)
 " intersense"
@@ -454,6 +466,10 @@ ssr::conf_struct ssr::configuration(int& argc, char* argv[])
       case 't':
         conf.tracker = optarg;
         break;
+        //vdb
+//      case 'a_vrpn':
+//         conf.vrpn_adress = optarg;
+//         break;
       case 'T':
         conf.tracker = "";
         break;

@@ -25,108 +25,16 @@
  ******************************************************************************/
 
 /// @file
-/// %Position class and helper functions (implementation).
+/// Main file for the VBAP Renderer.
 
-#include <cmath> // for atan2(), sqrt()
-#include <ostream>
+#include "controller.h"
+#include "vbaprenderer.h"
 
-#include "position.h"
-#include "orientation.h"
-#include "apf/math.h"
-
-Position::Position(const float x, const float y) :
-  x(x),
-  y(y)
-{}
-
-Position Position::operator-()
+int main(int argc, char* argv[])
 {
-  return Position(-this->x, -this->y);
-}
+  ssr::Controller<ssr::VbapRenderer> controller(argc, argv);
 
-Position& Position::operator+=(const Position& other)
-{
-  x += other.x;
-  y += other.y;
-  return *this;
-}
-
-Position& Position::operator-=(const Position& other)
-{
-  x -= other.x;
-  y -= other.y;
-  return *this;
-}
-
-bool Position::operator==(const Position& other) const
-{
-  return x == other.x && y == other.y;
-}
-
-bool Position::operator!=(const Position& other) const
-{
-  return !this->operator==(other);
-}
-
-/** convert the orientation given by the position vector (x,y) to an
- * Orientation.
- * @return Orientation with the corresponding azimuth value
- * @warning Works only for 2D!
- **/
-Orientation Position::orientation() const
-{
-  return Orientation(atan2(y, x) / apf::math::pi_div_180<float>());
-}
-
-float Position::length() const
-{
-  return sqrt(apf::math::square(x) + apf::math::square(y));
-}
-
-/** ._
- * @param angle angle in degrees.
- * @return the resulting position
- **/
-Position& Position::rotate(float angle)
-{
-  // angle phi in radians!
-  float phi = apf::math::deg2rad(this->orientation().azimuth + angle);
-  float radius = this->length();
-  return *this = Position(radius * cos(phi), radius * sin(phi));
-}
-
-// this is a 2D implementation!
-Position& Position::rotate(const Orientation& rotation)
-{
-  return this->rotate(rotation.azimuth);
-}
-
-Position operator-(const Position& a, const Position& b)
-{
-  Position temp(a);
-  return temp -= b;
-}
-
-Position operator+(const Position& a, const Position& b)
-{
-  Position temp(a);
-  return temp += b;
-}
-
-/** _.
- * @param point
- * @param orientation
- * @return Angle in radians.
- **/
-float angle(const Position& point, const Orientation& orientation)
-{
-  return angle(point.orientation(), orientation);
-}
-
-std::ostream& operator<<(std::ostream& stream, const Position& position)
-{
-  stream << "x = " << position.x << ", y = " << position.y;
-  return stream;
+  controller.run();
 }
 
 // Settings for Vim (http://www.vim.org/), please do not remove:

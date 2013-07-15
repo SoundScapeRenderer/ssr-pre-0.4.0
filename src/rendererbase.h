@@ -428,11 +428,8 @@ class RendererBase<Derived>::Source
     // In the default case, the output level are ignored
     bool get_output_levels(sample_type*, sample_type*) const { return false; }
 
-#if 0
-    // TODO: check if all renderers implement this. If not, provide default.
     void connect() {}
     void disconnect() {}
-#endif
 
     Derived& parent;
 

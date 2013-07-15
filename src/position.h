@@ -63,7 +63,8 @@ struct Position
   Position operator-();                        ///< unary minus operator
   Position& operator+=(const Position& other); ///< += operator
   Position& operator-=(const Position& other); ///< -= operator
-  bool operator==(const Position& other);      ///< == operator
+  bool operator==(const Position& other) const;  ///< == operator
+  bool operator!=(const Position& other) const;  ///< != operator
 
   // Declaring the following operators as friend is not really necessary as
   // their fields are public anyway, but it doesn't hurt either.
@@ -86,7 +87,6 @@ struct Position
   {
     return Position(a.x / b, a.y / b);
   }
-
 };
 
 /// Calculate the angle between the position vector of @a point and the

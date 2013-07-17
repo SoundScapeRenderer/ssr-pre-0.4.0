@@ -142,6 +142,10 @@ dist_noinst_DATA += \
 	razor-ahrs/Example.cpp
 endif
 
+if ENABLE_VRPN
+SSRSOURCES += trackervrpn.cpp trackervrpn.h
+endif
+
 if ENABLE_ECASOUND
 SSRSOURCES += \
 	audioplayer.cpp \

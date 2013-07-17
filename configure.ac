@@ -576,6 +576,17 @@ ENABLE_AUTO([razor], [Razor AHRS tracker support],
   AC_MSG_RESULT([$have_razor])
 ])
 
+dnl Checking for VRPN tracker support
+ENABLE_AUTO([vrpn], [VRPN tracker support],
+[
+  AC_MSG_CHECKING([various header files for VRPN tracker support])
+  AC_MSG_RESULT([see below])
+  AC_CHECK_HEADER([vrpn_Tracker.h],   , [have_vrpn=no])
+  AC_SEARCH_LIBS([vrpn_MAGIC], [vrpn], , [have_vrpn=no])
+  AC_MSG_CHECKING([VRPN tracker support])
+  AC_MSG_RESULT([$have_vrpn])
+])
+
 dnl Checking for InterSense support
 ENABLE_AUTO([intersense], [InterSense tracker support],
 [
@@ -735,32 +746,32 @@ AS_IF([test x$have_gui = xyes],
 
 echo "|"
 echo "| Build with tracker support:"
-echo "|    InterSense .............................. : $intersense_version"
-echo "|    Polhemus Fastrak ........................ : $have_polhemus"
-echo "|    Razor AHRS .............................. : $have_razor"
+echo "|    InterSense .......................... : $intersense_version"
+echo "|    Polhemus Fastrak .................... : $have_polhemus"
+echo "|    Razor AHRS .......................... : $have_razor"
+echo "|    VRPN ................................ : $have_vrpn"
 echo "|"
-echo "| Build with Ecasound support ................ : $have_ecasound"
-echo "| Build with IP interface .................... : $have_ip_interface"
-echo "| Build with GUI ............................. : $gui_string"
+echo "| Build with Ecasound support ............ : $have_ecasound"
+echo "| Build with IP interface ................ : $have_ip_interface"
+echo "| Build with GUI ......................... : $gui_string"
 echo "|"
-echo "| Enable debugging ........................... : $have_debugging"
-echo "| Enable optimization ........................ : $have_optimization"
+echo "| Enable debugging/optimization .......... : $have_debugging/$have_optimization"
 AS_IF([test x$have_app_bundle = xyes],
 [
-echo "| MacOSX application bundle (disk image) ..... : $DMG_NAME"
+echo "| Mac OS X application bundle (disk image) : $DMG_NAME"
 ],
 [
-echo "| Install prefix ............................. : $prefix"
+echo "| Install prefix ......................... : $prefix"
 ])
-echo "|"
 
 AS_IF([test x$have_ecasound = xyes -a x$have_ecasound_program != xyes],
 [
+  echo "|"
   echo "|>  WARNING: Ecasound (the program, not the library) was not found!"
   echo "|>  It is needed for playing (and recording) sound files with the SSR."
-  echo "|"
 ])
 
+echo "|"
 echo
 AS_IF([test x$have_app_bundle = xyes],
 [

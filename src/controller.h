@@ -68,6 +68,9 @@
 #ifdef ENABLE_POLHEMUS
 #include "trackerpolhemus.h"
 #endif
+#ifdef ENABLE_VRPN
+#include "trackervrpn.h"
+#endif
 #ifdef ENABLE_RAZOR
 #include "trackerrazor.h"
 #endif
@@ -1212,6 +1215,7 @@ Controller<Renderer>::_start_tracker(const std::string& type, const std::string&
   {
 #if defined(ENABLE_INTERSENSE)
     _tracker = TrackerInterSense::create(*this, ports);
+
 #else
     ERROR("The SSR was compiled without InterSense tracker support!");
     (void)ports;  // avoid "unused parameter" warning
@@ -1228,6 +1232,16 @@ Controller<Renderer>::_start_tracker(const std::string& type, const std::string&
     return;
 #endif
   }
+  else if (type == "vrpn")
+   {
+ #if defined(ENABLE_VRPN)
+     _tracker = TrackerVrpn::create(*this, ports);
+ #else
+     ERROR("The SSR was compiled without VRPN tracker support!");
+     (void)ports;  // avoid "unused parameter" warning
+     return;
+ #endif
+   }
   else if (type == "razor")
   {
 #if defined(ENABLE_RAZOR)
@@ -1257,7 +1271,7 @@ template<typename Renderer>
 void
 Controller<Renderer>::calibrate_client()
 {
-#if defined(ENABLE_INTERSENSE) || defined(ENABLE_POLHEMUS) || defined(ENABLE_RAZOR)
+#if defined(ENABLE_INTERSENSE) || defined(ENABLE_POLHEMUS) || defined(ENABLE_VRPN) || defined(ENABLE_RAZOR)
   if (!ptrtools::is_null(_tracker))
   {
     _tracker->calibrate();

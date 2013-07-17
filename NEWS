@@ -20,6 +20,8 @@ User-visible changes in the SoundScape Renderer. Recent changes on top.
 
  - experimental draft for Puredata Externals and Matlab MEX files
 
+ - VRPN tracker support
+
 0.3.4 a.k.a. "Pianoforte" (13 November 2012)
 
  - several bugfixes and improvements

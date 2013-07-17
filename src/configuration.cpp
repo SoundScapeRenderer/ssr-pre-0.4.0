@@ -83,6 +83,9 @@ namespace // anonymous
 #ifdef ENABLE_POLHEMUS
       ", Polhemus"
 #endif
+#ifdef ENABLE_VRPN
+      ", VRPN"
+#endif
 #ifdef ENABLE_RAZOR
       ", Razor AHRS"
 #endif
@@ -160,9 +163,10 @@ ssr::conf_struct ssr::configuration(int& argc, char* argv[])
   // for AAP renderer
   conf.ambisonics_order = 0; // "0" means use maximum that makes sense
   conf.in_phase_rendering = false;
-
 #if defined(ENABLE_POLHEMUS)
   conf.tracker = "polhemus";
+#elif defined(ENABLE_VRPN)
+  conf.tracker = "vrpn";
 #elif defined(ENABLE_INTERSENSE)
   conf.tracker = "intersense";
 #elif defined(ENABLE_RAZOR)
@@ -170,6 +174,7 @@ ssr::conf_struct ssr::configuration(int& argc, char* argv[])
 #else
   conf.tracker = "";
 #endif
+
   // USB ports have to be checked first!
   conf.tracker_ports = "/dev/ttyUSB0 /dev/ttyUSB1 /dev/ttyS0 /dev/tty.usbserial-00001004 /dev/tty.usbserial-00002006";
 
@@ -245,10 +250,13 @@ ssr::conf_struct ssr::configuration(int& argc, char* argv[])
 "-g, --gui              Start GUI (not enabled at compile time!)\n"
 "-G, --no-gui           Don't start GUI (default)\n"
 #endif
-#if defined(ENABLE_INTERSENSE) || defined(ENABLE_POLHEMUS) || defined(ENABLE_RAZOR)
+#if defined(ENABLE_INTERSENSE) || defined(ENABLE_POLHEMUS) || defined(ENABLE_VRPN) || defined(ENABLE_RAZOR)
 "-t, --tracker=TYPE     Start tracker, possible value(s):"
 #if defined(ENABLE_POLHEMUS)
 " polhemus"
+#endif
+#if defined(ENABLE_VRPN)
+" vrpn"
 #endif
 #if defined(ENABLE_INTERSENSE)
 " intersense"

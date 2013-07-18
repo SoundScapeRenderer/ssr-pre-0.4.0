@@ -34,6 +34,7 @@
 
 #include "apf/convolver.h"  // for Convolver
 #include "apf/sndfiletools.h"  // for apf::load_sndfile
+#include "apf/combine_channels.h"  // for apf::raised_cosine_fade, ...
 
 namespace ssr
 {

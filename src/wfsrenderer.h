@@ -35,6 +35,7 @@
 #include "apf/convolver.h"  // for Convolver
 #include "apf/blockdelayline.h"  // for NonCausalBlockDelayLine
 #include "apf/sndfiletools.h"  // for apf::load_sndfile
+#include "apf/combine_channels.h"  // for apf::raised_cosine_fade, ...
 
 // TODO: make more flexible option:
 #define WEIGHTING_OLD

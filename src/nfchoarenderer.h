@@ -33,6 +33,7 @@
 #include "apf/math.h"  // for apf::math::linear_interpolator
 #include "apf/fftwtools.h"  // for apf::fftw, apf::fftw_allocator
 #include "apf/iterator.h"  // for apf::dual_iterator, apf::discard_iterator, ...
+#include "apf/combine_channels.h"  // for apf::CombineChannelsInterpolation
 
 #include "ssr_global.h"  // for ssr::c
 #include "loudspeakerrenderer.h"

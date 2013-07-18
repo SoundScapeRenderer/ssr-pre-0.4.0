@@ -77,7 +77,7 @@ struct BrsRenderer::SourceChannel : apf::has_begin_and_end<sample_type*>
   void update();
   void convolve_and_more(sample_type weight);
 
-  int crossfade_mode;
+  apf::CombineChannelsResult::type crossfade_mode;
   sample_type new_weighting_factor;
 };
 
@@ -159,32 +159,42 @@ class BrsRenderer::Source : public _base::Source
       _brtf_index = size_t(apf::math::wrap(
           (azi - 90.0f) * float(_angles) / 360.0f + 0.5f, float(_angles)));
 
-      int crossfade_mode;
+      using namespace apf::CombineChannelsResult;
+      type crossfade_mode;
 
       // Check on one channel only, filters are always changed in parallel
       bool queues_empty = this->sourcechannels[0].queues_empty();
 
-      if (queues_empty
+      if (_new_weighting_factor == 0 && _old_weighting_factor == 0)
+      {
+        crossfade_mode = nothing;
+      }
+      else if (queues_empty
           && _new_weighting_factor == _old_weighting_factor
           && _brtf_index == _old_brtf_index)
       {
-        if (_new_weighting_factor == 0)
-        {
-          crossfade_mode = 0;
-        }
-        else
-        {
-          crossfade_mode = 1;
-        }
+        crossfade_mode = constant;
       }
-      else  // something changed -> crossfade
+      else if (_old_weighting_factor == 0)
       {
-        crossfade_mode = 2;
+        crossfade_mode = fade_in;
+      }
+      else if (_new_weighting_factor == 0)
+      {
+        crossfade_mode = fade_out;
+      }
+      else
+      {
+        crossfade_mode = change;
       }
 
       for (size_t i = 0; i < 2; ++i)
       {
-        if (crossfade_mode != 0)
+        if (crossfade_mode == nothing || crossfade_mode == fade_in)
+        {
+          // No need to convolve with old values
+        }
+        else
         {
           this->sourcechannels[i].convolve_and_more(_old_weighting_factor);
         }
@@ -227,7 +237,8 @@ void BrsRenderer::SourceChannel::convolve_and_more(sample_type weight)
 
 struct BrsRenderer::RenderFunction
 {
-  int select(SourceChannel& in) { return in.crossfade_mode; }
+  apf::CombineChannelsResult::type
+    select(SourceChannel& in) { return in.crossfade_mode; }
 };
 
 class BrsRenderer::Output : public _base::Output

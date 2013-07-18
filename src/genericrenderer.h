@@ -154,18 +154,24 @@ void GenericRenderer::SourceChannel::convolve(sample_type weight)
 
 struct GenericRenderer::RenderFunction
 {
-  int select(SourceChannel& in)
+  apf::CombineChannelsResult::type select(SourceChannel& in)
   {
     sample_type old_factor = in.source._old_weighting_factor;
     sample_type new_factor = in.source._new_weighting_factor;
 
-    if (old_factor == 0 && new_factor == 0) return 0;
+    using namespace apf::CombineChannelsResult;
+
+    if (old_factor == 0 && new_factor == 0) return nothing;
+
+    if (old_factor == 0) return fade_in;
 
     in.convolve(old_factor);
 
-    if (old_factor == new_factor) return 1;
+    if (new_factor == 0) return fade_out;
 
-    return 2;
+    if (old_factor == new_factor) return constant;
+
+    return change;
   }
 };
 

@@ -106,7 +106,7 @@ class BinauralRenderer::SourceChannel : public Convolver::Output
     Convolver::Filter temporary_hrtf;
 
     sample_type weight;
-    int crossfade_mode;
+    apf::CombineChannelsResult::type crossfade_mode;
 
   private:
     const size_t _block_size;
@@ -171,7 +171,8 @@ BinauralRenderer::_load_hrtfs(const std::string& filename, size_t size)
 
 struct BinauralRenderer::RenderFunction
 {
-  int select(const SourceChannel& in) { return in.crossfade_mode; }
+  apf::CombineChannelsResult::type
+    select(const SourceChannel& in) { return in.crossfade_mode; }
 };
 
 class BinauralRenderer::Output : public _base::Output
@@ -324,7 +325,8 @@ void BinauralRenderer::Source::_process()
   _hrtf_index = size_t(apf::math::wrap(
       rel_ori.azimuth * angles / 360.0f + 0.5f, angles));
 
-  int crossfade_mode;
+  using namespace apf::CombineChannelsResult;
+  type crossfade_mode;
 
   // Check on one channel only, filters are always changed in parallel
   bool queues_empty = this->sourcechannels[0].queues_empty();
@@ -332,52 +334,61 @@ void BinauralRenderer::Source::_process()
   bool hrtf_changed = _hrtf_index != _old_hrtf_index
       || _interp_factor != _old_interp_factor;
 
-  if (queues_empty
+  if (_weight == 0 && _old_weight == 0)
+  {
+    crossfade_mode = nothing;
+  }
+  else if (queues_empty
       && _weight == _old_weight
       && !hrtf_changed)
   {
-    if (_weight == 0)
-    {
-      crossfade_mode = 0;
-    }
-    else
-    {
-      crossfade_mode = 1;
-    }
+    crossfade_mode = constant;
   }
-  else  // something changed -> crossfade
+  else if (_weight == 0)
   {
-    crossfade_mode = 2;
+    crossfade_mode = fade_out;
+  }
+  else if (_old_weight == 0)
+  {
+    crossfade_mode = fade_in;
+  }
+  else
+  {
+    crossfade_mode = change;
   }
 
   for (size_t i = 0; i < 2; ++i)
   {
     SourceChannel& channel = this->sourcechannels[i];
 
-    if (crossfade_mode != 0)
+    if (crossfade_mode == nothing || crossfade_mode == fade_in)
+    {
+      // No need to convolve
+    }
+    else
     {
       channel.convolve_and_more(_old_weight);
+    }
 
-      if (!queues_empty) channel.rotate_queues();
+    if (!queues_empty) channel.rotate_queues();
 
-      if (hrtf_changed)
+    if (hrtf_changed)
+    {
+      // left and right channels are interleaved
+      Convolver::Filter& hrtf
+        = (*_input.parent._hrtfs)[2 * _hrtf_index + i];
+
+      if (_interp_factor == 0)
       {
-        // left and right channels are interleaved
-        Convolver::Filter& hrtf
-          = (*_input.parent._hrtfs)[2 * _hrtf_index + i];
-
-        if (_interp_factor == 0)
-        {
-          channel.set_filter(hrtf);
-        }
-        else
-        {
-          // Interpolate between selected HRTF and neutral filter (Dirac)
-          apf::conv::transform_nested(hrtf
-              , *_input.parent._neutral_filter, channel.temporary_hrtf
-              , _interpolate(_interp_factor));
-          this->sourcechannels[i].set_filter(channel.temporary_hrtf);
-        }
+        channel.set_filter(hrtf);
+      }
+      else
+      {
+        // Interpolate between selected HRTF and neutral filter (Dirac)
+        apf::conv::transform_nested(hrtf
+            , *_input.parent._neutral_filter, channel.temporary_hrtf
+            , _interpolate(_interp_factor));
+        this->sourcechannels[i].set_filter(channel.temporary_hrtf);
       }
     }
 

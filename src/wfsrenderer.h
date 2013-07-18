@@ -154,7 +154,7 @@ class WfsRenderer::RenderFunction
 
     RenderFunction(const Output& out) : _out(out) {}
 
-    int select(SourceChannel& in);
+    apf::CombineChannelsResult::type select(SourceChannel& in);
 
     result_type operator()(sample_type in)
     {
@@ -281,12 +281,12 @@ void WfsRenderer::Source::_process()
 
 void WfsRenderer::SourceChannel::update()
 {
-  // TODO: avoid reading delay line if weighting_factor == 0?
   _begin = this->source.delayline.get_read_circulator(this->delay);
   _end = _begin + source.parent.block_size();
 }
 
-int WfsRenderer::RenderFunction::select(SourceChannel& in)
+apf::CombineChannelsResult::type
+WfsRenderer::RenderFunction::select(SourceChannel& in)
 {
   // define a restricted area around loudspeakers to avoid division by zero:
   const float safety_radius = 0.01f; // 1 cm
@@ -508,19 +508,6 @@ int WfsRenderer::RenderFunction::select(SourceChannel& in)
   // TODO: enable interpolated reading from delay line.
   int int_delay = static_cast<int>(delay + 0.5f);
 
-  if (in.old_weighting_factor != 0)
-  {
-    in._begin = in.source.delayline.get_read_circulator(in.old_delay);
-    in._end = in._begin + _out.parent.block_size();
-  }
-  else
-  {
-    // TODO: avoid reading delay line, data is never used!
-    // WARNING: if _begin/_end isn't set to something, it's a singular iterator
-    in._begin = in.source.delayline.get_read_circulator(0);
-    in._end = in._begin + _out.parent.block_size();
-  }
-
   if (in.source.delayline.delay_is_valid(int_delay))
   {
     in.delay = int_delay;
@@ -530,7 +517,6 @@ int WfsRenderer::RenderFunction::select(SourceChannel& in)
   {
     // TODO: some sort of warning message?
 
-    // TODO: avoid useless reading of delay line if weighting_factor == 0
     in.delay = 0;
     in.weighting_factor = 0;
   }
@@ -538,15 +524,41 @@ int WfsRenderer::RenderFunction::select(SourceChannel& in)
   _old_factor = in.old_weighting_factor;
   _new_factor = in.weighting_factor;
 
+  using namespace apf::CombineChannelsResult;
+  type crossfade_mode;
+
   if (_old_factor == 0 && _new_factor == 0)
   {
-    return 0;
+    crossfade_mode = nothing;
   }
   else if (_old_factor == _new_factor && in.old_delay == in.delay)
   {
-    return 1;
+    crossfade_mode = constant;
   }
-  return 2;
+  else if (_old_factor == 0)
+  {
+    crossfade_mode = fade_in;
+  }
+  else if (_new_factor == 0)
+  {
+    crossfade_mode = fade_out;
+  }
+  else
+  {
+    crossfade_mode = change;
+  }
+
+  if (crossfade_mode == nothing || crossfade_mode == fade_in)
+  {
+    // No need to read the delayline here
+  }
+  else
+  {
+    in._begin = in.source.delayline.get_read_circulator(in.old_delay);
+    in._end = in._begin + _out.parent.block_size();
+  }
+
+  return crossfade_mode;
 }
 
 }  // namespace ssr

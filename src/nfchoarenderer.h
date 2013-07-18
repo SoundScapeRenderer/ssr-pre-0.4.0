@@ -208,7 +208,7 @@ class NfcHoaRenderer::Mode : public ProcessItem<Mode>
 
     const Source& source;
     sample_type rotation1, rotation2, old_rotation1, old_rotation2;
-    int interpolation_mode;
+    apf::CombineChannelsResult::type interpolation_mode;
 
   private:
     void _process();
@@ -283,21 +283,23 @@ void NfcHoaRenderer::Mode::_process()
       = std::sin(-_mode_number * sample_type(this->source.angle));
   }
 
+  using namespace apf::CombineChannelsResult;
+
   if (this->source.weighting_factor == 0
       && this->source.old_weighting_factor == 0)
   {
-    this->interpolation_mode = 0;
+    this->interpolation_mode = nothing;
   }
   else if (this->source.weighting_factor == this->source.old_weighting_factor
       && this->source.angle == this->source.old_angle
       && this->source.distance == this->source.old_distance
       && this->source.source_model == this->source.old_source_model)
   {
-    this->interpolation_mode = 1;
+    this->interpolation_mode = constant;
   }
   else
   {
-    this->interpolation_mode = 2;
+    this->interpolation_mode = change;
   }
 }
 
@@ -356,7 +358,7 @@ class NfcHoaRenderer::RenderFunction
   public:
     typedef std::pair<sample_type, sample_type> result_type;
 
-    int select(const Mode& in)
+    apf::CombineChannelsResult::type select(const Mode& in)
     {
       // TODO: where to apply global scale factor?
 
@@ -364,7 +366,7 @@ class NfcHoaRenderer::RenderFunction
       // All of this is combined in in.source.weighting_factor
       // TODO: move this to Source class?
 
-      if (in.interpolation_mode == 2)
+      if (in.interpolation_mode == apf::CombineChannelsResult::change)
       {
         sample_type block_size = in.size();
         _interpolator1.set(in.old_rotation1 * in.source.old_weighting_factor
@@ -372,7 +374,7 @@ class NfcHoaRenderer::RenderFunction
         _interpolator2.set(in.old_rotation2 * in.source.old_weighting_factor
             , in.rotation2 * in.source.weighting_factor, block_size);
       }
-      else if (in.interpolation_mode == 1)
+      else if (in.interpolation_mode == apf::CombineChannelsResult::constant)
       {
         _rotation1 = in.rotation1 * in.source.weighting_factor;
         _rotation2 = in.rotation2 * in.source.weighting_factor;

@@ -99,6 +99,7 @@ SSRSOURCES = \
 	../apf/apf/blockdelayline.h \
 	../apf/apf/fftwtools.h \
 	../apf/apf/sndfiletools.h \
+	../apf/apf/combine_channels.h \
 	configuration.cpp \
 	configuration.h \
 	controller.h \

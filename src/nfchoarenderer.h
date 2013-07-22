@@ -577,7 +577,7 @@ NfcHoaRenderer::load_reproduction_setup()
   // TODO: check if clockwise or counterclockwise setup?
 
   typedef apf::cast_proxy<Output, rtlist_t> output_list_t;
-  output_list_t outputs(this->get_non_const_output_list());
+  output_list_t outputs(const_cast<rtlist_t&>(this->get_output_list()));
 
   // TODO: with C++11, _add_distance should be replaced by a lambda function
 

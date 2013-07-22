@@ -188,11 +188,6 @@ class RendererBase : public apf::MimoProcessor<Derived
 
     bool show_head() const { return _show_head; }
 
-    rtlist_t& get_non_const_output_list()
-    {
-      return const_cast<rtlist_t&>(this->get_output_list());
-    }
-
     // TODO: proper solution for getting the reproduction setup
     template<typename SomeListType>
     void get_loudspeakers(SomeListType&) {}
@@ -536,7 +531,8 @@ struct SourceToOutput : Base<Derived>
       std::list<typename Derived::SourceChannel*> temp;
       apf::append_pointers(this->sourcechannels, temp);
       this->parent.add_to_sublist(temp, apf::make_cast_proxy<Output>(
-            this->parent.get_non_const_output_list()), &Output::sourcechannels);
+            const_cast<rtlist_t&>(this->parent.get_output_list()))
+          , &Output::sourcechannels);
     }
 
     void disconnect()
@@ -544,10 +540,14 @@ struct SourceToOutput : Base<Derived>
       std::list<typename Derived::SourceChannel*> temp;
       apf::append_pointers(this->sourcechannels, temp);
       this->parent.rem_from_sublist(temp, apf::make_cast_proxy<Output>(
-            this->parent.get_non_const_output_list()), &Output::sourcechannels);
+            const_cast<rtlist_t&>(this->parent.get_output_list()))
+          , &Output::sourcechannels);
     }
 
     sourcechannels_t sourcechannels;
+
+    private:
+      typedef typename Derived::rtlist_t rtlist_t;
   };
 
   struct Output : Base<Derived>::Output

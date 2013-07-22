@@ -152,7 +152,7 @@ class WfsRenderer::RenderFunction
   public:
     typedef sample_type result_type;
 
-    RenderFunction(const Output& out) : _out(out) {}
+    RenderFunction(const Output& out) : _in(0), _out(out) {}
 
     apf::CombineChannelsResult::type select(SourceChannel& in);
 
@@ -166,9 +166,16 @@ class WfsRenderer::RenderFunction
       return in * _old_factor;
     }
 
+    void update()
+    {
+      assert(_in);
+      _in->update();
+    }
+
   private:
     sample_type _old_factor, _new_factor;
 
+    SourceChannel* _in;
     const Output& _out;
 };
 
@@ -288,6 +295,8 @@ void WfsRenderer::SourceChannel::update()
 apf::CombineChannelsResult::type
 WfsRenderer::RenderFunction::select(SourceChannel& in)
 {
+  _in = &in;
+
   // define a restricted area around loudspeakers to avoid division by zero:
   const float safety_radius = 0.01f; // 1 cm
 

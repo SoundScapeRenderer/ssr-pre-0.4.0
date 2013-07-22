@@ -54,7 +54,7 @@ class GenericRenderer : public SourceToOutput<GenericRenderer
     class Source;
     struct SourceChannel;
     class Output;
-    struct RenderFunction;
+    class RenderFunction;
 
     GenericRenderer(const apf::parameter_map& params)
       : _base(params)
@@ -152,27 +152,41 @@ void GenericRenderer::SourceChannel::convolve(sample_type weight)
   _end = _begin + this->convolver.block_size();
 }
 
-struct GenericRenderer::RenderFunction
+class GenericRenderer::RenderFunction
 {
-  apf::CombineChannelsResult::type select(SourceChannel& in)
-  {
-    sample_type old_factor = in.source._old_weighting_factor;
-    sample_type new_factor = in.source._new_weighting_factor;
+  public:
+    RenderFunction() : _in(0) {}
 
-    using namespace apf::CombineChannelsResult;
+    apf::CombineChannelsResult::type select(SourceChannel& in)
+    {
+      _in = & in;
 
-    if (old_factor == 0 && new_factor == 0) return nothing;
+      sample_type old_factor = in.source._old_weighting_factor;
+      sample_type new_factor = in.source._new_weighting_factor;
 
-    if (old_factor == 0) return fade_in;
+      using namespace apf::CombineChannelsResult;
 
-    in.convolve(old_factor);
+      if (old_factor == 0 && new_factor == 0) return nothing;
 
-    if (new_factor == 0) return fade_out;
+      if (old_factor == 0) return fade_in;
 
-    if (old_factor == new_factor) return constant;
+      in.convolve(old_factor);
 
-    return change;
-  }
+      if (new_factor == 0) return fade_out;
+
+      if (old_factor == new_factor) return constant;
+
+      return change;
+    }
+
+    void update()
+    {
+      assert(_in);
+      _in->update();
+    }
+
+  private:
+    SourceChannel* _in;
 };
 
 class GenericRenderer::Output : public _base::Output

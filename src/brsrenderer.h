@@ -53,7 +53,7 @@ class BrsRenderer : public SourceToOutput<BrsRenderer, RendererBase>
     class Source;
     struct SourceChannel;
     class Output;
-    struct RenderFunction;
+    class RenderFunction;
 
     BrsRenderer(const apf::parameter_map& params)
       : _base(params)
@@ -235,10 +235,25 @@ void BrsRenderer::SourceChannel::convolve_and_more(sample_type weight)
   _end = _begin + this->block_size();
 }
 
-struct BrsRenderer::RenderFunction
+class BrsRenderer::RenderFunction
 {
-  apf::CombineChannelsResult::type
-    select(SourceChannel& in) { return in.crossfade_mode; }
+  public:
+    RenderFunction() : _in(0) {}
+
+    apf::CombineChannelsResult::type select(SourceChannel& in)
+    {
+      _in = &in;
+      return in.crossfade_mode;
+    }
+
+    void update()
+    {
+      assert(_in);
+      _in->update();
+    }
+
+  private:
+    SourceChannel* _in;
 };
 
 class BrsRenderer::Output : public _base::Output

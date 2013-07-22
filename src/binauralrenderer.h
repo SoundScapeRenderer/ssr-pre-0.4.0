@@ -169,10 +169,25 @@ BinauralRenderer::_load_hrtfs(const std::string& filename, size_t size)
   // Number of partitions may be different from _hrtfs!
 }
 
-struct BinauralRenderer::RenderFunction
+class BinauralRenderer::RenderFunction
 {
-  apf::CombineChannelsResult::type
-    select(const SourceChannel& in) { return in.crossfade_mode; }
+  public:
+    RenderFunction() : _in(0) {}
+
+    apf::CombineChannelsResult::type select(SourceChannel& in)
+    {
+      _in = &in;
+      return in.crossfade_mode;
+    }
+
+    void update()
+    {
+      assert(_in);
+      _in->update();
+    }
+
+  private:
+    SourceChannel* _in;
 };
 
 class BinauralRenderer::Output : public _base::Output

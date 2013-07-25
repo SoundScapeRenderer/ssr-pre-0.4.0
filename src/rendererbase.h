@@ -101,11 +101,6 @@ class RendererBase : public apf::MimoProcessor<Derived
       apf::SharedData<sample_type> amplitude_reference_distance;
     } state;
 
-    APF_PROCESS(RendererBase, Base)
-    {
-      this->_process_list(_source_list);
-    }
-
     // If you don't need a list proxy, just use a reference to the list
     template<typename L, typename ListProxy, typename DataMember>
     class AddToSublistCommand : public apf::CommandQueue::Command

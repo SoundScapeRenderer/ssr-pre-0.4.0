@@ -61,6 +61,11 @@ class GenericRenderer : public SourceToOutput<GenericRenderer
       , _fade(this->block_size())
     {}
 
+    APF_PROCESS(GenericRenderer, _base)
+    {
+      this->_process_list(_source_list);
+    }
+
   private:
     class _source_initializer;
 

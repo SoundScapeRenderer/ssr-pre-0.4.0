@@ -62,6 +62,11 @@ class BrsRenderer : public SourceToOutput<BrsRenderer, RendererBase>
 
     void load_reproduction_setup();
 
+    APF_PROCESS(BrsRenderer, _base)
+    {
+      this->_process_list(_source_list);
+    }
+
   private:
     apf::raised_cosine_fade<sample_type> _fade;
 };

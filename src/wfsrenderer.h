@@ -90,6 +90,11 @@ class WfsRenderer : public SourceToOutput<WfsRenderer, LoudspeakerRenderer>
             , ir.begin(), ir.end()));
     }
 
+    APF_PROCESS(WfsRenderer, _base)
+    {
+      this->_process_list(_source_list);
+    }
+
   private:
     apf::raised_cosine_fade<sample_type> _fade;
     std::auto_ptr<Convolver::Filter> _pre_filter;

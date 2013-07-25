@@ -64,6 +64,11 @@ class BinauralRenderer : public SourceToOutput<BinauralRenderer, RendererBase>
 
     void load_reproduction_setup();
 
+    APF_PROCESS(BinauralRenderer, _base)
+    {
+      this->_process_list(_source_list);
+    }
+
   private:
     typedef apf::fixed_vector<Convolver::Filter> hrtf_set_t;
 

@@ -74,6 +74,7 @@ class NfcHoaRenderer : public LoudspeakerRenderer<NfcHoaRenderer>
 
     APF_PROCESS(NfcHoaRenderer, _base)
     {
+      this->_process_list(_source_list);
       this->_process_list(_mode_pair_list);
       this->_process_list(_mode_accumulator_list);
 

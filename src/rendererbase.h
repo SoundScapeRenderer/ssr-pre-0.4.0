@@ -65,15 +65,15 @@ class RendererBase : public apf::MimoProcessor<Derived
 {
   private:
     typedef apf::MimoProcessor<Derived, APF_MIMOPROCESSOR_INTERFACE_POLICY
-      , APF_MIMOPROCESSOR_THREAD_POLICY, SSR_QUERY_POLICY> Base;
+      , APF_MIMOPROCESSOR_THREAD_POLICY, SSR_QUERY_POLICY> _base;
 
   public:
-    typedef typename Base::rtlist_t rtlist_t;
-    typedef typename Base::DefaultInput Input;
-    typedef typename Base::ScopedLock ScopedLock;
-    typedef typename Base::sample_type sample_type;
+    typedef typename _base::rtlist_t rtlist_t;
+    typedef typename _base::DefaultInput Input;
+    typedef typename _base::ScopedLock ScopedLock;
+    typedef typename _base::sample_type sample_type;
 
-    using Base::_fifo;
+    using _base::_fifo;
 
     class Source;
     // TODO: try to remove this:
@@ -234,7 +234,7 @@ class RendererBase : public apf::MimoProcessor<Derived
 
     int _highest_id;
 
-    typename Base::Lock _lock;
+    typename _base::Lock _lock;
 };
 
 /** Constructor.
@@ -242,7 +242,7 @@ class RendererBase : public apf::MimoProcessor<Derived
  **/
 template<typename Derived>
 RendererBase<Derived>::RendererBase(const apf::parameter_map& p)
-  : Base(_add_params(p))
+  : _base(_add_params(p))
   , state(_fifo)
   , master_volume_correction(apf::math::dB2linear(
         this->params.get("master_volume_correction", 0.0)))
@@ -351,11 +351,11 @@ RendererBase<Derived>::_get_new_id()
 /// A sound source.
 template<typename Derived>
 class RendererBase<Derived>::Source
-                   : public Base::template ProcessItem<typename Derived::Source>
-                   , public apf::has_begin_and_end<typename Input::iterator>
+                  : public _base::template ProcessItem<typename Derived::Source>
+                  , public apf::has_begin_and_end<typename Input::iterator>
 {
   private:
-    typedef typename Base::template ProcessItem<typename Derived::Source>
+    typedef typename _base::template ProcessItem<typename Derived::Source>
       SourceBase;
 
   public:
@@ -456,17 +456,17 @@ class RendererBase<Derived>::Source
 };
 
 template<typename Derived>
-class RendererBase<Derived>::Output : public Base::Output
+class RendererBase<Derived>::Output : public _base::Output
 {
   public:
-    Output(const typename Base::Output::Params& p)
-      : Base::Output(p)
+    Output(const typename _base::Output::Params& p)
+      : _base::Output(p)
       , _level()
     {}
 
-    struct Process : Base::Output::Process
+    struct Process : _base::Output::Process
     {
-      explicit Process(Output& o) : Base::Output::Process(o) , _out(o) {}
+      explicit Process(Output& o) : _base::Output::Process(o) , _out(o) {}
 
       ~Process()
       {

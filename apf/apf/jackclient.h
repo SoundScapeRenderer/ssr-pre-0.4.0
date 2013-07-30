@@ -36,6 +36,7 @@
 #include <stdexcept>  // for std::runtime_error
 #include <cassert>    // for assert()
 #include <errno.h>    // for EEXIST
+#include <unistd.h>    // for usleep()
 
 #ifdef APF_JACKCLIENT_DEBUG
 #include <iostream>
@@ -44,6 +45,14 @@
   do { std::cout << "apf::JackClient: " << str << std::endl; } while (false)
 #else
 #define APF_JACKCLIENT_DEBUG_MSG(str) do { } while (false)
+#endif
+
+#ifndef APF_JACKCLIENT_CONNECTION_ATTEMPTS
+#define APF_JACKCLIENT_CONNECTION_ATTEMPTS 20
+#endif
+
+#ifndef APF_JACKCLIENT_USLEEPTIME
+#define APF_JACKCLIENT_USLEEPTIME 100000
 #endif
 
 namespace apf
@@ -125,11 +134,20 @@ class JackClient
     {
       if (!_client || jack_activate(_client)) return false;
 
-      this->connect_pending_connections();
+      for (int attempts = 0
+          ; attempts < (APF_JACKCLIENT_CONNECTION_ATTEMPTS)
+          ; ++attempts)
+      {
+        if (this->connect_pending_connections())
+        {
+          return true;
+        }
 
-      // TODO: Still pending connections are ignored!
+        usleep(APF_JACKCLIENT_USLEEPTIME);
+      }
 
-      return true;
+      this->deactivate();
+      return false;
     }
 
     /// Deactivate JACK client.

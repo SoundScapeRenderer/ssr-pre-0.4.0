@@ -49,8 +49,6 @@ typedef unsigned int id_t;
 extern int verbose;
 extern float c;         ///< speed of sound (meters per second)
 extern float c_inverse; ///< reciprocal value of c
-/// time to sleep after connecting a new soundfile with ecasound
-extern unsigned int usleeptime;
 
 }  // namespace ssr
 

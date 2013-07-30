@@ -281,10 +281,7 @@ AudioPlayer::Soundfile::Soundfile(const std::string& filename, bool loop,
     _eca.command("cs-disconnect");
     throw soundfile_error("AudioPlayer::Soundfile: " + _eca.last_error());
   }
-  // It takes a little time until the client is available
-  // This is a little ugly, but I don't know a better way to do it.
-  // If you know one, tell me, please!
-  usleep(ssr::usleeptime);
+
   VERBOSE2("Added '" + _escaped_filename
       + "', format: '" + apf::str::A2S(_sample_format)
       + "', channels: " + apf::str::A2S(_channels)

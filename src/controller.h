@@ -593,15 +593,16 @@ class Controller<Renderer>::query_state
 template<typename Renderer>
 bool Controller<Renderer>::run()
 {
-  bool success = false;
-
   // TODO: make sleep time customizable
   _query_thread.reset(Renderer::new_scoped_thread(
         typename Renderer::QueryThread(_renderer._query_fifo), 10 * 1000));
 
   _start_tracker(_conf.tracker, _conf.tracker_ports);
 
-  _renderer.activate();
+  if (!_renderer.activate())
+  {
+    return false;
+  }
 
   // CAUTION: this must be called after activate()!
   // If not, an infinite recursion happens!
@@ -617,7 +618,10 @@ bool Controller<Renderer>::run()
     this->transport_locate(0.0f);
     //this->transport_start();
 
-    success = _start_gui(_conf.path_to_gui_images, _conf.path_to_scene_menu);
+    if (!_start_gui(_conf.path_to_gui_images, _conf.path_to_scene_menu))
+    {
+      return false;
+    }
 #else
     // this condition has already been checked above!
     assert(false);
@@ -655,9 +659,8 @@ bool Controller<Renderer>::run()
           break;
       }
     }
-    success = true;
   }
-  return success;
+  return true;
 }
 
 template<typename Renderer>

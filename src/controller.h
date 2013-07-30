@@ -517,6 +517,13 @@ class Controller<Renderer>::query_state
       _controller.set_cpu_load(_cpu_load);
       _controller.set_master_signal_level(_master_level);
 
+      // TODO: create and use a scoped lock
+      // With C++11, this can be easily done with std::unique_ptr and auto:
+      //auto lock _renderer.get_scoped_lock();
+      // TODO: get_scoped_lock() must transfer the ownership of the lock!
+
+      _renderer.lock();
+
       // To check the size is not sufficient, we also check the last element
       if (!_discard_source_levels
           && _source_levels.size() == _renderer.get_source_map().size()
@@ -528,6 +535,9 @@ class Controller<Renderer>::query_state
       }
       _source_levels.resize(_renderer.get_source_map().size()
           , SourceLevel(_renderer.get_output_list().size()));
+
+      // TODO: remove as soon as a scoped lock is available
+      _renderer.unlock();
     }
 
   private:

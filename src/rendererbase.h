@@ -187,6 +187,11 @@ class RendererBase : public apf::MimoProcessor<Derived
     template<typename SomeListType>
     void get_loudspeakers(SomeListType&) {}
 
+    // TODO: C++11: replace by get_scoped_lock() which returns a std::unique_ptr
+    void lock() { _lock.lock(); }
+
+    void unlock() { _lock.unlock(); }
+
     const sample_type master_volume_correction;  // linear
 
   protected:

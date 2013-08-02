@@ -43,16 +43,14 @@ Orientation::Orientation(const float azimuth) :
  **/
 Orientation operator-(const Orientation& lhs, const Orientation& rhs)
 {
-  // VBAP renderer needs wrapping 
-  return Orientation(apf::math::wrap_angle(lhs.azimuth - rhs.azimuth));
+  return Orientation(lhs.azimuth - rhs.azimuth);
 }
 
 /** + operator.
  **/
 Orientation operator+(const Orientation& lhs, const Orientation& rhs)
 {
-  // VBAP renderer needs wrapping 
-  return Orientation(apf::math::wrap_angle(lhs.azimuth + rhs.azimuth));
+  return Orientation(lhs.azimuth + rhs.azimuth);
 }
 
 /** += operator.

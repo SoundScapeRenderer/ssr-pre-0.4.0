@@ -21,7 +21,7 @@ Usage example:
 
 ``` octave
 
-inputblock = single([0 0 1 0 0 0 0 0]).';
+inputblock = transpose(single([0 0 1 0 0 0 0 0]));
 sources = size(inputblock, 2);
 blocksize = size(inputblock, 1);
 fs = 44100;

@@ -38,6 +38,9 @@
 #include "apf/pointer_policy.h"
 // TODO: make switch for Windows threads
 #include "apf/posix_thread_policy.h"
+#include "apf/stringtools.h"
+
+using apf::str::S2A;
 
 #include "nfchoarenderer.h"
 
@@ -327,7 +330,7 @@ void source(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     double* coordinates = mxGetPr(prhs[0]);
 
     --nrhs; ++prhs;
-    APF_MEX_ERROR_NO_FURTHER_INPUTS("source");
+    APF_MEX_ERROR_NO_FURTHER_INPUTS("source position");
 
     for (size_t i = 0; i < in_channels; ++i)
     {
@@ -340,8 +343,60 @@ void source(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   }
   else if (command == "orientation")
   {
-    // TODO
-    mexErrMsgTxt("'source orientation' is not implemented yet!");
+    if (nrhs < 1)
+    {
+      mexErrMsgTxt("'source orientation' needs a further argument!");
+    }
+    if (mxIsComplex(prhs[0]))
+    {
+      mexErrMsgTxt("Complex values are not allowed!");
+    }
+    if (!mxIsNumeric(prhs[0]))
+    {
+      mexErrMsgTxt("source orientations must be in a numeric matrix!");
+    }
+    if (mxGetN(prhs[0]) != in_channels)
+    {
+      mexErrMsgTxt("Number of columns must be the same as number of sources!");
+    }
+    if (mxGetM(prhs[0]) != 1)
+    {
+      mexErrMsgTxt("Last argument must be a row vector of angles!");
+    }
+
+    double* angles = mxGetPr(prhs[0]);
+
+    --nrhs; ++prhs;
+    APF_MEX_ERROR_NO_FURTHER_INPUTS("source orientation");
+
+    for (size_t i = 0; i < in_channels; ++i)
+    {
+      ssr::NfcHoaRenderer::SourceBase* source = engine->get_source(i + 1);
+      // TODO: check if source == nullptr
+      source->orientation(Orientation(angles[i]));  // degree
+    }
+  }
+  else if (command == "model")
+  {
+    if (nrhs != in_channels)
+    {
+      mexErrMsgTxt("Specify as many model strings as there are sources!");
+    }
+
+    for (int i = 0; i < in_channels; ++i)
+    {
+      std::string model_str;
+      mex::next_arg(nrhs, prhs, model_str, "All further arguments to "
+          "'source model' must be a valid source model strings!");
+
+      Source::model_t model = Source::unknown;
+      if (!S2A(model_str, model))
+      {
+        mexPrintf("Model string '%s':", model_str.c_str());
+        mexErrMsgTxt("Couldn't convert source model string!");
+      }
+      engine->get_source(i + 1)->model(model);
+    }
   }
   else
   {

@@ -29,9 +29,10 @@ setup = '../data/reproduction_setups/circle.asd';
 ssr_nfc_hoa('init', setup, sources, blocksize, fs)
 positions = [0; 2];  % one column for each source
 orientations = -90;  % row vector of angles in degrees
+models = { 'plane' };
 ssr_nfc_hoa('source', 'position', positions)
 ssr_nfc_hoa('source', 'orientation', orientations)
-ssr_nfc_hoa('source', 'model', 'plane')
+ssr_nfc_hoa('source', 'model', models{:})
 % TODO: set more source parameters
 % process (and discard) one block for interpolation
 outputblock = ssr_nfc_hoa('process', single(zeros(blocksize, sources)));

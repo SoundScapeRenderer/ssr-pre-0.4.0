@@ -280,8 +280,9 @@ void NfcHoaRenderer::Mode::_process()
   {
     this->rotation1
       = std::cos(-_mode_number * sample_type(this->source.angle));
+    // NOTE: the factor for the imaginary components has negative node number!
     this->rotation2
-      = std::sin(-_mode_number * sample_type(this->source.angle));
+      = std::sin( _mode_number * sample_type(this->source.angle));
   }
 
   using namespace apf::CombineChannelsResult;

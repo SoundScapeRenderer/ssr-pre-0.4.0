@@ -114,7 +114,7 @@ class GenericRenderer::Source : public _base::Source
       _convolver.reset(new Convolver::Input(block_size
             , Convolver::min_partitions(block_size, size)));
 
-      this->sourcechannels.reserve(outputs);
+      this->sourcechannels.allocate(outputs);
 
       for (matrix_t::slices_iterator slice = ir_data.slices.begin()
           ; slice != ir_data.slices.end()

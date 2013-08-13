@@ -140,7 +140,7 @@ class BrsRenderer::Source : public _base::Source
 
       _convolver_input.reset(new Convolver::Input(block_size, partitions));
 
-      this->sourcechannels.reserve(2);
+      this->sourcechannels.allocate(2);
       this->sourcechannels.emplace_back(*_convolver_input);
       this->sourcechannels.emplace_back(*_convolver_input);
     }

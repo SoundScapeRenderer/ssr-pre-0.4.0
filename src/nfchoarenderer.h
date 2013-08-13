@@ -596,8 +596,8 @@ NfcHoaRenderer::load_reproduction_setup()
     "distance of " << this->array_radius << " meters.\n"
     "Assuming circular (counterclockwise) setup!\n" << std::endl;
 
-  _mode_matrix.reset(normal_loudspeakers, this->block_size());
-  _fft_matrix.reset(this->block_size(), normal_loudspeakers);
+  _mode_matrix.initialize(normal_loudspeakers, this->block_size());
+  _fft_matrix.initialize(this->block_size(), normal_loudspeakers);
 
   this->order = normal_loudspeakers / 2;  // round down
 

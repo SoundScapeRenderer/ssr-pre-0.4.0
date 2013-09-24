@@ -54,7 +54,7 @@ class BinauralRenderer : public SourceToOutput<BinauralRenderer, RendererBase>
     class SourceChannel;
     class Source;
     class Output;
-    struct RenderFunction;
+    class RenderFunction;
 
     BinauralRenderer(const apf::parameter_map& params)
       : _base(params)

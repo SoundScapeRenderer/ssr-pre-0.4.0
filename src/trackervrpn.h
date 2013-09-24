@@ -41,7 +41,7 @@
 namespace ssr
 {
 
-class Publisher; // forward declaration
+struct Publisher; // forward declaration
 
 /// VRPN tracker 
 class TrackerVrpn : public vrpn_Tracker_Remote, public Tracker

@@ -95,7 +95,7 @@ ssr::CommandParser::parse_cmd(std::string& cmd)
 
       Position position;
       Orientation orientation;
-      bool position_fixed, orientation_fixed;
+      bool position_fixed = false, orientation_fixed = false;
 
       for (XMLParser::Node inner_loop = i.child(); !!inner_loop; ++inner_loop)
       {

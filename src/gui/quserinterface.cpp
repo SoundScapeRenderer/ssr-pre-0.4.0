@@ -1343,8 +1343,8 @@ void ssr::QUserInterface::_show_about_window()
     "<BR><BR>"
     SSR_AUTHORS_QT
     "<BR><BR>"
-    "<EM>Website</EM>:&nbsp;"PACKAGE_URL"<BR>"
-    "<EM>e-Mail</EM>:&nbsp;&nbsp;"PACKAGE_BUGREPORT"<BR>"
+    "<EM>Website</EM>:&nbsp;" PACKAGE_URL "<BR>"
+    "<EM>e-Mail</EM>:&nbsp;&nbsp;" PACKAGE_BUGREPORT "<BR>"
     "<BR>"
     "Copyright &copy; 2012-2013 Institut f&uuml;r Nachrichtentechnik<BR>"
     "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"

@@ -160,6 +160,9 @@ PKG_CHECK_MODULES([LIBXML], [libxml-2.0 >= 2.0],
 
 dnl by the way, AC_HELP_STRING is deprecated, use AS_HELP_STRING instead!
 
+dnl select C++11 (unconditionally)
+CXXFLAGS="$CXXFLAGS -std=c++11"
+
 ENABLE_EXPLICIT([debugging],[debugging symbols, asserts, ...])
 
 AS_IF([test x$have_debugging = xyes],
@@ -621,7 +624,7 @@ AS_IF([test x$have_warnings = xyes],
   [
     dnl all warnings ... and a few more!
     WARNING_FLAGS="$WARNING_FLAGS -Wall -Wextra"
-    WARNING_FLAGS="$WARNING_FLAGS -std=c++98 -pedantic"
+    WARNING_FLAGS="$WARNING_FLAGS -pedantic"
     dnl this makes -pedantic less pedantic (Qt often uses "long long"):
     WARNING_FLAGS="$WARNING_FLAGS -Wno-long-long"
 

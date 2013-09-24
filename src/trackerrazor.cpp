@@ -53,8 +53,8 @@ ssr::TrackerRazor::TrackerRazor(Publisher& controller, const std::string& ports)
       VERBOSE_NOLF("Trying port " << port << " ... ");
       try {
         _tracker = new RazorAHRS(port,
-            std::tr1::bind(&TrackerRazor::on_data, this, placeholders::_1),
-            std::tr1::bind(&TrackerRazor::on_error, this, placeholders::_1));
+            std::tr1::bind(&TrackerRazor::on_data, this, std::tr1::placeholders::_1),
+            std::tr1::bind(&TrackerRazor::on_error, this, std::tr1::placeholders::_1));
       }
       catch(std::runtime_error& e)
       {

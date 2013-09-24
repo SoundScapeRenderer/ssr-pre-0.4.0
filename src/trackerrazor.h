@@ -70,7 +70,7 @@ class TrackerRazor : public Tracker
       }
       _controller.set_reference_orientation(Orientation(-_current_azimuth + _az_corr));
     }
-    void on_error(const string &msg) { ERROR("Razor AHRS: " << msg); }
+    void on_error(const std::string &msg) { ERROR("Razor AHRS: " << msg); }
 
     Publisher& _controller;
     volatile float _current_azimuth;

@@ -54,7 +54,8 @@ ssr::TrackerRazor::TrackerRazor(Publisher& controller, const std::string& ports)
       try {
         _tracker = new RazorAHRS(port,
             std::tr1::bind(&TrackerRazor::on_data, this, std::tr1::placeholders::_1),
-            std::tr1::bind(&TrackerRazor::on_error, this, std::tr1::placeholders::_1));
+            std::tr1::bind(&TrackerRazor::on_error, this, std::tr1::placeholders::_1),
+            RazorAHRS::YAW_PITCH_ROLL);
       }
       catch(std::runtime_error& e)
       {

@@ -160,9 +160,6 @@ PKG_CHECK_MODULES([LIBXML], [libxml-2.0 >= 2.0],
 
 dnl by the way, AC_HELP_STRING is deprecated, use AS_HELP_STRING instead!
 
-dnl select C++11 (unconditionally)
-CXXFLAGS="$CXXFLAGS -std=c++11"
-
 ENABLE_EXPLICIT([debugging],[debugging symbols, asserts, ...])
 
 AS_IF([test x$have_debugging = xyes],
@@ -175,6 +172,9 @@ AS_IF([test x$have_debugging = xyes],
 
 dnl overwrite default CXXFLAGS set by AC_PROG_CXX
 AS_IF([test x$usercxxflags = xno], [CXXFLAGS="-g"])
+
+dnl select C++11 (unconditionally)
+CXXFLAGS="$CXXFLAGS -std=c++11"
 
 ENABLE_AUTO([optimization], [code optimization],
 [

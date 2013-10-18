@@ -115,7 +115,7 @@ ssr::conf_struct ssr::configuration(int& argc, char* argv[])
 
   // borrowed from ardour sources: cut path from program name
   const char *exec_name = strrchr(argv[0], '/');
-  if (exec_name == NULL) exec_name = argv[0]; else exec_name++;
+  if (exec_name == nullptr) exec_name = argv[0]; else exec_name++;
   conf.exec_name = exec_name;
 
 #ifndef NDEBUG
@@ -292,34 +292,34 @@ ssr::conf_struct ssr::configuration(int& argc, char* argv[])
 
   const struct option longopts[] =
   {
-    {"hrirs",        required_argument, NULL,  0 },
-    {"hrir-size",    required_argument, NULL,  0 },
-    {"prefilter",    required_argument, NULL,  0 },
-    {"ambisonics-order",required_argument,NULL,'o'},
-    {"in-phase-rendering", no_argument, NULL,  0 },
+    {"hrirs",        required_argument, nullptr,  0 },
+    {"hrir-size",    required_argument, nullptr,  0 },
+    {"prefilter",    required_argument, nullptr,  0 },
+    {"ambisonics-order",required_argument,nullptr,'o'},
+    {"in-phase-rendering", no_argument, nullptr,  0 },
 
-    {"name",         required_argument, NULL, 'n'},
-    {"input-prefix", required_argument, NULL,  0 },
-    {"output-prefix",required_argument, NULL,  0 },
-    {"freewheel",    no_argument,       NULL, 'f'},
+    {"name",         required_argument, nullptr, 'n'},
+    {"input-prefix", required_argument, nullptr,  0 },
+    {"output-prefix",required_argument, nullptr,  0 },
+    {"freewheel",    no_argument,       nullptr, 'f'},
 
-    {"config",       required_argument, NULL, 'c'},
-    {"setup",        required_argument, NULL, 's'},
-    {"threads",      required_argument, NULL,  0 },
-    {"record",       required_argument, NULL, 'r'},
-    {"loop",         no_argument,       NULL,  0 },
-    {"master-volume-correction", required_argument, NULL, 0},
-    {"ip-server",    optional_argument, NULL, 'i'},
-    {"no-ip-server", no_argument,       NULL, 'I'},
-    {"gui",          no_argument,       NULL, 'g'},
-    {"no-gui",       no_argument,       NULL, 'G'},
-    {"tracker",      required_argument, NULL, 't'},
-    {"no-tracker",   no_argument,       NULL, 'T'},
-    {"tracker-port", required_argument, NULL,  0 },
+    {"config",       required_argument, nullptr, 'c'},
+    {"setup",        required_argument, nullptr, 's'},
+    {"threads",      required_argument, nullptr,  0 },
+    {"record",       required_argument, nullptr, 'r'},
+    {"loop",         no_argument,       nullptr,  0 },
+    {"master-volume-correction", required_argument, nullptr, 0},
+    {"ip-server",    optional_argument, nullptr, 'i'},
+    {"no-ip-server", no_argument,       nullptr, 'I'},
+    {"gui",          no_argument,       nullptr, 'g'},
+    {"no-gui",       no_argument,       nullptr, 'G'},
+    {"tracker",      required_argument, nullptr, 't'},
+    {"no-tracker",   no_argument,       nullptr, 'T'},
+    {"tracker-port", required_argument, nullptr,  0 },
 
-    {"help",         no_argument,       NULL, 'h'},
-    {"verbose",      no_argument,       NULL, 'v'},
-    {"version",      no_argument,       NULL, 'V'},
+    {"help",         no_argument,       nullptr, 'h'},
+    {"verbose",      no_argument,       nullptr, 'v'},
+    {"version",      no_argument,       nullptr, 'V'},
 
     // for some obscure reasons, the last element has to be filled with zeroes
     {0, 0, 0, 0}
@@ -596,7 +596,7 @@ int ssr::load_config_file(const char *filename, conf_struct& conf){
 
   char line_number=0;
 
-  if ((file = fopen(filename,"r"))==NULL) {
+  if ((file = fopen(filename, "r")) == nullptr) {
     if (verbose) fprintf(stderr,"Cannot open %s !\n",filename);
     return (EXIT_FAILURE); //need to create one?
   }

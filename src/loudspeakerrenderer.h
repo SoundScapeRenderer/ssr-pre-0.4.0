@@ -34,7 +34,6 @@
 #include "loudspeaker.h"
 #include "xmlparser.h"
 #include "apf/parameter_map.h"
-#include "ptrtools.h"
 
 namespace ssr
 {
@@ -74,9 +73,9 @@ class LoudspeakerRenderer : public RendererBase<Derived>
     void _load_circular_array(const Node& node);
     void _set_connection(apf::parameter_map& p);
 
-    std::auto_ptr<Position> _get_position(const Node& node);
-    std::auto_ptr<Orientation> _get_orientation(const Node& node);
-    std::auto_ptr<Orientation> _get_angle(const Node& node);
+    std::unique_ptr<Position> _get_position(const Node& node);
+    std::unique_ptr<Orientation> _get_orientation(const Node& node);
+    std::unique_ptr<Orientation> _get_angle(const Node& node);
 
     const std::string _reproduction_setup;
     const std::string _xml_schema;
@@ -112,7 +111,7 @@ LoudspeakerRenderer<Derived>::load_reproduction_setup()
   // read the setup from XML file
   XMLParser xp; // load XML parser
   XMLParser::doc_t setup_file = xp.load_file(_reproduction_setup);
-  if (ptrtools::is_null(setup_file))
+  if (!setup_file)
   {
     throw std::runtime_error("Unable to load reproduction setup file \""
         + _reproduction_setup + "\"!");
@@ -133,7 +132,7 @@ LoudspeakerRenderer<Derived>::load_reproduction_setup()
   // "//reproduction_setup/linear_array",
   // but this would not preserve the order of the elements!
 
-  if (ptrtools::is_null(xpath_result))
+  if (!xpath_result)
   {
     throw std::runtime_error(
         "No <reproduction_setup> section found in XML file!");
@@ -203,19 +202,19 @@ LoudspeakerRenderer<Derived>::_load_loudspeaker(const Node& node)
 {
   if (!node) return;
 
-  std::auto_ptr<Position> position;
-  std::auto_ptr<Orientation> orientation;
+  std::unique_ptr<Position> position;
+  std::unique_ptr<Orientation> orientation;
 
   position    = _get_position(node);
   orientation = _get_orientation(node);
 
-  if (ptrtools::is_null(position))
+  if (!position)
   {
     throw std::runtime_error(
         "No position found for the loudspeaker! Not loaded!");
     return;
   }
-  else if (ptrtools::is_null(orientation))
+  else if (!orientation)
   {
     throw std::runtime_error(
         "No orientation found for the loudspeaker! Not loaded!");
@@ -273,8 +272,8 @@ LoudspeakerRenderer<Derived>::_load_linear_array(const Node& node)
     return;
   }
 
-  std::auto_ptr<Position> first_pos, second_pos, last_pos;
-  std::auto_ptr<Orientation>      first_dir, second_dir, last_dir;
+  std::unique_ptr<Position> first_pos, second_pos, last_pos;
+  std::unique_ptr<Orientation> first_dir, second_dir, last_dir;
 
   // we search the first occurence of each element, but
   // the XML Schema should assure that each element comes only once.
@@ -285,13 +284,13 @@ LoudspeakerRenderer<Derived>::_load_linear_array(const Node& node)
   last_pos   = _get_position   (node.child("last"));
   last_dir   = _get_orientation(node.child("last"));
 
-  if (ptrtools::is_null(first_pos))
+  if (!first_pos)
   {
     throw std::runtime_error(
         "No position found for first loudspeaker! Array not loaded!");
     return;
   }
-  if (ptrtools::is_null(first_dir))
+  if (!first_dir)
   {
     throw std::runtime_error(
         "No orientation found for first loudspeaker! Array not loaded!");
@@ -300,20 +299,20 @@ LoudspeakerRenderer<Derived>::_load_linear_array(const Node& node)
   const DirectionalPoint first(*first_pos, *first_dir);
   DirectionalPoint increment; // default ctor. will be overwritten
 
-  if (!ptrtools::is_null(second_pos) && ptrtools::is_null(last_pos))
+  if (second_pos && !last_pos)
   {
     // if no orientation was given for "second", it gets the same as "first"
-    if (ptrtools::is_null(second_dir))
+    if (!second_dir)
     {
       second_dir.reset(new Orientation(*first_dir));
     }
     const DirectionalPoint second(*second_pos, *second_dir);
     increment = second - first;
   }
-  else if (!ptrtools::is_null(last_pos) && ptrtools::is_null(second_pos))
+  else if (last_pos && !second_pos)
   {
     // if no orientation was given for "last", it gets the same as "first"
-    if (ptrtools::is_null(last_dir))
+    if (!last_dir)
     {
       last_dir.reset(new Orientation(*first_dir));
     }
@@ -350,8 +349,8 @@ LoudspeakerRenderer<Derived>::_load_circular_array(const Node& node)
   if (!node) return;
 
   int number;
-  std::auto_ptr<Position> first_pos, center_pos;
-  std::auto_ptr<Orientation>      first_dir, second_dir, last_dir;
+  std::unique_ptr<Position> first_pos, center_pos;
+  std::unique_ptr<Orientation> first_dir, second_dir, last_dir;
 
   if (!apf::str::S2A(node.get_attribute("number"), number) || (number < 2))
   {
@@ -366,13 +365,13 @@ LoudspeakerRenderer<Derived>::_load_circular_array(const Node& node)
   second_dir = _get_angle      (node.child("second"));
   last_dir   = _get_angle      (node.child("last"));
 
-  if (ptrtools::is_null(first_pos))
+  if (!first_pos)
   {
     throw std::runtime_error(
         "No position found for first loudspeaker! Array not loaded!");
     return;
   }
-  if (ptrtools::is_null(first_dir))
+  if (!first_dir)
   {
     throw std::runtime_error(
         "No orientation found for first loudspeaker! Array not loaded!");
@@ -380,7 +379,7 @@ LoudspeakerRenderer<Derived>::_load_circular_array(const Node& node)
   }
 
   // if no center is given, it is set to the origin
-  if (ptrtools::is_null(center_pos))
+  if (!center_pos)
   {
     center_pos.reset(new Position(0,0));
   }
@@ -392,11 +391,11 @@ LoudspeakerRenderer<Derived>::_load_circular_array(const Node& node)
   float angle_increment = 360.0f / number; // full circle
   // division by zero not possible, as number >= 2 (see above)
 
-  if (!ptrtools::is_null(second_dir))
+  if (second_dir)
   {
     angle_increment = second_dir->azimuth;
   }
-  else if (!ptrtools::is_null(last_dir))
+  else if (last_dir)
   {
     angle_increment = last_dir->azimuth / (number - 1);
     // division by zero not possible, as number >= 2 (see above)
@@ -421,10 +420,10 @@ LoudspeakerRenderer<Derived>::_load_circular_array(const Node& node)
 }
 
 template<typename Derived>
-std::auto_ptr<Position>
+std::unique_ptr<Position>
 LoudspeakerRenderer<Derived>::_get_position(const Node& node)
 {
-  std::auto_ptr<Position> temp; // temp = NULL
+  std::unique_ptr<Position> temp; // temp = NULL
   if (!node) return temp; // return NULL
 
   for (Node i = node.child(); !!i; ++i)
@@ -452,10 +451,10 @@ LoudspeakerRenderer<Derived>::_get_position(const Node& node)
 }
 
 template<typename Derived>
-std::auto_ptr<Orientation>
+std::unique_ptr<Orientation>
 LoudspeakerRenderer<Derived>::_get_orientation(const Node& node)
 {
-  std::auto_ptr<Orientation> temp; // temp = NULL
+  std::unique_ptr<Orientation> temp; // temp = NULL
   if (!node) return temp;          // return NULL
   for (Node i = node.child(); !!i; ++i)
   {
@@ -478,10 +477,10 @@ LoudspeakerRenderer<Derived>::_get_orientation(const Node& node)
 }
 
 template<typename Derived>
-std::auto_ptr<Orientation>
+std::unique_ptr<Orientation>
 LoudspeakerRenderer<Derived>::_get_angle(const Node& node)
 {
-  std::auto_ptr<Orientation> temp; // temp = NULL
+  std::unique_ptr<Orientation> temp; // temp = NULL
   if (!node) return temp;          // return NULL
   for (Node i = node.child(); !!i; ++i)
   {

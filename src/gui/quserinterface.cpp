@@ -47,7 +47,6 @@
 using apf::math::dB2linear;
 using apf::math::linear2dB;
 
-#include "ptrtools.h"
 #include "apf/stringtools.h"
 #include "posixpathtools.h"
 
@@ -636,7 +635,7 @@ void ssr::QUserInterface::_load_scene(const QString& path_to_scene)
   QSceneButton* sending_object = static_cast<QSceneButton *>(sender());
 
   // Check if function was called by a signal
-  if (sending_object != NULL)
+  if (sending_object != nullptr)
   {
     // Uncheck the other buttons
     for (scene_button_list_t::iterator i = _scene_button_list.begin();
@@ -931,7 +930,7 @@ void ssr::QUserInterface::mousePressEvent(QMouseEvent *event)
   // from here on we can be sure that a source has been selected //
   /////////////////////////////////////////////////////////////////
 
-  std::auto_ptr<Position> source_position =
+  std::unique_ptr<Position> source_position =
     _scene.get_source_position(_id_of_last_clicked_source);
 
   // save mouse pointer offset to source position
@@ -1141,7 +1140,7 @@ void ssr::QUserInterface::_update_source_properties_position()
 {
   if (!_id_of_last_clicked_source) return;
 
-  std::auto_ptr<Position> source_position =
+  std::unique_ptr<Position> source_position =
     _scene.get_source_position(_id_of_last_clicked_source);
 
 

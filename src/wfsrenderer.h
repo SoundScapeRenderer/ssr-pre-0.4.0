@@ -97,7 +97,7 @@ class WfsRenderer : public SourceToOutput<WfsRenderer, LoudspeakerRenderer>
 
   private:
     apf::raised_cosine_fade<sample_type> _fade;
-    std::auto_ptr<Convolver::Filter> _pre_filter;
+    std::unique_ptr<Convolver::Filter> _pre_filter;
 
     size_t _max_delay, _initial_delay;
 };

@@ -34,10 +34,9 @@
 #include "maptools.h"
 #include "ssr_global.h"
 #include "apf/stringtools.h"
-#include "ptrtools.h"
 #include "posixpathtools.h"
 
-using ptrtools::is_null; using ptrtools::destroy; using maptools::get_item;
+using maptools::get_item;
 
 /// delete the file map.
 AudioPlayer::~AudioPlayer()
@@ -68,7 +67,7 @@ std::string AudioPlayer::get_port_name(const std::string& audio_file_name,
   assert(channel >= 0);
 
   const Soundfile* registered_file = get_item(_file_map, audio_file_name);
-  if (registered_file != NULL)
+  if (registered_file != nullptr)
   {
     VERBOSE2("AudioPlayer: Input file '" + audio_file_name
         + "' already registered.");
@@ -82,7 +81,7 @@ std::string AudioPlayer::get_port_name(const std::string& audio_file_name,
   else // file not yet registered
   {
     Soundfile::ptr_t temp = Soundfile::create(audio_file_name, loop);
-    if (is_null(temp))
+    if (!temp)
     {
       WARNING("AudioPlayer: Initialization of soundfile '" + audio_file_name
           + "' failed!");

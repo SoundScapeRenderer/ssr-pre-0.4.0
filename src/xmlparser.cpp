@@ -72,7 +72,7 @@ XMLParser::doc_t XMLParser::load_string(const std::string& xml_string) const
 std::string XMLParser::replace_entities(const std::string& input) const
 {
   xmlChar* xml_string;
-  xml_string = xmlEncodeEntitiesReentrant(NULL, BAD_CAST input.c_str());
+  xml_string = xmlEncodeEntitiesReentrant(nullptr, BAD_CAST input.c_str());
   if (!xml_string) return "";
   std::string temp((char*)xml_string);
   xmlFree(xml_string);
@@ -94,7 +94,7 @@ bool XMLParser::Document::validate(const std::string& schema_file_name) const
   }
   xmlSchemaParserCtxtPtr schema_ctxt;
   schema_ctxt = xmlSchemaNewParserCtxt(schema_file_name.c_str());
-  if (schema_ctxt == NULL)
+  if (schema_ctxt == nullptr)
   {
     ERR("error in xmlSchemaNewParserCtxt!");
     return false;
@@ -102,7 +102,7 @@ bool XMLParser::Document::validate(const std::string& schema_file_name) const
 
   xmlSchemaPtr schema;
   schema = xmlSchemaParse(schema_ctxt);
-  if (schema == NULL)
+  if (schema == nullptr)
   {
     ERR("error in xmlSchemaParse!");
     return false;
@@ -111,7 +111,7 @@ bool XMLParser::Document::validate(const std::string& schema_file_name) const
 
   xmlSchemaValidCtxtPtr valid_schema;
   valid_schema = xmlSchemaNewValidCtxt(schema);
-  if (valid_schema == NULL)
+  if (valid_schema == nullptr)
   {
     ERR("error in xmlSchemaNewValidCtxt!");
     return false;
@@ -178,8 +178,8 @@ XMLParser::XPathResult::~XPathResult()
 
 xmlNodePtr XMLParser::XPathResult::node() const
 {
-  if (!_xpath_object) return NULL;
-  if (_current >= _xpath_object->nodesetval->nodeNr) return NULL;
+  if (!_xpath_object) return nullptr;
+  if (_current >= _xpath_object->nodesetval->nodeNr) return nullptr;
   return _xpath_object->nodesetval->nodeTab[_current];
 }
 
@@ -216,34 +216,34 @@ XMLParser::xpath_t XMLParser::Document::eval_xpath(
   if (!_xpath_available())
   {
     ERR("Couldn't create XPath context!");
-    return xpath_t(NULL);
+    return xpath_t(nullptr);
   }
   xmlXPathObjectPtr result;
   result = xmlXPathEvalExpression(BAD_CAST expression.c_str(),
       _xpath_context);
-  if (result == NULL)
+  if (result == nullptr)
   {
     ERR("Error in xmlXPathEvalExpression!");
-    return xpath_t(NULL);
+    return xpath_t(nullptr);
   }
   if(xmlXPathNodeSetIsEmpty(result->nodesetval))
   {
     xmlXPathFreeObject(result);
     //ERR("No result!");
-    return xpath_t(NULL);
+    return xpath_t(nullptr);
   }
   return xpath_t(new XPathResult(result));
 }
 
 XMLParser::Document::Document(const std::string& input, bool file)
   throw (document_error) :
-  _doc(NULL),
-  _xpath_context(NULL)
+  _doc(nullptr),
+  _xpath_context(nullptr)
 {
   if (file)
   {
     _doc = xmlParseFile(input.c_str());
-    if (_doc == NULL)
+    if (_doc == nullptr)
     {
       throw document_error("Error in xmlParseFile (" + input + ")!");
     }
@@ -251,7 +251,7 @@ XMLParser::Document::Document(const std::string& input, bool file)
   else
   {
     _doc = xmlParseDoc(BAD_CAST input.c_str());
-    if (_doc == NULL)
+    if (_doc == nullptr)
     {
       throw document_error("error in xmlParseDoc (" + input + ")!");
     }
@@ -260,10 +260,10 @@ XMLParser::Document::Document(const std::string& input, bool file)
 
 bool XMLParser::Document::_xpath_available() const
 {
-  if (_xpath_context == NULL)
+  if (_xpath_context == nullptr)
   {
     _xpath_context = xmlXPathNewContext(_doc);
-    if (_xpath_context == NULL)
+    if (_xpath_context == nullptr)
     {
       ERR("Error in xmlXPathNewContext");
       return false;
@@ -278,7 +278,7 @@ XMLParser::Node::Node(const xmlNodePtr node) :
 
 XMLParser::Node XMLParser::new_node(const std::string& name)
 {
-  return Node(xmlNewNode(NULL, BAD_CAST name.c_str()));
+  return Node(xmlNewNode(nullptr, BAD_CAST name.c_str()));
 }
 
 /*
@@ -291,9 +291,9 @@ bool XMLParser::Node::add_child(const Node& child_node)
 xmlNodePtr XMLParser::Node::new_child(const std::string& name,
     const std::string& content)
 {
-  if (!_node) return NULL;
-  return xmlNewChild(_node, NULL, BAD_CAST name.c_str(),
-    content == "" ? NULL : BAD_CAST content.c_str());
+  if (!_node) return nullptr;
+  return xmlNewChild(_node, nullptr, BAD_CAST name.c_str(),
+    content == "" ? nullptr : BAD_CAST content.c_str());
 }
 
 void XMLParser::Node::new_attribute(const std::string& name,
@@ -351,7 +351,7 @@ XMLParser::Node XMLParser::Node::child(const std::string& name) const
   {
     if (i == name) return i;
   }
-  return Node(NULL);
+  return Node(nullptr);
 }
 
 xmlNodePtr XMLParser::Node::get() const
@@ -390,7 +390,7 @@ std::string XMLParser::Node::to_string()
   //xmlFree(temp);
   //xmlFreeDoc(doc);
   // when doc is freed, all nodes are deleted, too
-  //_node = NULL;
+  //_node = nullptr;
 
   return result;
 }

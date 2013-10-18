@@ -126,9 +126,9 @@ class Scene : public Subscriber
     /// get source
     Source get_source(id_t id) const;
     /// get source position
-    std::auto_ptr<Position> get_source_position(id_t id) const;
+    std::unique_ptr<Position> get_source_position(id_t id) const;
     /// get source orientation
-    std::auto_ptr<Orientation> get_source_orientation(id_t id) const;
+    std::unique_ptr<Orientation> get_source_orientation(id_t id) const;
     /// get source model (=type)
     Source::model_t get_source_model(id_t id) const;
     /// get source gain

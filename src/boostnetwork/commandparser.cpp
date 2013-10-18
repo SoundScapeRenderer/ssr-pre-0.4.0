@@ -34,10 +34,8 @@
 #include "publisher.h"
 
 #include "apf/stringtools.h"
-#include "ptrtools.h"
 #include "apf/math.h"  // for dB2linear()
 
-using ptrtools::is_null;
 using namespace apf::str;
 
 /** ctor.
@@ -58,7 +56,7 @@ ssr::CommandParser::parse_cmd(std::string& cmd)
 {
   XMLParser xp;
   XMLParser::doc_t doc1 = xp.load_string(cmd);
-  if (is_null(doc1))
+  if (!doc1)
   {
     ERROR("Unable to load string! (\"" << cmd << "\")");
     return;
@@ -66,7 +64,7 @@ ssr::CommandParser::parse_cmd(std::string& cmd)
 
   XMLParser::xpath_t result1 = doc1->eval_xpath("/request");
 
-  if (is_null(result1))
+  if (!result1)
   {
     ERROR("XPath: no result!");
     return;
@@ -495,14 +493,14 @@ ssr::CommandParser::parse_string2(std::string cmd)
 {
   XMLParser xp;
   XMLParser::doc_t doc1 = xp.load_string(data);
-  if (is_null(doc1))
+  if (!doc1)
   {
     std::cerr << "client_parser_thread: Unable to load string!" << std::endl;
     return;
   }
   XMLParser::xpath_t result1 = doc1->eval_xpath("/update");
 
-  if (is_null(result1))
+  if (!result1)
   {
     std::cerr << "XPath: no result!" << std::endl;
     continue ;

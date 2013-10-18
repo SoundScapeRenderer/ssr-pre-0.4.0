@@ -36,7 +36,6 @@
 #include "trackerpolhemus.h"
 #include "publisher.h"
 #include "ssr_global.h"
-#include "ptrtools.h"
 #include "apf/stringtools.h"
 
 using apf::str::A2S;
@@ -187,7 +186,7 @@ void
 ssr::TrackerPolhemus::_start()
 {
   // create thread
-  pthread_create(&_thread_id , NULL, _thread, this);
+  pthread_create(&_thread_id , nullptr, _thread, this);
   VERBOSE("Starting tracker ...");
 }
 
@@ -204,7 +203,7 @@ ssr::TrackerPolhemus::_stop()
 void*
 ssr::TrackerPolhemus::_thread(void *arg)
 {
-  return reinterpret_cast<TrackerPolhemus*> (arg)->thread(NULL);
+  return reinterpret_cast<TrackerPolhemus*> (arg)->thread(nullptr);
 }
 
 void*

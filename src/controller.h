@@ -79,7 +79,6 @@
 #include "rendersubscriber.h"
 
 #include "posixpathtools.h"
-#include "ptrtools.h"
 #include "apf/math.h"
 #include "apf/stringtools.h"
 
@@ -241,7 +240,7 @@ class Controller : public Publisher
     /// list of objects that will be notified on all events
     subscriber_list_t _subscribers;
 #ifdef ENABLE_GUI
-    std::auto_ptr<QGUI> _gui;
+    std::unique_ptr<QGUI> _gui;
 #endif
 
     Renderer _renderer;
@@ -254,9 +253,9 @@ class Controller : public Publisher
     std::string _schema_file_name;           ///< XML Schema
     std::string _input_port_prefix;          ///< e.g. alsa_pcm:capture
 #ifdef ENABLE_IP_INTERFACE
-    std::auto_ptr<Server> _network_interface;
+    std::unique_ptr<Server> _network_interface;
 #endif
-    std::auto_ptr<Tracker> _tracker;
+    std::unique_ptr<Tracker> _tracker;
 
     float _stand_ampl_ref_dist;
 
@@ -358,7 +357,7 @@ class Controller : public Publisher
 
     bool _loop; ///< part of a quick-hack. should be removed some time.
 
-    std::auto_ptr<typename Renderer::template ScopedThread<
+    std::unique_ptr<typename Renderer::template ScopedThread<
       typename Renderer::QueryThread> > _query_thread;
 };
 
@@ -369,7 +368,7 @@ Controller<Renderer>::Controller(int argc, char* argv[])
   , _conf(configuration(_argc, _argv))
   , _renderer(_conf.renderer_params)
   , _query_state(query_state(*this, _renderer))
-  , _tracker(0)
+  , _tracker(nullptr)
   , _loop(false)
 {
   // TODO: signal handling?
@@ -701,15 +700,15 @@ struct PositionPlusBool : Position
 /// Traverse through all child nodes of @a node and check for a @b position
 /// element.
 /// @param node parent node
-/// @return std::auto_ptr to the obtained position, empty auto_ptr if no
+/// @return std::unique_ptr to the obtained position, empty unique_ptr if no
 /// position element was found.
 /// @warning If you want to extract e.g. position and orientation it would be
 /// more effective to do both (or even more) in one loop. But anyway, this
 /// seems easier to use.
-inline std::auto_ptr<PositionPlusBool>
+inline std::unique_ptr<PositionPlusBool>
 get_position(const Node& node)
 {
-  std::auto_ptr<PositionPlusBool> temp; // temp = NULL
+  std::unique_ptr<PositionPlusBool> temp; // temp = NULL
   if (!node) return temp; // return NULL
 
   for (Node i = node.child(); !!i; ++i)
@@ -749,10 +748,10 @@ get_position(const Node& node)
 /// find orientation in child nodes.
 /// @param node parent node
 /// @see get_position
-inline std::auto_ptr<Orientation>
+inline std::unique_ptr<Orientation>
 get_orientation(const Node& node)
 {
-  std::auto_ptr<Orientation> temp; // temp = NULL
+  std::unique_ptr<Orientation> temp; // temp = NULL
   if (!node) return temp;          // return NULL
   for (Node i = node.child(); !!i; ++i)
   {
@@ -885,7 +884,7 @@ Controller<Renderer>::load_scene(const std::string& scene_file_name)
   {
     XMLParser xp; // load XML parser
     XMLParser::doc_t scene_file = xp.load_file(scene_file_name);
-    if (ptrtools::is_null(scene_file))
+    if (!scene_file)
     {
       ERROR("Unable to load scene setup file '" << scene_file_name << "'!");
       return false;
@@ -915,7 +914,7 @@ Controller<Renderer>::load_scene(const std::string& scene_file_name)
 
     xpath_result = scene_file->eval_xpath("//scene_setup/volume");
 
-    if (!ptrtools::is_null(xpath_result)
+    if (xpath_result
         && !apf::str::S2A(get_content(xpath_result->node()), master_volume))
     {
       WARNING("Invalid master volume specified in scene!");
@@ -931,7 +930,7 @@ Controller<Renderer>::load_scene(const std::string& scene_file_name)
 
     xpath_result
       = scene_file->eval_xpath("//scene_setup/amplitude_reference_distance");
-    if (!ptrtools::is_null(xpath_result))
+    if (xpath_result)
     {
       if (!apf::str::S2A(get_content(xpath_result->node()), ref_dist))
       {
@@ -946,11 +945,11 @@ Controller<Renderer>::load_scene(const std::string& scene_file_name)
 
     // LOAD REFERENCE
 
-    std::auto_ptr<internal::PositionPlusBool> pos_ptr;
-    std::auto_ptr<Orientation>      dir_ptr;
+    std::unique_ptr<internal::PositionPlusBool> pos_ptr;
+    std::unique_ptr<Orientation>      dir_ptr;
 
     xpath_result = scene_file->eval_xpath("//scene_setup/reference");
-    if (!ptrtools::is_null(xpath_result))
+    if (xpath_result)
     {
       // there should be only one result:
       if (xpath_result->size() != 1)
@@ -966,8 +965,8 @@ Controller<Renderer>::load_scene(const std::string& scene_file_name)
       VERBOSE("No reference point given in XML file. "
           "Using standard (= origin).");
     }
-    if (ptrtools::is_null(pos_ptr)) pos_ptr.reset(new internal::PositionPlusBool());
-    if (ptrtools::is_null(dir_ptr)) dir_ptr.reset(new Orientation(90));
+    if (!pos_ptr) pos_ptr.reset(new internal::PositionPlusBool());
+    if (!dir_ptr) dir_ptr.reset(new Orientation(90));
 
     this->set_reference_position(*pos_ptr);
     this->set_reference_orientation(*dir_ptr);
@@ -977,7 +976,7 @@ Controller<Renderer>::load_scene(const std::string& scene_file_name)
     // LOAD SOURCES
 
     xpath_result = scene_file->eval_xpath("//scene_setup/source");
-    if (!ptrtools::is_null(xpath_result))
+    if (xpath_result)
     {
       for (Node node; (node = xpath_result->node()); ++(*xpath_result))
       {
@@ -1007,13 +1006,13 @@ Controller<Renderer>::load_scene(const std::string& scene_file_name)
           model = Source::point;
         }
 
-        if ((model == Source::point) && ptrtools::is_null(dir_ptr))
+        if ((model == Source::point) && !dir_ptr)
         {
           // orientation is optional for point sources, required for plane waves
           dir_ptr.reset(new Orientation);
         }
 
-        if (ptrtools::is_null(pos_ptr) || ptrtools::is_null(dir_ptr))
+        if (!pos_ptr || !dir_ptr)
         {
           ERROR("Both position and orientation have to be specified for source"
               << id_str << name_str << "! Not loaded");
@@ -1271,7 +1270,7 @@ Controller<Renderer>::_start_tracker(const std::string& type, const std::string&
     return;
   }
 
-  if (ptrtools::is_null(_tracker))
+  if (!_tracker)
   {
     WARNING("Cannot find tracker. "
             "Make sure that you have the appropriate access rights "
@@ -1285,7 +1284,7 @@ void
 Controller<Renderer>::calibrate_client()
 {
 #if defined(ENABLE_INTERSENSE) || defined(ENABLE_POLHEMUS) || defined(ENABLE_VRPN) || defined(ENABLE_RAZOR)
-  if (!ptrtools::is_null(_tracker))
+  if (_tracker)
   {
     _tracker->calibrate();
   }
@@ -1444,7 +1443,7 @@ Controller<Renderer>::new_source(const std::string& name, const Source::model_t 
   {
 #ifdef ENABLE_ECASOUND
     // if not already running, start AudioPlayer
-    if (ptrtools::is_null(_audio_player))
+    if (!_audio_player)
     {
       _audio_player = AudioPlayer::ptr_t(new AudioPlayer);
     }
@@ -1512,7 +1511,7 @@ Controller<Renderer>::delete_all_sources()
 {
   _publish(&Subscriber::delete_all_sources);
 #ifdef ENABLE_ECASOUND
-  ptrtools::destroy(_audio_player); // shut down audio player
+  _audio_player.reset(); // shut down audio player
 #endif
   // Wait until InternalInput objects are destroyed
   _renderer.wait_for_rt_thread();
@@ -1768,16 +1767,16 @@ Controller<Renderer>::save_scene_as_XML(const std::string& filename) const
 
   // TODO: memory of node is never freed!
 
-  xmlDocPtr doc = xmlNewDoc(NULL);
+  xmlDocPtr doc = xmlNewDoc(nullptr);
   //xmlDocPtr doc = xmlNewDoc(BAD_CAST "1.0");
   if (!doc) return false;
 
   xmlDocSetRootElement(doc, root.get());
 
-  //xmlNewNs(my_node, BAD_CAST "http://www.w3.org/1999/xhtml", NULL);
+  //xmlNewNs(my_node, BAD_CAST "http://www.w3.org/1999/xhtml", nullptr);
 
-  //xmlSaveCtxtPtr ctxt = xmlSaveToFilename(filename.c_str(), NULL, 0);
-  xmlSaveCtxtPtr ctxt = xmlSaveToFilename(filename.c_str(), NULL
+  //xmlSaveCtxtPtr ctxt = xmlSaveToFilename(filename.c_str(), nullptr, 0);
+  xmlSaveCtxtPtr ctxt = xmlSaveToFilename(filename.c_str(), nullptr
       , XML_SAVE_FORMAT);
   if (!ctxt) return false;
 

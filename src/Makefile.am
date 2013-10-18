@@ -111,7 +111,6 @@ SSRSOURCES = \
 	position.cpp \
 	position.h \
 	posixpathtools.h \
-	ptrtools.h \
 	publisher.h \
 	rendererbase.h \
 	scene.cpp \

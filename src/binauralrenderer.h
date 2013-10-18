@@ -82,8 +82,8 @@ class BinauralRenderer : public SourceToOutput<BinauralRenderer, RendererBase>
     apf::raised_cosine_fade<sample_type> _fade;
     size_t _partitions;
     size_t _angles;  // Number of angles in HRIR file
-    std::auto_ptr<hrtf_set_t> _hrtfs;
-    std::auto_ptr<Convolver::Filter> _neutral_filter;
+    std::unique_ptr<hrtf_set_t> _hrtfs;
+    std::unique_ptr<Convolver::Filter> _neutral_filter;
 };
 
 class BinauralRenderer::SourceChannel : public Convolver::Output

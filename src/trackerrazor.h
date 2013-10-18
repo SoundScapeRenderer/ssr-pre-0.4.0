@@ -50,7 +50,7 @@ class TrackerRazor : public Tracker
     /// destructor
     ~TrackerRazor()
     {
-      if (_tracker != NULL) delete _tracker;
+      if (_tracker != nullptr) delete _tracker;
     }
   
   virtual void calibrate() { _az_corr = _current_azimuth + 90.0f; }

@@ -44,7 +44,7 @@
 class AudioPlayer : apf::NonCopyable
 {
   public:
-    typedef std::auto_ptr<AudioPlayer> ptr_t; ///< auto_ptr to AudioPlayer
+    typedef std::unique_ptr<AudioPlayer> ptr_t; ///< unique_ptr to AudioPlayer
 
     class Soundfile; // nested class
 
@@ -71,7 +71,7 @@ class AudioPlayer : apf::NonCopyable
 class AudioPlayer::Soundfile : apf::NonCopyable
 {
   public:
-    typedef std::auto_ptr<Soundfile> ptr_t; ///< auto_ptr to Soundfile
+    typedef std::unique_ptr<Soundfile> ptr_t; ///< unique_ptr to Soundfile
 
     /// exception to be thrown by ctor.
     struct soundfile_error : public std::runtime_error

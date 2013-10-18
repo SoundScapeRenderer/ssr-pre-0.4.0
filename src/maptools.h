@@ -55,7 +55,7 @@ const dataT* get_item(const std::map<idT,dataT*>& m, const idT id)
 {
   typename std::map<idT,dataT*>::const_iterator iter = m.find(id);
   if (iter != m.end()) return iter->second;
-  else return NULL;
+  else return nullptr;
 }
 
 // non-const version
@@ -64,7 +64,7 @@ dataT* get_item(std::map<idT,dataT*>& m, const idT id)
 {
   typename std::map<idT,dataT*>::iterator iter = m.find(id);
   if (iter != m.end()) return iter->second;
-  else return NULL;
+  else return nullptr;
 }
 
 template <typename idT, typename dataT>
@@ -72,7 +72,7 @@ const dataT* get_item(const std::map<idT,dataT>& m, const idT id)
 {
   typename std::map<idT,dataT>::const_iterator iter = m.find(id);
   if (iter != m.end()) return &(iter->second);
-  else return NULL;
+  else return nullptr;
 }
 
 // non-const version
@@ -81,7 +81,7 @@ dataT* get_item(std::map<idT,dataT>& m, const idT id)
 {
   typename std::map<idT,dataT>::iterator iter = m.find(id);
   if (iter != m.end()) return &(iter->second);
-  else return NULL;
+  else return nullptr;
 }
 
 //@}

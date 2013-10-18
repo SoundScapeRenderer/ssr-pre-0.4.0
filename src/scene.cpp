@@ -301,11 +301,11 @@ Source ssr::Scene::get_source(id_t id) const
 /** _.
  * @param id ID of the source
  * @return position of the source
- * @warning If @a id is not found, a auto_ptr to NULL is returned!
+ * @warning If @a id is not found, a unique_ptr to NULL is returned!
  **/
-std::auto_ptr<Position> ssr::Scene::get_source_position(id_t id) const
+std::unique_ptr<Position> ssr::Scene::get_source_position(id_t id) const
 {
-  std::auto_ptr<Position> position(new Position); // standard ctor
+  std::unique_ptr<Position> position(new Position); // standard ctor
   if (_get_source_member(id, &Source::position, *position)) return position;
   position.reset(); // set to NULL
   return position;
@@ -314,11 +314,11 @@ std::auto_ptr<Position> ssr::Scene::get_source_position(id_t id) const
 /** _.
  * @param id ID of the source
  * @return position of the source
- * @warning If @a id is not found, a auto_ptr to NULL is returned!
+ * @warning If @a id is not found, a unique_ptr to NULL is returned!
  **/
-std::auto_ptr<Orientation> ssr::Scene::get_source_orientation(id_t id) const
+std::unique_ptr<Orientation> ssr::Scene::get_source_orientation(id_t id) const
 {
-  std::auto_ptr<Orientation> orientation(new Orientation); // standard ctor
+  std::unique_ptr<Orientation> orientation(new Orientation); // standard ctor
   if (_get_source_member(id, &Source::orientation, *orientation)) return orientation;
   orientation.reset(); // set to NULL
   return orientation;

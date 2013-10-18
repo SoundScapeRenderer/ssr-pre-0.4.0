@@ -91,7 +91,7 @@ ssr::TrackerVrpn::calibrate()
 void
 ssr::TrackerVrpn::_start()
 {
-  pthread_create(&_thread_id, NULL, _thread, this);
+  pthread_create(&_thread_id, nullptr, _thread, this);
   VERBOSE("Starting tracker ...");
 }
 
@@ -105,7 +105,7 @@ ssr::TrackerVrpn::_stop()
 void*
 ssr::TrackerVrpn::_thread(void *arg)
 {
-  return static_cast<TrackerVrpn*>(arg)->thread(NULL);
+  return static_cast<TrackerVrpn*>(arg)->thread(nullptr);
 }
 
 void*

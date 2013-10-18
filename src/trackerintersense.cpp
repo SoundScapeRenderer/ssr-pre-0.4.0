@@ -37,7 +37,6 @@
 #include "trackerintersense.h"
 #include "publisher.h"
 #include "ssr_global.h"
-#include "ptrtools.h"
 #include "posixpathtools.h"
 
 #ifndef _REENTRANT
@@ -164,7 +163,7 @@ void ssr::TrackerInterSense::calibrate()
 void ssr::TrackerInterSense::_start()
 {
   // create thread
-  pthread_create(&_thread_id , NULL, _thread, this);
+  pthread_create(&_thread_id , nullptr, _thread, this);
   WARNING("Tracker started.");
 }
 
@@ -179,7 +178,7 @@ void ssr::TrackerInterSense::_stop()
 
 void* ssr::TrackerInterSense::_thread(void *arg)
 {
-  return reinterpret_cast<TrackerInterSense*> (arg)->thread(NULL);
+  return reinterpret_cast<TrackerInterSense*> (arg)->thread(nullptr);
 }
 
 void* ssr::TrackerInterSense::thread(void *arg)

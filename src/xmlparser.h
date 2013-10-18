@@ -31,7 +31,7 @@
 #define SSR_XMLPARSER_H
 
 #include <string>
-#include <memory> // for std::auto_ptr
+#include <memory> // for std::unique_ptr
 #include <stdexcept>
 #include <libxml/parser.h>
 #include <libxml/xmlschemas.h>
@@ -51,8 +51,8 @@ struct XMLParser
   class XPathResult; // forward declaration
   class Node;        // forward declaration
 
-  typedef std::auto_ptr<Document>    doc_t;
-  typedef std::auto_ptr<XPathResult> xpath_t;
+  typedef std::unique_ptr<Document>    doc_t;
+  typedef std::unique_ptr<XPathResult> xpath_t;
 
   doc_t load_file(const std::string& file_name) const;
   doc_t load_string(const std::string& xml_string) const;
@@ -127,7 +127,7 @@ class XMLParser::Node
 {
   public:
     // ctor is not explicit, can be used for implicit conversions!
-    Node(const xmlNodePtr node = NULL); ///< ctor
+    Node(const xmlNodePtr node = nullptr); ///< ctor
 
     //bool add_child(const Node& child_node);
     xmlNodePtr new_child(const std::string& name,

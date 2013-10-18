@@ -36,7 +36,7 @@ ssr::TrackerRazor::TrackerRazor(Publisher& controller, const std::string& ports)
   , _current_azimuth(0.0f)
   , _az_corr(90.0f)
   , _init_az_corr(true)
-  , _tracker(NULL)
+  , _tracker(nullptr)
 {
   if (ports == "")
   {
@@ -67,7 +67,7 @@ ssr::TrackerRazor::TrackerRazor(Publisher& controller, const std::string& ports)
       break; // stop trying
     }
   }
-  if (_tracker == NULL)
+  if (_tracker == nullptr)
   {
     throw std::runtime_error("Could not open serial port!");
   }

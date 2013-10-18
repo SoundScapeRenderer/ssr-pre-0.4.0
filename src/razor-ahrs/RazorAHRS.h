@@ -90,7 +90,7 @@ class RazorAHRS
     void _start_io_thread()
     {
       // create thread
-      pthread_create(&_thread_id , NULL, _thread_starter, this);
+      pthread_create(&_thread_id , nullptr, _thread_starter, this);
     }
   
     // stop the tracking thread
@@ -103,7 +103,7 @@ class RazorAHRS
 
     static void* _thread_starter(void *arg)
     {
-      return reinterpret_cast<RazorAHRS*> (arg)->_thread(NULL);
+      return reinterpret_cast<RazorAHRS*> (arg)->_thread(nullptr);
     }
     
     std::string to_str(int i)

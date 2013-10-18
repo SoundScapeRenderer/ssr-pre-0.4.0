@@ -123,14 +123,14 @@ RazorAHRS::_init_razor()
   const std::string new_line = "\r\n";
 
   // start time
-  gettimeofday(&t0, NULL);
+  gettimeofday(&t0, nullptr);
 
   // request synch token to see if Razor is really present
   const std::string contact_synch_id = "00"; 
   const std::string contact_synch_request = "#s" + contact_synch_id; 
   const std::string contact_synch_reply = synch_token + contact_synch_id + new_line;
   write(_serial_port, contact_synch_request.data(), contact_synch_request.length());
-  gettimeofday(&t1, NULL);
+  gettimeofday(&t1, nullptr);
 
   // set non-blocking I/O
   if (!_set_nonblocking_io()) return false;
@@ -158,7 +158,7 @@ RazorAHRS::_init_razor()
     }
 
     // check timeout
-    gettimeofday(&t2, NULL);
+    gettimeofday(&t2, nullptr);
     if (elapsed_ms(t1, t2) > 200)
     {
       // 200ms elapsed since last request and no answer -> request synch again

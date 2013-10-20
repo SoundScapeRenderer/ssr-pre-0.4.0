@@ -47,7 +47,7 @@ using apf::str::S2A;
 
 // global variables holding the state
 std::auto_ptr<ssr::NfcHoaRenderer> engine;
-size_t in_channels, out_channels, block_size, sample_rate, threads;
+mwSize in_channels, out_channels, block_size, sample_rate, threads;
 typedef ssr::NfcHoaRenderer::sample_type sample_type;
 std::vector<sample_type*> inputs, outputs;
 
@@ -217,7 +217,7 @@ void init(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
   out_channels = engine->get_output_list().size();
 
-  for (size_t i = 0; i < in_channels; ++i)
+  for (mwSize i = 0; i < in_channels; ++i)
   {
     // TODO: specify ID?
     engine->add_source();
@@ -239,11 +239,11 @@ void process(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   {
     mexErrMsgTxt("Exactly one input and one output is needed for 'process'!");
   }
-  if (mxGetM(prhs[0]) != block_size)
+  if (static_cast<mwSize>(mxGetM(prhs[0])) != block_size)
   {
     mexErrMsgTxt("Number of rows must be the same as block size!");
   }
-  if (mxGetN(prhs[0]) != in_channels)
+  if (static_cast<mwSize>(mxGetN(prhs[0])) != in_channels)
   {
     mexErrMsgTxt("Number of columns must be the same as number of inputs!");
   }
@@ -313,7 +313,7 @@ void source(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     {
       mexErrMsgTxt("source positions must be in a numeric matrix!");
     }
-    if (mxGetN(prhs[0]) != in_channels)
+    if (static_cast<mwSize>(mxGetN(prhs[0])) != in_channels)
     {
       mexErrMsgTxt("Number of columns must be the same as number of sources!");
     }
@@ -331,7 +331,7 @@ void source(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     --nrhs; ++prhs;
     APF_MEX_ERROR_NO_FURTHER_INPUTS("source position");
 
-    for (size_t i = 0; i < in_channels; ++i)
+    for (mwSize i = 0; i < in_channels; ++i)
     {
       // TODO: handle 3D coordinates
 
@@ -354,7 +354,7 @@ void source(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     {
       mexErrMsgTxt("source orientations must be in a numeric matrix!");
     }
-    if (mxGetN(prhs[0]) != in_channels)
+    if (static_cast<mwSize>(mxGetN(prhs[0])) != in_channels)
     {
       mexErrMsgTxt("Number of columns must be the same as number of sources!");
     }
@@ -368,7 +368,7 @@ void source(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     --nrhs; ++prhs;
     APF_MEX_ERROR_NO_FURTHER_INPUTS("source orientation");
 
-    for (size_t i = 0; i < in_channels; ++i)
+    for (mwSize i = 0; i < in_channels; ++i)
     {
       ssr::NfcHoaRenderer::SourceBase* source = engine->get_source(i + 1);
       // TODO: check if source == nullptr

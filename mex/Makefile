@@ -50,9 +50,6 @@ CXXFLAGS += -Wlong-long
 #CXXFLAGS += -Wold-style-cast
 #CXXFLAGS += -Winline
 
-# TODO: remove this at some point:
-CXXFLAGS += -Wno-sign-compare
-
 PKG_CONFIG ?= pkg-config
 MEX_CPPFLAGS += `$(PKG_CONFIG) --cflags $(LIBRARIES)`
 MEX_LDLIBS += `$(PKG_CONFIG) --libs $(LIBRARIES)`

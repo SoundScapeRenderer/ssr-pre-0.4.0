@@ -36,7 +36,6 @@
 #endif
 
 #include "apf/pointer_policy.h"
-// TODO: make switch for Windows threads
 #include "apf/posix_thread_policy.h"
 #include "apf/stringtools.h"
 

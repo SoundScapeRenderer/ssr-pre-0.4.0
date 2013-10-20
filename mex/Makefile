@@ -12,6 +12,8 @@ SRC_DIR ?= ../src
 MEX ?= mex -v
 OCT ?= mkoctfile --mex --verbose
 
+CXXFLAGS += -std=c++11
+
 # optimization:
 CXXFLAGS += -O3
 #CXXFLAGS += -fomit-frame-pointer -ffast-math -funroll-loops

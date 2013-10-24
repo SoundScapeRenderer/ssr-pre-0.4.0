@@ -88,8 +88,6 @@ class NfcHoaRenderer : public LoudspeakerRenderer<NfcHoaRenderer>
     float array_radius;
 
   private:
-    struct _add_distance;
-
     matrix_t _mode_matrix;
     fft_matrix_t _fft_matrix;
     rtlist_t _mode_pair_list, _mode_accumulator_list, _fft_list;
@@ -331,8 +329,7 @@ class NfcHoaRenderer::ModePair : public ProcessItem<ModePair>
 
     APF_PROCESS(ModePair, ProcessItem<ModePair>)
     {
-      // In C++11, std::unique_ptr has a "bool" operator to do "if (_first) ..."
-      if (_first.get())
+      if (_first)
       {
         _first->process();
       }
@@ -343,7 +340,7 @@ class NfcHoaRenderer::ModePair : public ProcessItem<ModePair>
     const Mode* second_ptr() const { return &_second; }
 
   private:
-    std::auto_ptr<Mode> _first;
+    std::unique_ptr<Mode> _first;
     Mode _second;
 };
 
@@ -556,19 +553,6 @@ struct NfcHoaRenderer::Output : _base::Output
   fft_matrix_t::Slice slice;
 };
 
-struct NfcHoaRenderer::_add_distance
-{
-  float
-  operator()(float base, const Output& out)
-  {
-    if (out.model == Loudspeaker::subwoofer)
-    {
-      throw std::logic_error("Subwoofers are currently not supported!");
-    }
-    return base + out.position.length();
-  }
-};
-
 void
 NfcHoaRenderer::load_reproduction_setup()
 {
@@ -581,10 +565,17 @@ NfcHoaRenderer::load_reproduction_setup()
   typedef apf::cast_proxy<Output, rtlist_t> output_list_t;
   output_list_t outputs(const_cast<rtlist_t&>(this->get_output_list()));
 
-  // TODO: with C++11, _add_distance should be replaced by a lambda function
+  auto add_distance = [] (float base, const Output& out)
+  {
+    if (out.model == Loudspeaker::subwoofer)
+    {
+      throw std::logic_error("Subwoofers are currently not supported!");
+    }
+    return base + out.position.length();
+  };
 
   float total = std::accumulate(outputs.begin(), outputs.end(), 0.0f
-      , _add_distance());
+      , add_distance);
 
   // This is only valid if there are no subwoofers:
   size_t normal_loudspeakers = outputs.size();

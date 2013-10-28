@@ -133,7 +133,7 @@ class VbapRenderer : public LoudspeakerRenderer<VbapRenderer>
 
     struct LoudspeakerWeight
     {
-      const Loudspeaker* ls_ptr = nullptr;
+      const Output* ls_ptr = nullptr;
       float weight = 0.0;
     };
 
@@ -189,11 +189,29 @@ class VbapRenderer::Source : public _base::Source
 
     bool get_output_levels(sample_type* first, sample_type* last) const
     {
-      (void)first;
-      (void)last;
+      sample_type* current = first;
 
-      // TODO: set levels all levels to zero except the two active loudspeakers
-      // TODO: and all subwoofers
+      for (const auto& out: rtlist_proxy<Output>(parent.get_output_list()))
+      {
+        // TODO: handle subwoofers!
+
+        if (this->loudspeaker_weights.first.get().ls_ptr == &out)
+        {
+          *current = this->loudspeaker_weights.first.get().weight;
+        }
+        else if (this->loudspeaker_weights.second.get().ls_ptr == &out)
+        {
+          *current = this->loudspeaker_weights.second.get().weight;
+        }
+        else
+        {
+          *current = 0;
+        }
+
+        ++current;
+      }
+      assert(current == last);
+      (void)last;
 
       return true;
     }
@@ -243,8 +261,6 @@ class VbapRenderer::Output : public _base::Output
     {
       // TODO: handle loudspeaker delays?
       // TODO: optional delay line?
-
-      // TODO: original loudspeaker index (for get_output_levels())
     }
 
     APF_PROCESS(Output, _base::Output)

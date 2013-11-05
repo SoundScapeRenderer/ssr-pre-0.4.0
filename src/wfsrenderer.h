@@ -32,7 +32,7 @@
 
 #include "loudspeakerrenderer.h"
 
-#include "apf/convolver.h"  // for Convolver
+#include "apf/convolver.h"  // for apf::conv::...
 #include "apf/blockdelayline.h"  // for NonCausalBlockDelayLine
 #include "apf/sndfiletools.h"  // for apf::load_sndfile
 #include "apf/combine_channels.h"  // for apf::raised_cosine_fade, ...
@@ -43,8 +43,6 @@
 
 namespace ssr
 {
-
-namespace Convolver = apf::conv;
 
 class WfsRenderer : public SourceToOutput<WfsRenderer, LoudspeakerRenderer>
 {
@@ -86,7 +84,7 @@ class WfsRenderer : public SourceToOutput<WfsRenderer, LoudspeakerRenderer>
       // TODO: warning if size changed?
       // TODO: warning if size == 0?
 
-      _pre_filter.reset(new Convolver::Filter(this->block_size()
+      _pre_filter.reset(new apf::conv::Filter(this->block_size()
             , ir.begin(), ir.end()));
     }
 
@@ -97,7 +95,7 @@ class WfsRenderer : public SourceToOutput<WfsRenderer, LoudspeakerRenderer>
 
   private:
     apf::raised_cosine_fade<sample_type> _fade;
-    std::unique_ptr<Convolver::Filter> _pre_filter;
+    std::unique_ptr<apf::conv::Filter> _pre_filter;
 
     size_t _max_delay, _initial_delay;
 };
@@ -122,7 +120,7 @@ class WfsRenderer::Input : public _base::Input
     }
 
   private:
-    Convolver::StaticConvolver _convolver;
+    apf::conv::StaticConvolver _convolver;
     apf::NonCausalBlockDelayLine<sample_type> _delayline;
 };
 

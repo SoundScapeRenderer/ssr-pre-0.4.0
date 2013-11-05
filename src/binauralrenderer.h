@@ -263,16 +263,12 @@ class BinauralRenderer::Source : public Convolver::Input, public _base::Source
     class _interpolate
     {
       public:
-        typedef sample_type result_type;
-        typedef sample_type first_argument_type;
-        typedef sample_type second_argument_type;
-
         _interpolate(sample_type interp_factor)
           : _interp_factor(interp_factor)
         {}
 
-        result_type
-        operator()(first_argument_type one, second_argument_type two) const
+        sample_type
+        operator()(sample_type one, sample_type two) const
         {
           return (1.0f - _interp_factor) * one + _interp_factor * two;
         }

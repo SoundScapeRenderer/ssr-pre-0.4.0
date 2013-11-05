@@ -153,18 +153,16 @@ class WfsRenderer::SourceChannel : public apf::has_begin_and_end<
 class WfsRenderer::RenderFunction
 {
   public:
-    typedef sample_type result_type;
-
     RenderFunction(const Output& out) : _in(0), _out(out) {}
 
     apf::CombineChannelsResult::type select(SourceChannel& in);
 
-    result_type operator()(sample_type in)
+    sample_type operator()(sample_type in)
     {
       return in * _new_factor;
     }
 
-    result_type operator()(sample_type in, apf::fade_out_tag)
+    sample_type operator()(sample_type in, apf::fade_out_tag)
     {
       return in * _old_factor;
     }

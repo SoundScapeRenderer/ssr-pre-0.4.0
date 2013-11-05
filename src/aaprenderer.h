@@ -123,18 +123,16 @@ AapRenderer::Source::get_output_levels(sample_type* first
 class AapRenderer::RenderFunction
 {
   public:
-    typedef sample_type result_type;
-
     RenderFunction(const Output& out) : _out(out) {}
 
     apf::CombineChannelsResult::type select(SourceChannel& in);
 
-    result_type operator()(sample_type in)
+    sample_type operator()(sample_type in)
     {
       return in * _weight;
     }
 
-    result_type operator()(sample_type in, sample_type index)
+    sample_type operator()(sample_type in, sample_type index)
     {
       return in * _interpolator(index);
     }

@@ -162,28 +162,6 @@ class NfcHoaRenderer::Source : public _base::Source
 class NfcHoaRenderer::Mode : public ProcessItem<Mode>
                            , public apf::fixed_vector<sample_type>
 {
-  private:
-    class interpolate_coefficients
-    {
-      public:
-        typedef apf::SosCoefficients<double> result_type;
-        typedef const std::pair<result_type, result_type>& argument_type;
-
-        interpolate_coefficients(double index, double block_size)
-          : _index(index)
-          , _block_size(block_size)
-        {}
-
-        result_type operator()(argument_type coeffs)
-        {
-          return coeffs.first
-            + _index * (coeffs.second - coeffs.first) / _block_size;
-        }
-
-      private:
-        double _index, _block_size;
-    };
-
   public:
     Mode(size_t mode_number, const Source& s)
       : apf::fixed_vector<sample_type>(s.parent.block_size())
@@ -258,12 +236,18 @@ void NfcHoaRenderer::Mode::_process()
       // Calculate one output sample
       *out++ = _filter(*in++);
 
-      // Create function object with current index
-      interpolate_coefficients func(index, block_size);
+      typedef apf::SosCoefficients<double> result_type;
+      typedef const std::pair<result_type, result_type>& argument_type;
+
+      auto interp_coeffs = [index, block_size] (argument_type coeffs)
+      {
+        return coeffs.first
+          + index * (coeffs.second - coeffs.first) / block_size;
+      };
 
       // Set interpolated filter coefficients
-      _filter.set(apf::make_transform_iterator(first_section, func)
-                , apf::make_transform_iterator(last_section, func));
+      _filter.set(apf::make_transform_iterator(first_section, interp_coeffs)
+                , apf::make_transform_iterator(last_section, interp_coeffs));
     }
 
     assert(in == this->source.end());

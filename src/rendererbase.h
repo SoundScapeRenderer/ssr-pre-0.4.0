@@ -158,7 +158,7 @@ class RendererBase : public apf::MimoProcessor<Derived
         const L _input;
         ListProxy _output;
         DataMember _member;
-        typename std::tr1::remove_const<L>::type _garbage;
+        typename std::remove_const<L>::type _garbage;
     };
 
     template<typename L, typename ListProxy, typename DataMember>

@@ -67,7 +67,7 @@ class VbapRenderer : public LoudspeakerRenderer<VbapRenderer>
       , _overhang_angle(
           params.get("vbap_overhang_angle", apf::math::deg2rad(30.0)))
       , _overhang_func(2 * _overhang_angle)
-      , _reference_offset_position(this->state.reference_offset_position())
+      , _reference_offset_position(this->state.reference_offset_position)
     {}
 
     void load_reproduction_setup();
@@ -76,7 +76,7 @@ class VbapRenderer : public LoudspeakerRenderer<VbapRenderer>
     {
       // WARNING: The reference offset is currently broken!
       // To make it work, we have to fiddle a bit.
-      auto temp = this->state.reference_offset_position();
+      auto temp = this->state.reference_offset_position.get();
       temp.rotate(-90.0);
       _reference_offset_position = temp;
 
@@ -102,8 +102,8 @@ class VbapRenderer : public LoudspeakerRenderer<VbapRenderer>
 
       _absolute_reference_offset_position
         = Position(_reference_offset_position).rotate(
-            this->state.reference_orientation())
-        + this->state.reference_position();
+            this->state.reference_orientation)
+        + this->state.reference_position;
 
       _process_list(_source_list);
     }
@@ -163,9 +163,9 @@ class VbapRenderer::Source : public _base::Source
       // NOTE: reference_offset_orientation doesn't affect rendering
 
       float incidence_angle = apf::math::wrap_two_pi(apf::math::deg2rad(
-            ((this->position()
+            ((this->position
               - this->parent._absolute_reference_offset_position).orientation()
-             - this->parent.state.reference_orientation()).azimuth));
+             - this->parent.state.reference_orientation).azimuth));
 
       auto l_begin = this->parent._sorted_loudspeakers.begin();
       auto l_end = this->parent._sorted_loudspeakers.end();

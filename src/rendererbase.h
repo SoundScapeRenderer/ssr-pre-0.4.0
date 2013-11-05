@@ -407,16 +407,16 @@ class RendererBase<Derived>::Source
 
       this->old_weighting_factor = this->weighting_factor;
 
-      if (!_input.parent.state.processing() || this->mute())
+      if (!_input.parent.state.processing || this->mute)
       {
         this->weighting_factor = 0.0;
       }
       else
       {
-        this->weighting_factor = this->gain();
+        this->weighting_factor = this->gain;
         // If the renderer does something nonlinear, the master volume should
         // be applied to the output signal ... TODO: shall we care?
-        this->weighting_factor *= _input.parent.state.master_volume();
+        this->weighting_factor *= _input.parent.state.master_volume;
         this->weighting_factor *= _input.parent.master_volume_correction;
       }
 

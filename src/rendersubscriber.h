@@ -69,7 +69,7 @@ class RenderSubscriber : public Subscriber
       typename Renderer::Source* src
         = static_cast<typename Renderer::Source*>(_renderer.get_source(id));
       if (!src) return false;
-      src->position(position);
+      src->position = position;
       _renderer.unlock();
       return true;
     }
@@ -81,7 +81,7 @@ class RenderSubscriber : public Subscriber
       typename Renderer::Source* src
         = static_cast<typename Renderer::Source*>(_renderer.get_source(id));
       if (!src) return false;
-      src->orientation(orientation);
+      src->orientation = orientation;
       _renderer.unlock();
       return true;
     }
@@ -93,7 +93,7 @@ class RenderSubscriber : public Subscriber
       typename Renderer::Source* src
         = static_cast<typename Renderer::Source*>(_renderer.get_source(id));
       if (!src) return false;
-      src->gain(gain);
+      src->gain = gain;
       _renderer.unlock();
       return true;
     }
@@ -105,7 +105,7 @@ class RenderSubscriber : public Subscriber
       typename Renderer::Source* src
         = static_cast<typename Renderer::Source*>(_renderer.get_source(id));
       if (!src) return false;
-      src->mute(mute);
+      src->mute = mute;
       _renderer.unlock();
       return true;
     }
@@ -131,7 +131,7 @@ class RenderSubscriber : public Subscriber
       typename Renderer::Source* src
         = static_cast<typename Renderer::Source*>(_renderer.get_source(id));
       if (!src) return false;
-      src->model(model);
+      src->model = model;
       _renderer.unlock();
       return true;
     }
@@ -168,7 +168,7 @@ class RenderSubscriber : public Subscriber
     {
       // TODO: change API, move locking inside RendererBase
       _renderer.lock();
-      _renderer.state.reference_position(position);
+      _renderer.state.reference_position = position;
       _renderer.unlock();
     }
 
@@ -176,7 +176,7 @@ class RenderSubscriber : public Subscriber
     {
       // TODO: change API, move locking inside RendererBase
       _renderer.lock();
-      _renderer.state.reference_orientation(orientation);
+      _renderer.state.reference_orientation = orientation;
       _renderer.unlock();
     }
 
@@ -184,7 +184,7 @@ class RenderSubscriber : public Subscriber
     {
       // TODO: change API, move locking inside RendererBase
       _renderer.lock();
-      _renderer.state.reference_offset_position(position);
+      _renderer.state.reference_offset_position = position;
       _renderer.unlock();
     }
 
@@ -192,7 +192,7 @@ class RenderSubscriber : public Subscriber
     {
       // TODO: change API, move locking inside RendererBase
       _renderer.lock();
-      _renderer.state.reference_offset_orientation(orientation);
+      _renderer.state.reference_offset_orientation = orientation;
       _renderer.unlock();
     }
 
@@ -200,7 +200,7 @@ class RenderSubscriber : public Subscriber
     {
       // TODO: change API, move locking inside RendererBase
       _renderer.lock();
-      _renderer.state.master_volume(volume);
+      _renderer.state.master_volume = volume;
       _renderer.unlock();
     }
 
@@ -210,7 +210,7 @@ class RenderSubscriber : public Subscriber
     {
       // TODO: change API, move locking inside RendererBase
       _renderer.lock();
-      _renderer.state.processing(state);
+      _renderer.state.processing = state;
       _renderer.unlock();
     }
 
@@ -224,7 +224,7 @@ class RenderSubscriber : public Subscriber
     {
       // TODO: change API, move locking inside RendererBase
       _renderer.lock();
-      _renderer.state.amplitude_reference_distance(distance);
+      _renderer.state.amplitude_reference_distance = distance;
       _renderer.unlock();
     }
 

@@ -154,7 +154,7 @@ class BrsRenderer::Source : public _base::Source
 
       _old_brtf_index = _brtf_index;
 
-      float azi = this->parent.state.reference_orientation().azimuth;
+      float azi = this->parent.state.reference_orientation.get().azimuth;
 
       // TODO: get reference offset!
 

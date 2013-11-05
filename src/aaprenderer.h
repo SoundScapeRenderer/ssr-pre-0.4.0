@@ -232,9 +232,9 @@ AapRenderer::RenderFunction::select(SourceChannel& in)
     // To make it work, we have to fiddle a bit.
 
     float alpha_0  = deg2rad((_out.position).orientation().azimuth);
-    float theta_pw = deg2rad(((in.source.position() -
-            _out.parent.state.reference_position()).orientation()
-          - _out.parent.state.reference_orientation()).azimuth + 90.0f);
+    float theta_pw = deg2rad(((in.source.position -
+            _out.parent.state.reference_position).orientation()
+          - _out.parent.state.reference_orientation).azimuth + 90.0f);
 
     // TODO: wrap angles?
 
@@ -267,16 +267,16 @@ AapRenderer::RenderFunction::select(SourceChannel& in)
   // TODO: centralize distance attenuation
 
   // no distance attenuation for plane waves 
-  if (in.source.model() == ::Source::plane)
+  if (in.source.model == ::Source::plane)
   {
-    auto ampl_ref = _out.parent.state.amplitude_reference_distance();
+    auto ampl_ref = _out.parent.state.amplitude_reference_distance;
     weighting_factor *= 0.5f / ampl_ref;  // 1/r
     //weighting_factor *= 0.25f / sqrt(ampl_ref);  // 1/sqrt(r)
   }
   else
   {
     auto source_distance
-      = (in.source.position() - _out.parent.state.reference_position()).length();
+      = (in.source.position - _out.parent.state.reference_position).length();
 
     // no volume increase for sources closer than 0.5m to reference position
     source_distance = std::max(source_distance, 0.5f);

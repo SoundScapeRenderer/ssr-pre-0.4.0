@@ -295,20 +295,20 @@ void BinauralRenderer::Source::_process()
 
   this->add_block(_input.begin());
 
-  const Position& ref_pos = _input.parent.state.reference_position()
-    + _input.parent.state.reference_offset_position();
-  const Orientation& ref_ori = _input.parent.state.reference_orientation()
-    + _input.parent.state.reference_offset_orientation();
+  const Position& ref_pos = _input.parent.state.reference_position
+    + _input.parent.state.reference_offset_position;
+  const Orientation& ref_ori = _input.parent.state.reference_orientation
+    + _input.parent.state.reference_offset_orientation;
 
   if (this->weighting_factor != 0)
   {
     _weight = 1;
 
-    if (this->model() == ::Source::plane)
+    if (this->model == ::Source::plane)
     {
       // no distance attenuation for plane waves 
       // 1/r:
-      _weight *= 0.5f / _input.parent.state.amplitude_reference_distance();
+      _weight *= 0.5f / _input.parent.state.amplitude_reference_distance;
 
       // 1/sqrt(r):
       //_weight *= 0.25f / sqrt(
@@ -317,7 +317,7 @@ void BinauralRenderer::Source::_process()
     else
     {
       float source_distance
-        = (this->position() - ref_pos).length();
+        = (this->position - ref_pos).length();
 
       if (source_distance < 0.5f)
       {
@@ -341,7 +341,7 @@ void BinauralRenderer::Source::_process()
   float angles = _input.parent._angles;
 
   // calculate relative orientation of sound source
-  Orientation rel_ori = (this->position()-ref_pos).orientation() - ref_ori;
+  Orientation rel_ori = (this->position - ref_pos).orientation() - ref_ori;
   _hrtf_index = size_t(apf::math::wrap(
       rel_ori.azimuth * angles / 360.0f + 0.5f, angles));
 

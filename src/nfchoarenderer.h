@@ -110,21 +110,21 @@ class NfcHoaRenderer::Source : public _base::Source
       // NOTE: reference offset is not taken into account!
 
       // distance is only used for point sources (but is updated anyway)
-      this->distance = (this->position()
-          - this->parent.state.reference_position()).length();
+      this->distance = (this->position
+          - this->parent.state.reference_position).length();
 
       // TODO: distance is not correct for plane waves!
       // This is only important for the delay
 
       Orientation source_orientation;
 
-      switch (this->model())
+      switch (this->model)
       {
         default:
         case ::Source::point:
           this->source_model = coeff_t::point_source;
-          source_orientation = (this->position()
-              - this->parent.state.reference_position()).orientation();
+          source_orientation = (this->position
+              - this->parent.state.reference_position).orientation();
           // TODO: proper calculation of attenuation factor, this is temporary!
           {
             float distance_limit = 0.25f;
@@ -134,14 +134,14 @@ class NfcHoaRenderer::Source : public _base::Source
           break;
         case ::Source::plane:
           this->source_model = coeff_t::plane_wave;
-          source_orientation = this->orientation() - Orientation(180);
+          source_orientation = this->orientation - Orientation(180);
           // Note: no distance attenuation for plane waves!
           // TODO: constant factor using amplitude_reference_distance()?
           break;
       }
 
       this->angle = apf::math::deg2rad(90 + (source_orientation
-            - this->parent.state.reference_orientation()).azimuth);
+            - this->parent.state.reference_orientation).azimuth);
 
       // TODO: calculate delay
 

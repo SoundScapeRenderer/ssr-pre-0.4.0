@@ -246,7 +246,7 @@ class WfsRenderer::Source : public _base::Source
 
 void WfsRenderer::Source::_process()
 {
-  if (this->model() == ::Source::plane)
+  if (this->model == ::Source::plane)
   {
     // do nothing, focused-ness is irrelevant for plane waves
     _focused = false;
@@ -269,11 +269,11 @@ void WfsRenderer::Source::_process()
 
       // TODO: avoid getting reference 2 times (see select())
       DirectionalPoint ls = *out;
-      DirectionalPoint ref(out->parent.state.reference_position()
-      , out->parent.state.reference_orientation());
+      DirectionalPoint ref(out->parent.state.reference_position
+      , out->parent.state.reference_orientation);
       ls.transform(ref);
 
-      sample_type a = apf::math::wrap(angle(ls.position - this->position()
+      sample_type a = apf::math::wrap(angle(ls.position - this->position
             , ls.orientation), 2 * apf::math::pi<sample_type>());
 
       sample_type halfpi = apf::math::pi<sample_type>()/2;
@@ -306,15 +306,15 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
   const float safety_radius = 0.01f; // 1 cm
 
   // TODO: move reference calculation to WfsRenderer::Process?
-  DirectionalPoint ref(_out.parent.state.reference_position()
-      , _out.parent.state.reference_orientation());
+  DirectionalPoint ref(_out.parent.state.reference_position
+      , _out.parent.state.reference_orientation);
 
   // TODO: this is actually wrong!
   // We use it to be compatible with the (also wrong) GUI implementation.
   DirectionalPoint ref_off = ref;
   ref_off.transform(DirectionalPoint(
-        _out.parent.state.reference_offset_position()
-        , _out.parent.state.reference_offset_orientation()));
+        _out.parent.state.reference_offset_position
+        , _out.parent.state.reference_offset_orientation));
 
   in.old_weighting_factor = in.weighting_factor;
   in.old_delay = in.delay;
@@ -323,7 +323,7 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
   float delay = 0;
 
   Loudspeaker ls = _out;
-  Position src_pos = in.source.position();
+  Position src_pos = in.source.position;
 
   // TODO: shortcut if in.source.weighting_factor == 0
 
@@ -334,7 +334,7 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
 
   float source_ls_distance = (ls.position - src_pos).length();
 
-  switch (in.source.model()) // check if point source or plane wave or ...
+  switch (in.source.model) // check if point source or plane wave or ...
   {
     case ::Source::point:
       if (ls.model == Loudspeaker::subwoofer)
@@ -443,14 +443,14 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
         weighting_factor = 1.0f; // TODO: is this correct?
         // the delay is calculated to be correct on the reference position
         // delay can be negative!
-        delay = DirectionalPoint(in.source.position(), in.source.orientation())
+        delay = DirectionalPoint(in.source.position, in.source.orientation)
           .plane_to_point_distance(ref_off.position) - reference_distance;
         break; // step out of switch
       }
 
       // weighting factor is determined by the cosine of the angle
       // difference between plane wave direction and loudspeaker direction
-      weighting_factor = cos(angle(in.source.orientation(), ls.orientation));
+      weighting_factor = cos(angle(in.source.orientation, ls.orientation));
       // check if loudspeaker is active for this source
       if (weighting_factor < 0)
       {
@@ -459,7 +459,7 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
         break;
       }
 
-      delay = DirectionalPoint(in.source.position(), in.source.orientation())
+      delay = DirectionalPoint(in.source.position, in.source.orientation)
         .plane_to_point_distance(ls.position);
 
       if (delay < 0.0)
@@ -478,9 +478,9 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
   } // switch source model
 
   // no distance attenuation for plane waves 
-  if (in.source.model() == ::Source::plane)
+  if (in.source.model == ::Source::plane)
   {
-    float ampl_ref = _out.parent.state.amplitude_reference_distance();
+    float ampl_ref = _out.parent.state.amplitude_reference_distance;
     assert(ampl_ref > 0);
 
     // 1/r:

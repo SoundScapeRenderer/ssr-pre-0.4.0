@@ -65,48 +65,44 @@ class RenderSubscriber : public Subscriber
     virtual bool set_source_position(id_t id, const Position& position)
     {
       // TODO: change API, move locking inside RendererBase
-      _renderer.lock();
+      auto lock = _renderer.get_scoped_lock();
       typename Renderer::Source* src
         = static_cast<typename Renderer::Source*>(_renderer.get_source(id));
       if (!src) return false;
       src->position = position;
-      _renderer.unlock();
       return true;
     }
 
     virtual bool set_source_orientation(id_t id, const Orientation& orientation)
     {
       // TODO: change API, move locking inside RendererBase
-      _renderer.lock();
+      auto lock = _renderer.get_scoped_lock();
       typename Renderer::Source* src
         = static_cast<typename Renderer::Source*>(_renderer.get_source(id));
       if (!src) return false;
       src->orientation = orientation;
-      _renderer.unlock();
       return true;
     }
 
     virtual bool set_source_gain(id_t id, const float& gain)
     {
       // TODO: change API, move locking inside RendererBase
-      _renderer.lock();
+      auto lockk = _renderer.get_scoped_lock();
       typename Renderer::Source* src
         = static_cast<typename Renderer::Source*>(_renderer.get_source(id));
       if (!src) return false;
       src->gain = gain;
-      _renderer.unlock();
       return true;
     }
 
     virtual bool set_source_mute(id_t id, const bool& mute)
     {
       // TODO: change API, move locking inside RendererBase
-      _renderer.lock();
+      auto lock = _renderer.get_scoped_lock();
       typename Renderer::Source* src
         = static_cast<typename Renderer::Source*>(_renderer.get_source(id));
       if (!src) return false;
       src->mute = mute;
-      _renderer.unlock();
       return true;
     }
 
@@ -127,12 +123,11 @@ class RenderSubscriber : public Subscriber
     virtual bool set_source_model(id_t id, const Source::model_t& model)
     {
       // TODO: change API, move locking inside RendererBase
-      _renderer.lock();
+      auto lock = _renderer.get_scoped_lock();
       typename Renderer::Source* src
         = static_cast<typename Renderer::Source*>(_renderer.get_source(id));
       if (!src) return false;
       src->model = model;
-      _renderer.unlock();
       return true;
     }
 
@@ -167,41 +162,36 @@ class RenderSubscriber : public Subscriber
     virtual void set_reference_position(const Position& position)
     {
       // TODO: change API, move locking inside RendererBase
-      _renderer.lock();
+      auto lock = _renderer.get_scoped_lock();
       _renderer.state.reference_position = position;
-      _renderer.unlock();
     }
 
     virtual void set_reference_orientation(const Orientation& orientation)
     {
       // TODO: change API, move locking inside RendererBase
-      _renderer.lock();
+      auto lock = _renderer.get_scoped_lock();
       _renderer.state.reference_orientation = orientation;
-      _renderer.unlock();
     }
 
     virtual void set_reference_offset_position(const Position& position)
     {
       // TODO: change API, move locking inside RendererBase
-      _renderer.lock();
+      auto lock = _renderer.get_scoped_lock();
       _renderer.state.reference_offset_position = position;
-      _renderer.unlock();
     }
 
     virtual void set_reference_offset_orientation(const Orientation& orientation)
     {
       // TODO: change API, move locking inside RendererBase
-      _renderer.lock();
+      auto lock = _renderer.get_scoped_lock();
       _renderer.state.reference_offset_orientation = orientation;
-      _renderer.unlock();
     }
 
     virtual void set_master_volume(float volume)
     {
       // TODO: change API, move locking inside RendererBase
-      _renderer.lock();
+      auto lock = _renderer.get_scoped_lock();
       _renderer.state.master_volume = volume;
-      _renderer.unlock();
     }
 
     virtual void set_source_output_levels(id_t, float*, float*) {}
@@ -209,9 +199,8 @@ class RenderSubscriber : public Subscriber
     virtual void set_processing_state(bool state)
     {
       // TODO: change API, move locking inside RendererBase
-      _renderer.lock();
+      auto lock = _renderer.get_scoped_lock();
       _renderer.state.processing = state;
-      _renderer.unlock();
     }
 
     virtual void set_transport_state(
@@ -223,9 +212,8 @@ class RenderSubscriber : public Subscriber
     virtual void set_amplitude_reference_distance(float distance)
     {
       // TODO: change API, move locking inside RendererBase
-      _renderer.lock();
+      auto lock = _renderer.get_scoped_lock();
       _renderer.state.amplitude_reference_distance = distance;
-      _renderer.unlock();
     }
 
     virtual void set_master_signal_level(float level)

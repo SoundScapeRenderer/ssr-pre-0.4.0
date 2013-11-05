@@ -54,8 +54,8 @@ namespace ssr
  *
  * The parallel rendering engine uses the non-blocking datastructure RtList to
  * communicate between realtime and non-realtime threads.
- * All non-realtime accesses to RtList%s have to be locked with lock()/unlock()
- * or with ScopedLock to ensure single-reader/single-writer operation.
+ * All non-realtime accesses to RtList%s have to be locked with
+ * get_scoped_lock() to ensure single-reader/single-writer operation.
  **/
 template<typename Derived>
 class RendererBase : public apf::MimoProcessor<Derived
@@ -187,10 +187,11 @@ class RendererBase : public apf::MimoProcessor<Derived
     template<typename SomeListType>
     void get_loudspeakers(SomeListType&) {}
 
-    // TODO: C++11: replace by get_scoped_lock() which returns a std::unique_ptr
-    void lock() { _lock.lock(); }
-
-    void unlock() { _lock.unlock(); }
+    std::unique_ptr<ScopedLock> get_scoped_lock()
+    {
+      // TODO: in C++14, use make_unique()
+      return std::unique_ptr<ScopedLock>(new ScopedLock(_lock));
+    }
 
     const sample_type master_volume_correction;  // linear
 

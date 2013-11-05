@@ -161,8 +161,8 @@ ssr::conf_struct ssr::configuration(int& argc, char* argv[])
   conf.renderer_params.set("hrir_file", SSR_DATA_DIR"/default_hrirs.wav");
 
   // for AAP renderer
-  conf.ambisonics_order = 0; // "0" means use maximum that makes sense
-  conf.in_phase_rendering = false;
+  conf.renderer_params.set("ambisonics_order", 0); // "0" means use maximum that makes sense
+  conf.renderer_params.set("in_phase", false);
 #if defined(ENABLE_POLHEMUS)
   conf.tracker = "polhemus";
 #elif defined(ENABLE_VRPN)
@@ -356,7 +356,7 @@ ssr::conf_struct ssr::configuration(int& argc, char* argv[])
         }
         else if (strcmp("in-phase-rendering", longopts[longindex].name) == 0)
         {
-          conf.in_phase_rendering = true;
+          conf.renderer_params.set("in_phase", true);
         }
         else if (strcmp("input-prefix", longopts[longindex].name) == 0)
         {
@@ -449,7 +449,7 @@ ssr::conf_struct ssr::configuration(int& argc, char* argv[])
         break;
 
       case 'o':
-        conf.ambisonics_order = atoi(optarg);
+        conf.renderer_params.set("ambisonics_order", atoi(optarg));
         break;
 
       case 'r':
@@ -707,14 +707,14 @@ int ssr::load_config_file(const char *filename, conf_struct& conf){
     }
     else if (!strcmp(key, "AMBISONICS_ORDER"))
     {
-      conf.ambisonics_order = atoi(value);
+      conf.renderer_params.set("ambisonics_order", atoi(value));
     }
     else if (!strcmp(key, "IN_PHASE_RENDERING"))
     {
-      if (!strcasecmp(value,"TRUE")) conf.in_phase_rendering = true;
-      else if (!strcasecmp(value,"true")) conf.in_phase_rendering = true;
-      else if (!strcasecmp(value,"FALSE")) conf.in_phase_rendering = false;
-      else if (!strcasecmp(value,"false")) conf.in_phase_rendering = false;
+      if (!strcasecmp(value,"TRUE")) conf.renderer_params.set("in_phase", true);
+      else if (!strcasecmp(value,"true")) conf.renderer_params.set("in_phase", true);
+      else if (!strcasecmp(value,"FALSE")) conf.renderer_params.set("in_phase", false);
+      else if (!strcasecmp(value,"false")) conf.renderer_params.set("in_phase", false);
       else ERROR("I don't understand the option '" << value
           << "' for in-phase rendering.");
     }

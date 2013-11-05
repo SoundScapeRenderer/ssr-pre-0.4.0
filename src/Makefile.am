@@ -6,10 +6,10 @@
 ## to Makefile), comments with ## are dropped.
 
 ## TODO: make optional
-bin_PROGRAMS = ssr-binaural ssr-wfs ssr-generic ssr-brs ssr-nfc-hoa ssr-vbap
+bin_PROGRAMS = ssr-binaural ssr-wfs ssr-generic ssr-brs ssr-nfc-hoa ssr-vbap ssr-aap
 
 ## All possible optional programs must be listed here
-EXTRA_PROGRAMS = ssr-binaural ssr-wfs ssr-generic ssr-brs ssr-nfc-hoa ssr-vbap
+EXTRA_PROGRAMS = ssr-binaural ssr-wfs ssr-generic ssr-brs ssr-nfc-hoa ssr-vbap ssr-aap
 
 ## CPPFLAGS: preprocessor flags, e.g. -I and -D
 ## -I., -I$(srcdir), and a -I pointing to the directory holding config.h
@@ -66,6 +66,12 @@ ssr_vbap_SOURCES = ssr_vbap.cpp vbaprenderer.h \
 	$(SSRSOURCES)
 
 nodist_ssr_vbap_SOURCES = $(SSRMOCFILES)
+
+ssr_aap_SOURCES = ssr_aap.cpp aaprenderer.h \
+	$(LOUDSPEAKERSOURCES) \
+	$(SSRSOURCES)
+
+nodist_ssr_aap_SOURCES = $(SSRMOCFILES)
 
 ssr_brs_SOURCES = ssr_brs.cpp brsrenderer.h \
 	$(SSRSOURCES)

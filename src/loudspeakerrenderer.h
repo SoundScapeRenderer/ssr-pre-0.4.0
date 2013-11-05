@@ -51,6 +51,8 @@ class LoudspeakerRenderer : public RendererBase<Derived>
       public:
         struct Params : _base::Output::Params, Loudspeaker {};
 
+        // TODO: handle loudspeaker delays?
+
         Output(const Params& p) : _base::Output(p), Loudspeaker(p) {}
     };
 

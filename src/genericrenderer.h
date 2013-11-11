@@ -32,14 +32,12 @@
 
 #include "loudspeakerrenderer.h"
 
-#include "apf/convolver.h"  // for Convolver
+#include "apf/convolver.h"  // for apf::conv::*
 #include "apf/sndfiletools.h"  // for apf::load_sndfile
 #include "apf/combine_channels.h"  // for apf::raised_cosine_fade, ...
 
 namespace ssr
 {
-
-namespace Convolver = apf::conv;
 
 class GenericRenderer : public SourceToOutput<GenericRenderer
                                                           , LoudspeakerRenderer>
@@ -83,7 +81,7 @@ struct GenericRenderer::SourceChannel : apf::has_begin_and_end<sample_type*>
 
   const Source& source;
 
-  Convolver::StaticOutput convolver;
+  apf::conv::StaticOutput convolver;
 };
 
 class GenericRenderer::Source : public _base::Source
@@ -111,8 +109,8 @@ class GenericRenderer::Source : public _base::Source
 
       size_t block_size = this->parent.block_size();
 
-      _convolver.reset(new Convolver::Input(block_size
-            , Convolver::min_partitions(block_size, size)));
+      _convolver.reset(new apf::conv::Input(block_size
+            , apf::conv::min_partitions(block_size, size)));
 
       this->sourcechannels.allocate(outputs);
 
@@ -134,7 +132,7 @@ class GenericRenderer::Source : public _base::Source
 
     sample_type _new_weighting_factor, _old_weighting_factor;
 
-    std::auto_ptr<Convolver::Input> _convolver;
+    std::auto_ptr<apf::conv::Input> _convolver;
 };
 
 template<typename In>

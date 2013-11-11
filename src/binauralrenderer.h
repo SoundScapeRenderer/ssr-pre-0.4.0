@@ -32,15 +32,13 @@
 
 #include "rendererbase.h"
 #include "apf/iterator.h"  // for apf::cast_proxy, apf::make_cast_proxy()
-#include "apf/convolver.h"  // for apf::Convolver
+#include "apf/convolver.h"  // for apf::conv::*
 #include "apf/container.h"  // for apf::fixed_matrix
 #include "apf/sndfiletools.h"  // for apf::load_sndfile
 #include "apf/combine_channels.h"  // for apf::raised_cosine_fade, ...
 
 namespace ssr
 {
-
-namespace Convolver = apf::conv;
 
 // TODO: derive from HeadphoneRenderer?
 class BinauralRenderer : public SourceToOutput<BinauralRenderer, RendererBase>
@@ -70,7 +68,7 @@ class BinauralRenderer : public SourceToOutput<BinauralRenderer, RendererBase>
     }
 
   private:
-    typedef apf::fixed_vector<Convolver::Filter> hrtf_set_t;
+    typedef apf::fixed_vector<apf::conv::Filter> hrtf_set_t;
 
     void _load_hrtfs(const std::string& filename, size_t size);
 
@@ -83,16 +81,16 @@ class BinauralRenderer : public SourceToOutput<BinauralRenderer, RendererBase>
     size_t _partitions;
     size_t _angles;  // Number of angles in HRIR file
     std::unique_ptr<hrtf_set_t> _hrtfs;
-    std::unique_ptr<Convolver::Filter> _neutral_filter;
+    std::unique_ptr<apf::conv::Filter> _neutral_filter;
 };
 
-class BinauralRenderer::SourceChannel : public Convolver::Output
+class BinauralRenderer::SourceChannel : public apf::conv::Output
                                       , public apf::has_begin_and_end<float*>
 {
   public:
-    explicit SourceChannel(const Convolver::Input* input)
+    explicit SourceChannel(const apf::conv::Input* input)
       // TODO: assert that input != 0?
-      : Convolver::Output(*input)
+      : apf::conv::Output(*input)
       , temporary_hrtf(input->block_size(), input->partitions())
       , _block_size(input->block_size())
     {}
@@ -108,7 +106,7 @@ class BinauralRenderer::SourceChannel : public Convolver::Output
       this->convolve_and_more(this->weight);
     }
 
-    Convolver::Filter temporary_hrtf;
+    apf::conv::Filter temporary_hrtf;
 
     sample_type weight;
     apf::CombineChannelsResult::type crossfade_mode;
@@ -142,9 +140,9 @@ BinauralRenderer::_load_hrtfs(const std::string& filename, size_t size)
 
   size = hrir_file.readf(transpose.begin(), size);
 
-  _partitions = Convolver::min_partitions(this->block_size(), size);
+  _partitions = apf::conv::min_partitions(this->block_size(), size);
 
-  Convolver::Transform temp(this->block_size());
+  apf::conv::Transform temp(this->block_size());
 
   _hrtfs.reset(new hrtf_set_t(std::make_pair(no_of_channels
           , std::make_pair(_partitions, temp.partition_size()))));
@@ -169,7 +167,7 @@ BinauralRenderer::_load_hrtfs(const std::string& filename, size_t size)
   apf::fixed_vector<sample_type> impulse(index + 1);
   impulse.back() = 1;
 
-  _neutral_filter.reset(new Convolver::Filter(this->block_size()
+  _neutral_filter.reset(new apf::conv::Filter(this->block_size()
         , impulse.begin(), impulse.end()));
   // Number of partitions may be different from _hrtfs!
 }
@@ -238,7 +236,7 @@ void BinauralRenderer::load_reproduction_setup()
   this->add(params);
 }
 
-class BinauralRenderer::Source : public Convolver::Input, public _base::Source
+class BinauralRenderer::Source : public apf::conv::Input, public _base::Source
 {
   private:
     void _process();
@@ -246,7 +244,7 @@ class BinauralRenderer::Source : public Convolver::Input, public _base::Source
   public:
     Source(const Params& p)
       // TODO: assert that p.parent != 0?
-      : Convolver::Input(p.parent->block_size(), p.parent->_partitions)
+      : apf::conv::Input(p.parent->block_size(), p.parent->_partitions)
       , _base::Source(p, std::make_pair(size_t(2), this))
       , _hrtf_index(-1)
       , _interp_factor(-1)
@@ -391,7 +389,7 @@ void BinauralRenderer::Source::_process()
     if (hrtf_changed)
     {
       // left and right channels are interleaved
-      Convolver::Filter& hrtf
+      apf::conv::Filter& hrtf
         = (*_input.parent._hrtfs)[2 * _hrtf_index + i];
 
       if (_interp_factor == 0)

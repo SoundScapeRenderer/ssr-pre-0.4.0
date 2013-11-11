@@ -32,14 +32,12 @@
 
 #include "rendererbase.h"
 
-#include "apf/convolver.h"  // for Convolver
+#include "apf/convolver.h"  // for apf::conv::*
 #include "apf/sndfiletools.h"  // for apf::load_sndfile
 #include "apf/combine_channels.h"  // for apf::raised_cosine_fade, ...
 
 namespace ssr
 {
-
-namespace Convolver = apf::conv;
 
 class BrsRenderer : public SourceToOutput<BrsRenderer, RendererBase>
 {
@@ -72,10 +70,10 @@ class BrsRenderer : public SourceToOutput<BrsRenderer, RendererBase>
 };
 
 struct BrsRenderer::SourceChannel : apf::has_begin_and_end<sample_type*>
-                                  , Convolver::Output
+                                  , apf::conv::Output
 {
-  explicit SourceChannel(const Convolver::Input& in)
-    : Convolver::Output(in)
+  explicit SourceChannel(const apf::conv::Input& in)
+    : apf::conv::Output(in)
   {}
 
   // out-of-class definition because of cyclic dependencies with Source
@@ -121,9 +119,9 @@ class BrsRenderer::Source : public _base::Source
 
       size_t block_size = this->parent.block_size();
 
-      Convolver::Transform temp(block_size);
+      apf::conv::Transform temp(block_size);
 
-      size_t partitions = Convolver::min_partitions(block_size, size);
+      size_t partitions = apf::conv::min_partitions(block_size, size);
 
       _brtf_set.reset(new brtf_set_t(std::make_pair(no_of_channels
               , std::make_pair(partitions, temp.partition_size()))));
@@ -138,7 +136,7 @@ class BrsRenderer::Source : public _base::Source
 
       assert(target == _brtf_set->end());
 
-      _convolver_input.reset(new Convolver::Input(block_size, partitions));
+      _convolver_input.reset(new apf::conv::Input(block_size, partitions));
 
       this->sourcechannels.allocate(2);
       this->sourcechannels.emplace_back(*_convolver_input);
@@ -218,13 +216,13 @@ class BrsRenderer::Source : public _base::Source
     }
 
   private:
-    typedef apf::fixed_vector<Convolver::Filter> brtf_set_t;
+    typedef apf::fixed_vector<apf::conv::Filter> brtf_set_t;
     std::auto_ptr<brtf_set_t> _brtf_set;
 
     sample_type _new_weighting_factor, _old_weighting_factor;
     size_t _brtf_index, _old_brtf_index;
 
-    std::auto_ptr<Convolver::Input> _convolver_input;
+    std::auto_ptr<apf::conv::Input> _convolver_input;
 
     size_t _angles;  // Number of angles in BRIR file
 };

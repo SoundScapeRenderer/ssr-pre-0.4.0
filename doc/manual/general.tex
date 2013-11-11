@@ -9,8 +9,7 @@ The current implementation provides Wave Field Synthesis (WFS),
 binaural (HRTF-based) reproduction, binaural room (re-)synthesis (BRTF-based
 reproduction), head-tracked binaural playback, Ambisonics Amplitude Panning 
 (AAP), and Vector Base Amplitude Panning (VBAP).
-There are also some more exotic options like the Binaural Playback Renderer
-(BPB) and the Generic Renderer.
+There are also the slightly exotic Generic Renderer.
 For each rendering algorithm there is a separate executable file.
 For more details see section~\ref{sec:renderers}.
 
@@ -19,7 +18,7 @@ implementation of various spatial audio reproduction techniques. You may use it
 for your own academic research, teaching or demonstration activities or whatever
 else you like.
 However, it would be nice if you would mention the use of the SSR by
-e.g.\ referencing~\cite{Geier08:AES}.
+e.g.\ referencing~\cite{Geier08:AES} or~\cite{geier2012ssr}.
 
 Note that so far, the SSR only supports two-dimensional reproduction for any
 type of renderer. For WFS principally any convex loudspeaker setup
@@ -94,8 +93,7 @@ positioned like a virtual stereo loudspeaker setup with respect to the location
 of the reference point. For audio files with more (or less) channels, SSR randomly
 arranges the resulting virtual sound sources.
 All types that
-ecasound and libsndfile can open can be used. In particular this includes \texttt{.wav} and \texttt{.aiff} files.
-Even \texttt{.mp3} could work, depending on the codecs installed.
+ecasound and libsndfile can open can be used. In particular this includes \texttt{.wav}, \texttt{.aiff}, \texttt{.flac} and \texttt{.ogg} files.
 
 In the case of a scene being loaded from an \texttt{.asd} file, all audio files
 which are associated to virtual sound sources are replayed in parallel and
@@ -226,32 +224,18 @@ may very likely change in future versions.
 Please find some
 brief information in section~\ref{sec:network}.
 
-An example how the SSR can be controlled via its network interface is the
-Python client located in the directory \verb|python_client/| and the provided
-Pure Data patches.
+%An example how the SSR can be controlled via its network interface is the
+%Python client located in the directory \verb|python_client/| and the provided
+%Pure Data patches.
 
-\subsection{Known Problems, Bug Reports, Feature Requests and Comments}
+\subsection{Bug Reports, Feature Requests and Comments}
 
-For a list of known problems have a look at the SSR development website%
-\footnote{\url{https://dev.qu.tu-berlin.de/projects/ssr/wiki/Known_Issues}}.
+%For a list of known problems have a look at the SSR development website%
+%\footnote{\url{https://dev.qu.tu-berlin.de/projects/ssr/wiki/Known_Issues}}.
 Please report any bugs, feature requests and comments to
 \contactadress. We will keep track of them and will try to fix them
 in a reasonable time. The more bugs you report the more we can fix.
 Of course, you are welcome to provide bug fixes.~\smiley
-
-\subsection{Missing Features}
-
-Apropos feature requests: While scanning this document you might realize that
-there might be certain essential features missing. Actually, we agree. Due to
-time constraints we postponed the following features -- amongst others -- to
-the next (or let's say a later) release of the SSR:
-
-\begin{itemize}
-\item Possibility to create audio scenes using the GUI.
-\item Possibility to apply a headphone compensation filter.
-\item Possibility to apply filter on subwoofers.
-\item Near-field compensated Ambisonics.
-\end{itemize}
 
 \subsection{Contributors}
 

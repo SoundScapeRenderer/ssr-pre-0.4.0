@@ -5,8 +5,7 @@
 The following sections are relevant if you want to build the SSR from its source
 code. This is the default procedure for GNU/Linux systems. If you want to use
 the SSR on a Mac, you can also use the pre-compiled app bundle.
-For further information visit the SSR development website%
-\footnote{\url{http://dev.qu.tu-berlin.de/projects/ssr/wiki/SSR_for_MacOSX}}.
+For further information visit the SSR website~\cite{ssr}.
 
 \subsection{Getting the Source}
 
@@ -57,7 +56,7 @@ where available, are required for a full installation of the SSR:
 \item[-] Boost.Asio \cite{boost}, included since Boost version 1.35.
 \end{itemize}
 
-We provide a simple integration of two tracking systems.
+We provide a simple integration of several head tracking systems.
 Please read section
 %\ref{sec:configuring} for an actual configuration or read section
 \ref{sec:head_tracking} for further informations about head tracking.
@@ -96,9 +95,7 @@ If the configure script terminates with success, it creates a file named
 \texttt{make install}
 \end{quote}
 %
-This will compile the SSR and install it to your system. We recommend the usage of GCC 4 or higher. Note that with \verb+./configure --prefix+ you can specify
-where to install the SSR on your system. The default prefix is
-\texttt{/usr/local}.
+This will compile the SSR and install it to your system.
 %Section \ref{sec:configuring} contains more information about configuring.
 
 \subsection{Uninstalling}
@@ -129,7 +126,7 @@ headphones for listening with this renderer.
 Type \verb+ssr --help+ to get an overview of the command
 line options and various renderers:
 
-{\small
+{\footnotesize
 \begin{verbatim}
 USAGE: ssr [OPTIONS] <scene-file>
 
@@ -141,11 +138,11 @@ OPTIONS:
 Choose a rendering algorithm:
     --binaural         Binaural (using HRIRs)
     --brs              Binaural Room Synthesis (using BRIRs)
-    --bpb              Binaural Playback Renderer
     --wfs              Wave Field Synthesis
     --aap              Ambisonics Amplitude Panning
     --vbap             Stereophonic (Vector Base Amplitude Panning)
     --generic          Generic Renderer
+    --nfc-hoa          Near-field-corrected Higher Order Ambisonics (experimental!)
 
 Renderer-specific options:
     --hrirs=FILE       Load the HRIRs for binaural renderer from FILE
@@ -155,6 +152,7 @@ Renderer-specific options:
     --in-phase-rendering     Use in-phase rendering for Ambisonics
 
 JACK options:
+-n, --name=NAME        Set JACK client name to NAME
     --input-prefix=PREFIX    Input  port prefix (default: "system:capture_")
     --output-prefix=PREFIX   Output port prefix (default: "system:playback_")
 -f, --freewheel        Use JACK in freewheeling mode
@@ -162,6 +160,7 @@ JACK options:
 General options:
 -c, --config=FILE      Read configuration from FILE
 -s, --setup=FILE       Load reproduction setup from FILE
+    --threads=N        Number of audio threads (default N=1)
 -r, --record=FILE      Record the audio output of the renderer to FILE
     --loop             Loop all audio files
     --master-volume-correction=VALUE
@@ -171,7 +170,7 @@ General options:
 -I, --no-ip-server     Don't start IP server
 -g, --gui              Start GUI (default)
 -G, --no-gui           Don't start GUI
--t, --tracker=TYPE     Start tracker, possible value(s): polhemus intersense razor
+-t, --tracker=TYPE     Start tracker, possible value(s): polhemus vrpn razor
     --tracker-port=PORT
                        A serial port can be specified, e.g. /dev/ttyS1
 -T, --no-tracker       Don't start tracker
@@ -219,10 +218,10 @@ using a software player like \texttt{ecaplay}~\cite{ecasound}.
 \subsection{Configuration File}
 \label{sec:ssr_configuration_file}
 
-The general configuration of the SSR (that means which renderer to use, if GUI
-is enabled etc.) can be specified in a configuration file
+The general configuration of the SSR (if GUI
+is enabled, which tracker to use etc.) can be specified in a configuration file
 (e.g. \texttt{ssr.conf}). By specifying
-your wishes in such a file, you avoid having to give explicit command
+your settings in such a file, you avoid having to give explicit command
 line options every time you start the SSR. We have added the example
 \texttt{data/ssr.conf.example} which mentions all possible parameters.
 Take a look inside, it is rather self-explanatory.

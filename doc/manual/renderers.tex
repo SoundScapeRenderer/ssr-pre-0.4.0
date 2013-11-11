@@ -268,82 +268,81 @@ with 8 different source positions. Due to the file size, we have not included
 them in the release. Please contact \contactadress\ to obtain the data.
 
 
-\subsection{Binaural Playback Renderer}
-
-The binaural playback (BPB) renderer is actually not a renderer but
-a playback engine that enables real-time head-tracking in headphone
-playback. It is similar to BRS with the only difference that it does
-not employ impulse responses that are applied to the input signal.
-It is rather such that the entire signals for the two ears for all
-desired possible head orientations have to be precomputed and are then
-loaded into the memory. During playback, depending on the
-instantaneous head orientation of the listener as measured by the
-tracking system, the corresponding audio data are replayed. If a
-change in head orientation occurs then a crossfade is applied over
-the duration of one JACK frame. Playing is automatically looped. To
-stop replay, mute the source. When the source is unmuted, replay
-starts at the beginning of the data.
-
-The BPB renderer was designed for the simulation of time-varying
-systems, which are complicated to implement in real-time. The
-audio signals can be prepared in any desired software and also
-costly algorithms that do not run in real-time can be replayed with
-head-tracking.
-
-As shown in the example \texttt{bin/scenes/bpb\_example.asd} and
-similar to the description of a BRS scene, a virtual source has the
-optional property \texttt{properties\_file}, which holds the location
-of the file containing the audio data. By default, it is assumed
-that the data are stored in a 720-channel audio file the channels of
-which are arranged similarly to BRS impulse responses.
-
-Loading all 720 channels into memory can result in hundreds of
-megabytes even for signals of moderate length. In order to avoid
-restrictions due to the available memory caused by possibly unrequired 
-data it is possible to restrict the interval of head
-orientations. This restriction has to be applied symmetrically,
-e.g.~$\pm60^\circ$. The resolution between the limits is still
-1$^\circ$. The channel arrangement for the $\pm60^\circ$ example
-would then be
+%\subsection{Binaural Playback Renderer}
 %
-\begin{itemize}
-\item[-] 1st channel: left ear, head orientation 0$^\circ$
-\item[-] 2nd channel: right ear, head orientation 0$^\circ$
-\item[-] 3rd channel: left ear, head orientation 1$^\circ$
-\item[-] 4th channel: right ear, head orientation 1$^\circ$
-\item[] \dots
-\item[-] 121st channel: left ear, head orientation 60$^\circ$
-\item[-] 122nd channel: right ear, head orientation 60$^\circ$
-\item[-] 123rd channel: left ear, head orientation 300$^\circ$ (i.e.~-60$^\circ$)
-\item[-] 124th channel: right ear, head orientation 300$^\circ$ (i.e.~-60$^\circ$)
-\item[-] 125th channel: left ear, head orientation 301$^\circ$ (i.e.~-59$^\circ$)
-\item[-] 126th channel: right ear, head orientation 301$^\circ$ (i.e.~-59$^\circ$)
-\item[] \dots
-\item[-] 242nd channel: right ear, head orientation 359$^\circ$ (i.e.~-1$^ \circ$)
-\end{itemize}
+%The binaural playback (BPB) renderer is actually not a renderer but
+%a playback engine that enables real-time head-tracking in headphone
+%playback. It is similar to BRS with the only difference that it does
+%not employ impulse responses that are applied to the input signal.
+%It is rather such that the entire signals for the two ears for all
+%desired possible head orientations have to be precomputed and are then
+%loaded into the memory. During playback, depending on the
+%instantaneous head orientation of the listener as measured by the
+%tracking system, the corresponding audio data are replayed. If a
+%change in head orientation occurs then a crossfade is applied over
+%the duration of one JACK frame. Playing is automatically looped. To
+%stop replay, mute the source. When the source is unmuted, replay
+%starts at the beginning of the data.
 %
-resulting thus in 242 channels. It is not necessary to explicitly
-specify the desired interval of possible head orientations. The SSR deduces it 
-directly from the number of channels of the
-\texttt{properties\_file}. If the listener turns the head to
-orientations for which no data are available the BPB renderer
-automatically replays the data for the closest orientation available.
-We assume that this is less disturbing in practice than a full
-dropout of the signal.
-
-To fulfill the ASDF syntax, the specification of an input signal is
-required. In order to avoid the unnecessary opening and replaying of
-an audio file, we propose to specify an arbitrary input port such as
-
-\begin{verbatim}
-<source name="source" properties_file="../audio/binaural_data.wav">
-  <!-- this is arbitrary -->
-  <port>0</port>
-  <!-- this only influences the GUI -->
-  <position x="-2" y="2"/>
-</source>
-\end{verbatim}
-
+%The BPB renderer was designed for the simulation of time-varying
+%systems, which are complicated to implement in real-time. The
+%audio signals can be prepared in any desired software and also
+%costly algorithms that do not run in real-time can be replayed with
+%head-tracking.
+%
+%As shown in the example \texttt{bin/scenes/bpb\_example.asd} and
+%similar to the description of a BRS scene, a virtual source has the
+%optional property \texttt{properties\_file}, which holds the location
+%of the file containing the audio data. By default, it is assumed
+%that the data are stored in a 720-channel audio file the channels of
+%which are arranged similarly to BRS impulse responses.
+%
+%Loading all 720 channels into memory can result in hundreds of
+%megabytes even for signals of moderate length. In order to avoid
+%restrictions due to the available memory caused by possibly unrequired 
+%data it is possible to restrict the interval of head
+%orientations. This restriction has to be applied symmetrically,
+%e.g.~$\pm60^\circ$. The resolution between the limits is still
+%1$^\circ$. The channel arrangement for the $\pm60^\circ$ example
+%would then be
+%%
+%\begin{itemize}
+%\item[-] 1st channel: left ear, head orientation 0$^\circ$
+%\item[-] 2nd channel: right ear, head orientation 0$^\circ$
+%\item[-] 3rd channel: left ear, head orientation 1$^\circ$
+%\item[-] 4th channel: right ear, head orientation 1$^\circ$
+%\item[] \dots
+%\item[-] 121st channel: left ear, head orientation 60$^\circ$
+%\item[-] 122nd channel: right ear, head orientation 60$^\circ$
+%\item[-] 123rd channel: left ear, head orientation 300$^\circ$ (i.e.~-60$^\circ$)
+%\item[-] 124th channel: right ear, head orientation 300$^\circ$ (i.e.~-60$^\circ$)
+%\item[-] 125th channel: left ear, head orientation 301$^\circ$ (i.e.~-59$^\circ$)
+%\item[-] 126th channel: right ear, head orientation 301$^\circ$ (i.e.~-59$^\circ$)
+%\item[] \dots
+%\item[-] 242nd channel: right ear, head orientation 359$^\circ$ (i.e.~-1$^ \circ$)
+%\end{itemize}
+%%
+%resulting thus in 242 channels. It is not necessary to explicitly
+%specify the desired interval of possible head orientations. The SSR deduces it 
+%directly from the number of channels of the
+%\texttt{properties\_file}. If the listener turns the head to
+%orientations for which no data are available the BPB renderer
+%automatically replays the data for the closest orientation available.
+%We assume that this is less disturbing in practice than a full
+%dropout of the signal.
+%
+%To fulfill the ASDF syntax, the specification of an input signal is
+%required. In order to avoid the unnecessary opening and replaying of
+%an audio file, we propose to specify an arbitrary input port such as
+%
+%\begin{verbatim}
+%<source name="source" properties_file="../audio/binaural_data.wav">
+%  <!-- this is arbitrary -->
+%  <port>0</port>
+%  <!-- this only influences the GUI -->
+%  <position x="-2" y="2"/>
+%</source>
+%\end{verbatim}
 
 \subsection{Vector Base Amplitude Panning Renderer}
 
@@ -628,21 +627,21 @@ considered by the different renderers.}
 \end{table}
 
 
-\subsection{Parallel Processing Renderers}
-
-The renderers as described above do not support parallel processing. We are
-currently redesigning the architecture of the SSR in order to support audio
-processing in multiple threads so that the power of multi-processor/multi-core machines can be
-properly exploited. The current SSR release contains versions of the WFS, the
-VBAP, and the binaural renderer which support parallel processing. These
-versions are disabled at compile time by default.
-If you want to enable these renderers use the option \texttt{./configure
---enable-newrenderer} (Section~\ref{sec:comp_inst}) when configuring. All
-renderers other than WFS, VBAP, and binaural will then not be available.
-
-\textbf{WARNING:} The parallel processing renderers are under heavy development.
-If you encounter unexpected behaviour or bugs, please report them to 
-\emph{SoundScapeRenderer@telekom.de}. Thank you. 
+%\subsection{Parallel Processing Renderers}
+%
+%The renderers as described above do not support parallel processing. We are
+%currently redesigning the architecture of the SSR in order to support audio
+%processing in multiple threads so that the power of multi-processor/multi-core machines can be
+%properly exploited. The current SSR release contains versions of the WFS, the
+%VBAP, and the binaural renderer which support parallel processing. These
+%versions are disabled at compile time by default.
+%If you want to enable these renderers use the option \texttt{./configure
+%--enable-newrenderer} (Section~\ref{sec:comp_inst}) when configuring. All
+%renderers other than WFS, VBAP, and binaural will then not be available.
+%
+%\textbf{WARNING:} The parallel processing renderers are under heavy development.
+%If you encounter unexpected behaviour or bugs, please report them to 
+%\emph{SoundScapeRenderer@telekom.de}. Thank you. 
 
 \subsection{Summary}
 

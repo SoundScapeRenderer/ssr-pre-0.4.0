@@ -79,7 +79,7 @@ class WfsRenderer : public SourceToOutput<WfsRenderer, LoudspeakerRenderer>
 
       apf::fixed_vector<sample_type> ir(size);
 
-      size = prefilter.readf(ir.begin(), size);
+      size = prefilter.readf(ir.data(), size);
 
       // TODO: warning if size changed?
       // TODO: warning if size == 0?
@@ -128,11 +128,11 @@ class WfsRenderer::SourceChannel : public apf::has_begin_and_end<
                           apf::NonCausalBlockDelayLine<sample_type>::circulator>
 {
   public:
-    explicit SourceChannel(const Source* s)
+    SourceChannel(const Source& s)
       : crossfade_mode(0)
       , old_weighting_factor(0)
       , weighting_factor(0)
-      , source(*s)
+      , source(s)
     {}
 
     void update();
@@ -208,9 +208,7 @@ class WfsRenderer::Source : public _base::Source
 
   public:
     Source(const Params& p)
-      : _base::Source(p
-          // We cannot create a std::pair of a reference, so we use a pointer:
-          , std::make_pair(p.parent->get_output_list().size(), this))
+      : _base::Source(p, p.parent->get_output_list().size(), *this)
       , delayline(p.input->_delayline)
     {}
 

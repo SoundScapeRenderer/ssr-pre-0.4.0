@@ -47,7 +47,7 @@ struct Publisher;
 class TrackerInterSense : public Tracker
 {
   public:
-    typedef std::auto_ptr<TrackerInterSense> ptr_t;
+    typedef std::unique_ptr<TrackerInterSense> ptr_t;
 
     virtual ~TrackerInterSense(); ///< destructor
 

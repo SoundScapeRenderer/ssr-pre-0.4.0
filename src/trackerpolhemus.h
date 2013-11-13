@@ -46,7 +46,7 @@ struct Publisher; // forward declaration
 class TrackerPolhemus : public Tracker
 {
   public:
-    typedef std::auto_ptr<TrackerPolhemus> ptr_t;
+    typedef std::unique_ptr<TrackerPolhemus> ptr_t;
 
     virtual ~TrackerPolhemus(); ///< destructor
 

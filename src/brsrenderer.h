@@ -115,7 +115,7 @@ class BrsRenderer::Source : public _base::Source
       matrix_t ir_data(size, no_of_channels);
 
       // TODO: check return value?
-      ir_file.readf(ir_data.begin(), size);
+      ir_file.readf(ir_data.data(), size);
 
       size_t block_size = this->parent.block_size();
 
@@ -123,8 +123,8 @@ class BrsRenderer::Source : public _base::Source
 
       size_t partitions = apf::conv::min_partitions(block_size, size);
 
-      _brtf_set.reset(new brtf_set_t(std::make_pair(no_of_channels
-              , std::make_pair(partitions, temp.partition_size()))));
+      _brtf_set.reset(new brtf_set_t(no_of_channels
+              , partitions, temp.partition_size()));
 
       brtf_set_t::iterator target = _brtf_set->begin();
       for (matrix_t::slices_iterator it = ir_data.slices.begin()
@@ -138,7 +138,7 @@ class BrsRenderer::Source : public _base::Source
 
       _convolver_input.reset(new apf::conv::Input(block_size, partitions));
 
-      this->sourcechannels.allocate(2);
+      this->sourcechannels.reserve(2);
       this->sourcechannels.emplace_back(*_convolver_input);
       this->sourcechannels.emplace_back(*_convolver_input);
     }
@@ -217,12 +217,12 @@ class BrsRenderer::Source : public _base::Source
 
   private:
     typedef apf::fixed_vector<apf::conv::Filter> brtf_set_t;
-    std::auto_ptr<brtf_set_t> _brtf_set;
+    std::unique_ptr<brtf_set_t> _brtf_set;
 
     sample_type _new_weighting_factor, _old_weighting_factor;
     size_t _brtf_index, _old_brtf_index;
 
-    std::auto_ptr<apf::conv::Input> _convolver_input;
+    std::unique_ptr<apf::conv::Input> _convolver_input;
 
     size_t _angles;  // Number of angles in BRIR file
 };

@@ -34,6 +34,7 @@
 
 #include "apf/mimoprocessor.h"
 #include "apf/shareddata.h"
+#include "apf/container.h"  // for distribute_list()
 #include "apf/parameter_map.h"
 #include "apf/math.h"  // for dB2linear()
 
@@ -506,22 +507,10 @@ struct SourceToOutput : Base<Derived>
     typedef typename Base<Derived>::Source::Params Params;
     typedef apf::fixed_vector<typename Derived::SourceChannel> sourcechannels_t;
 
-    Source(const Params& p)
+    template<typename... Args>
+    Source(const Params& p, Args&&... args)
       : Base<Derived>::Source(p)
-      , sourcechannels()
-    {}
-
-    template<typename Arg>
-    Source(const Params& p, const Arg& arg)
-      : Base<Derived>::Source(p)
-      , sourcechannels(arg)
-    {}
-
-    // ctor from sequence
-    template<typename In>
-    Source(const Params& p, In first, In last)
-      : Base<Derived>::Source(p)
-      , sourcechannels(first, last)
+      , sourcechannels(std::forward<Args>(args)...)
     {}
 
     void connect()

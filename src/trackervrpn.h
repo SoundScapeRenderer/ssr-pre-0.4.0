@@ -32,7 +32,7 @@
 
 #include <pthread.h>
 #include <string>
-#include <memory>  // for std::auto_ptr
+#include <memory>  // for std::unique_ptr
 
 #include <vrpn_Tracker.h>
 
@@ -47,7 +47,7 @@ struct Publisher; // forward declaration
 class TrackerVrpn : public vrpn_Tracker_Remote, public Tracker
 {
   public:
-    typedef std::auto_ptr<TrackerVrpn> ptr_t;
+    typedef std::unique_ptr<TrackerVrpn> ptr_t;
 
     virtual ~TrackerVrpn();
 

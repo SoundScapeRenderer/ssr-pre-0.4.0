@@ -41,7 +41,7 @@
 class AudioRecorder
 {
   public:
-    typedef std::auto_ptr<AudioRecorder> ptr_t; ///< auto_ptr to AudioRecorder
+    typedef std::unique_ptr<AudioRecorder> ptr_t; ///< auto_ptr to AudioRecorder
 
     /// exception to be thrown by ctor.
     struct audiorecorder_error : public std::runtime_error

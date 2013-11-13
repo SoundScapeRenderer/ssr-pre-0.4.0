@@ -74,9 +74,7 @@ class AapRenderer::Source : public _base::Source
 {
   public:
     Source(const Params& p)
-      : _base::Source(p
-          // We cannot create a std::pair of a reference, so we use a pointer:
-          , std::make_pair(p.parent->get_output_list().size(), this))
+      : _base::Source(p, p.parent->get_output_list().size(), this)
     {}
 
     bool get_output_levels(sample_type* first, sample_type* last) const;

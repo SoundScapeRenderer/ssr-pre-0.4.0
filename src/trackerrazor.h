@@ -42,7 +42,7 @@ namespace ssr
 class TrackerRazor : public Tracker
 {
   public:
-    typedef std::auto_ptr<TrackerRazor> ptr_t;
+    typedef std::unique_ptr<TrackerRazor> ptr_t;
 
     /// "named constructor"
     static ptr_t create(Publisher& controller, const std::string& ports);

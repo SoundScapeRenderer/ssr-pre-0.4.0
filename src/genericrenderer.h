@@ -105,14 +105,14 @@ class GenericRenderer::Source : public _base::Source
       matrix_t ir_data(size, outputs);
 
       // TODO: check return value?
-      ir_file.readf(ir_data.begin(), size);
+      ir_file.readf(ir_data.data(), size);
 
       size_t block_size = this->parent.block_size();
 
       _convolver.reset(new apf::conv::Input(block_size
             , apf::conv::min_partitions(block_size, size)));
 
-      this->sourcechannels.allocate(outputs);
+      this->sourcechannels.reserve(outputs);
 
       for (matrix_t::slices_iterator slice = ir_data.slices.begin()
           ; slice != ir_data.slices.end()
@@ -132,7 +132,7 @@ class GenericRenderer::Source : public _base::Source
 
     sample_type _new_weighting_factor, _old_weighting_factor;
 
-    std::auto_ptr<apf::conv::Input> _convolver;
+    std::unique_ptr<apf::conv::Input> _convolver;
 };
 
 template<typename In>

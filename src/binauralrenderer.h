@@ -88,11 +88,10 @@ class BinauralRenderer::SourceChannel : public apf::conv::Output
                                       , public apf::has_begin_and_end<float*>
 {
   public:
-    explicit SourceChannel(const apf::conv::Input* input)
-      // TODO: assert that input != 0?
-      : apf::conv::Output(*input)
-      , temporary_hrtf(input->block_size(), input->partitions())
-      , _block_size(input->block_size())
+    SourceChannel(const apf::conv::Input& input)
+      : apf::conv::Output(input)
+      , temporary_hrtf(input.block_size(), input.partitions())
+      , _block_size(input.block_size())
     {}
 
     void convolve_and_more(sample_type weight)
@@ -138,14 +137,14 @@ BinauralRenderer::_load_hrtfs(const std::string& filename, size_t size)
 
   apf::fixed_matrix<float> transpose(size, no_of_channels);
 
-  size = hrir_file.readf(transpose.begin(), size);
+  size = hrir_file.readf(transpose.data(), size);
 
   _partitions = apf::conv::min_partitions(this->block_size(), size);
 
   apf::conv::Transform temp(this->block_size());
 
-  _hrtfs.reset(new hrtf_set_t(std::make_pair(no_of_channels
-          , std::make_pair(_partitions, temp.partition_size()))));
+  _hrtfs.reset(
+      new hrtf_set_t(no_of_channels, _partitions, temp.partition_size()));
 
   hrtf_set_t::iterator target = _hrtfs->begin();
   for (apf::fixed_matrix<float>::slices_iterator it = transpose.slices.begin()
@@ -245,7 +244,7 @@ class BinauralRenderer::Source : public apf::conv::Input, public _base::Source
     Source(const Params& p)
       // TODO: assert that p.parent != 0?
       : apf::conv::Input(p.parent->block_size(), p.parent->_partitions)
-      , _base::Source(p, std::make_pair(size_t(2), this))
+      , _base::Source(p, 2, *this)
       , _hrtf_index(-1)
       , _interp_factor(-1)
       , _weight(0)

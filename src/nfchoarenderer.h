@@ -509,11 +509,9 @@ class NfcHoaRenderer::FftProcessor : public ProcessItem<FftProcessor>
 {
   public:
     FftProcessor(size_t block_size, sample_type* first)
-      : _fft_plan(apf::fftw<sample_type>::plan_r2r_1d(block_size, first, first
-            , FFTW_R2HC, FFTW_PATIENT))
+      : _fft_plan(apf::fftw<sample_type>::plan_r2r_1d, block_size, first, first
+            , FFTW_R2HC, FFTW_PATIENT)
     {}
-
-    ~FftProcessor() { apf::fftw<sample_type>::destroy_plan(_fft_plan); }
 
     APF_PROCESS(FftProcessor, ProcessItem<FftProcessor>)
     {
@@ -522,7 +520,7 @@ class NfcHoaRenderer::FftProcessor : public ProcessItem<FftProcessor>
     }
 
   private:
-    apf::fftw<sample_type>::plan _fft_plan;
+    apf::fftw<sample_type>::scoped_plan _fft_plan;
 };
 
 struct NfcHoaRenderer::Output : _base::Output

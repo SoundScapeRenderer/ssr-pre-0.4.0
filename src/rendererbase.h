@@ -214,20 +214,6 @@ class RendererBase : public apf::MimoProcessor<Derived
     bool _show_head;
 
   private:
-    class _find_source
-    {
-      public:
-        _find_source(Source* source) : _source(source) {}
-
-        bool operator()(const std::pair<int, Source*>& in)
-        {
-          return in.second == _source;
-        }
-
-      private:
-        Source* _source;
-    };
-
     apf::parameter_map _add_params(const apf::parameter_map& params)
     {
       apf::parameter_map temp(params);
@@ -316,7 +302,10 @@ void RendererBase<Derived>::rem_source(Source* source)
 
   // work-around to delete source from _source_map
   auto delinquent = std::find_if(_source_map.begin(), _source_map.end()
-        , _find_source(source));
+        , [source] (const std::pair<int, Source*>& in)
+          {
+            return in.second == source;
+          });
   _source_map.erase(delinquent);
 
   source->derived().disconnect();

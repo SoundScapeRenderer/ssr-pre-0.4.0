@@ -256,24 +256,6 @@ class BinauralRenderer::Source : public apf::conv::Input, public _base::Source
     }
 
   private:
-    // Function object for interpolation between filters
-    class _interpolate
-    {
-      public:
-        _interpolate(sample_type interp_factor)
-          : _interp_factor(interp_factor)
-        {}
-
-        sample_type
-        operator()(sample_type one, sample_type two) const
-        {
-          return (1.0f - _interp_factor) * one + _interp_factor * two;
-        }
-
-      private:
-        float _interp_factor;
-    };
-
     size_t _hrtf_index, _old_hrtf_index;
     float _interp_factor, _old_interp_factor;
     float _weight, _old_weight;
@@ -400,7 +382,10 @@ void BinauralRenderer::Source::_process()
         // Interpolate between selected HRTF and neutral filter (Dirac)
         apf::conv::transform_nested(hrtf
             , *_input.parent._neutral_filter, channel.temporary_hrtf
-            , _interpolate(_interp_factor));
+            , [this] (sample_type one, sample_type two)
+              {
+                return (1.0f - _interp_factor) * one + _interp_factor * two;
+              });
         this->sourcechannels[i].set_filter(channel.temporary_hrtf);
       }
     }

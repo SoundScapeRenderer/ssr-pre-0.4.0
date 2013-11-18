@@ -66,10 +66,9 @@ class RenderSubscriber : public Subscriber
     {
       // TODO: change API, move locking inside RendererBase
       auto lock = _renderer.get_scoped_lock();
-      typename Renderer::Source* src
-        = static_cast<typename Renderer::Source*>(_renderer.get_source(id));
+      auto src = _renderer.get_source(id);
       if (!src) return false;
-      src->position = position;
+      src->derived().position = position;
       return true;
     }
 
@@ -77,10 +76,9 @@ class RenderSubscriber : public Subscriber
     {
       // TODO: change API, move locking inside RendererBase
       auto lock = _renderer.get_scoped_lock();
-      typename Renderer::Source* src
-        = static_cast<typename Renderer::Source*>(_renderer.get_source(id));
+      auto src = _renderer.get_source(id);
       if (!src) return false;
-      src->orientation = orientation;
+      src->derived().orientation = orientation;
       return true;
     }
 
@@ -88,10 +86,9 @@ class RenderSubscriber : public Subscriber
     {
       // TODO: change API, move locking inside RendererBase
       auto lockk = _renderer.get_scoped_lock();
-      typename Renderer::Source* src
-        = static_cast<typename Renderer::Source*>(_renderer.get_source(id));
+      auto src = _renderer.get_source(id);
       if (!src) return false;
-      src->gain = gain;
+      src->derived().gain = gain;
       return true;
     }
 
@@ -99,10 +96,9 @@ class RenderSubscriber : public Subscriber
     {
       // TODO: change API, move locking inside RendererBase
       auto lock = _renderer.get_scoped_lock();
-      typename Renderer::Source* src
-        = static_cast<typename Renderer::Source*>(_renderer.get_source(id));
+      auto src = _renderer.get_source(id);
       if (!src) return false;
-      src->mute = mute;
+      src->derived().mute = mute;
       return true;
     }
 
@@ -124,10 +120,9 @@ class RenderSubscriber : public Subscriber
     {
       // TODO: change API, move locking inside RendererBase
       auto lock = _renderer.get_scoped_lock();
-      typename Renderer::Source* src
-        = static_cast<typename Renderer::Source*>(_renderer.get_source(id));
+      auto src = _renderer.get_source(id);
       if (!src) return false;
-      src->model = model;
+      src->derived().model = model;
       return true;
     }
 

@@ -279,8 +279,7 @@ int RendererBase<Derived>::add_source(const apf::parameter_map& p)
 
   typename Derived::Source::Params src_params;
   src_params = p;
-  assert(dynamic_cast<Derived*>(this));
-  src_params.parent = static_cast<Derived*>(this);
+  src_params.parent = &this->derived();
   src_params.fifo = &_fifo;
   src_params.input = in;
 
@@ -310,17 +309,17 @@ int RendererBase<Derived>::add_source(const apf::parameter_map& p)
 template<typename Derived>
 void RendererBase<Derived>::rem_source(Source* source)
 {
+  assert(source);
+
   // TODO: remove by ID instead of by pointer?
   ScopedLock guard(_lock);
 
   // work-around to delete source from _source_map
-  typename std::map<int, Source*>::iterator delinquent
-    = std::find_if(_source_map.begin(), _source_map.end()
+  auto delinquent = std::find_if(_source_map.begin(), _source_map.end()
         , _find_source(source));
   _source_map.erase(delinquent);
 
-  assert(dynamic_cast<typename Derived::Source*>(source));
-  static_cast<typename Derived::Source*>(source)->disconnect();
+  source->derived().disconnect();
 
   Input* input = const_cast<Input*>(&source->_input);
   _source_list.rem(source);

@@ -63,12 +63,11 @@ void ssr::Scene::set_loudspeakers(const Loudspeaker::container_t& loudspeakers)
   }
   // reserve memory to avoid unnecessary re-allocation
   _loudspeakers.reserve(loudspeakers.size());
-  for (Loudspeaker::container_t::const_iterator i = loudspeakers.begin();
-      i != loudspeakers.end(); ++i)
+  for (const auto& ls: loudspeakers)
   {
     // construction of temporary variable with type conversion ctor
     // and copy construction into vector
-    _loudspeakers.push_back(Loudspeaker(*i));
+    _loudspeakers.push_back(Loudspeaker(ls));
   }
 }
 
@@ -289,8 +288,8 @@ ssr::jack_nframes_t ssr::Scene::get_transport_position() const
 
 Source ssr::Scene::get_source(id_t id) const
 {
-  Source source(_loudspeakers.size());
-  const Source* const source_ptr = maptools::get_item(_source_map, id);
+  auto source = Source(_loudspeakers.size());
+  auto source_ptr = maptools::get_item(_source_map, id);
 
   if (!source_ptr) ERROR("Source " << id << " doesn't exist!");
   else source = *source_ptr;

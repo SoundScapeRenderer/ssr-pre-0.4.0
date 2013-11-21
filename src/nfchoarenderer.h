@@ -45,16 +45,16 @@ namespace ssr
 class NfcHoaRenderer : public LoudspeakerRenderer<NfcHoaRenderer>
 {
   private:
-    typedef LoudspeakerRenderer<NfcHoaRenderer> _base;
-    typedef HoaCoefficients<double> coeff_t;
+    using _base = LoudspeakerRenderer<NfcHoaRenderer>;
+    using coeff_t = HoaCoefficients<double>;
 
   public:
     static const char* name() { return "NFC-HOA-Renderer"; }
 
-    typedef apf::fixed_matrix<sample_type> matrix_t;
-    typedef apf::fixed_matrix<sample_type, apf::fftw_allocator<sample_type> >
-      fft_matrix_t;
-    typedef apf::Cascade<apf::BiQuad<double, apf::dp::ac> > filter_type;
+    using matrix_t = apf::fixed_matrix<sample_type>;
+    using fft_matrix_t
+      = apf::fixed_matrix<sample_type, apf::fftw_allocator<sample_type>>;
+    using filter_type = apf::Cascade<apf::BiQuad<double, apf::dp::ac>>;
 
     class Source;
     class Mode;
@@ -116,7 +116,7 @@ class NfcHoaRenderer::Source : public _base::Source
       // TODO: distance is not correct for plane waves!
       // This is only important for the delay
 
-      Orientation source_orientation;
+      auto source_orientation = Orientation();
 
       switch (this->model)
       {
@@ -225,8 +225,8 @@ void NfcHoaRenderer::Mode::_process()
 
     sample_type block_size = this->size();
 
-    Source::iterator in = this->source.begin();
-    iterator out = this->begin();
+    auto in = this->source.begin();
+    auto out = this->begin();
 
     // Calculate each sample separately. The first sample uses the old
     // coefficients, after the last sample the filter is updated again for the
@@ -236,8 +236,8 @@ void NfcHoaRenderer::Mode::_process()
       // Calculate one output sample
       *out++ = _filter(*in++);
 
-      typedef apf::SosCoefficients<double> result_type;
-      typedef const std::pair<result_type, result_type>& argument_type;
+      using result_type = apf::SosCoefficients<double>;
+      using argument_type = const std::pair<result_type, result_type>&;
 
       auto interp_coeffs = [index, block_size] (argument_type coeffs)
       {
@@ -339,7 +339,7 @@ NfcHoaRenderer::Source::Source(const Params& p)
 class NfcHoaRenderer::RenderFunction
 {
   public:
-    typedef std::pair<sample_type, sample_type> result_type;
+    using result_type = std::pair<sample_type, sample_type>;
 
     apf::CombineChannelsResult::type select(const Mode& in)
     {
@@ -389,7 +389,7 @@ class NfcHoaRenderer::RenderFunction
 // Template-free base class to be used in Source::connect()
 struct NfcHoaRenderer::ModeAccumulatorBase : Item
 {
-  typedef std::list<const Mode*> mode_ptrs_t;
+  using mode_ptrs_t = std::list<const Mode*>;
 
   // List of modes to be combined
   mode_ptrs_t mode_pointers;
@@ -422,7 +422,7 @@ class NfcHoaRenderer::ModeAccumulator : public ModeAccumulatorBase
     class two_matrix_channels
     {
       public:
-        typedef apf::dual_iterator<I1, I2> iterator;
+        using iterator = apf::dual_iterator<I1, I2>;
 
         two_matrix_channels(I1 i1, I2 i2, size_t block_size)
           : _begin(i1, i2)
@@ -466,11 +466,9 @@ NfcHoaRenderer::Source::connect()
 
   // create list of pointers to Mode objects
 
-  typedef apf::cast_proxy<ModePair, std::list<ModePair*> > proxy_list_t;
-  proxy_list_t pairs(_mode_pairs);
-  for (proxy_list_t::reverse_iterator pair = pairs.rbegin()
-      ; pair != pairs.rend()
-      ; ++pair)
+  auto reverse_pairs
+    = apf::make_begin_and_end(_mode_pairs.rbegin(), _mode_pairs.rend());
+  for (auto pair: reverse_pairs)
   {
     if (pair->first_ptr()) _modes.push_front(pair->first_ptr());
     _modes.push_back(pair->second_ptr());
@@ -544,7 +542,7 @@ NfcHoaRenderer::load_reproduction_setup()
 
   // TODO: check if clockwise or counterclockwise setup?
 
-  typedef apf::cast_proxy<Output, rtlist_t> output_list_t;
+  using output_list_t = apf::cast_proxy<Output, rtlist_t>;
   output_list_t outputs(const_cast<rtlist_t&>(this->get_output_list()));
 
   auto add_distance = [] (float base, const Output& out)

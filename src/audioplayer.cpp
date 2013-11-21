@@ -66,7 +66,7 @@ std::string AudioPlayer::get_port_name(const std::string& audio_file_name,
 {
   assert(channel >= 0);
 
-  const Soundfile* registered_file = get_item(_file_map, audio_file_name);
+  auto registered_file = get_item(_file_map, audio_file_name);
   if (registered_file != nullptr)
   {
     VERBOSE2("AudioPlayer: Input file '" + audio_file_name
@@ -80,7 +80,7 @@ std::string AudioPlayer::get_port_name(const std::string& audio_file_name,
   }
   else // file not yet registered
   {
-    Soundfile::ptr_t temp = Soundfile::create(audio_file_name, loop);
+    auto temp = Soundfile::create(audio_file_name, loop);
     if (!temp)
     {
       WARNING("AudioPlayer: Initialization of soundfile '" + audio_file_name

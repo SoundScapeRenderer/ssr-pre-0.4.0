@@ -40,7 +40,7 @@
 namespace ssr
 {
 
-typedef uint32_t jack_nframes_t; // from <jack/types.h>
+using jack_nframes_t = uint32_t; // from <jack/types.h>
 
 /** Abstract interface to Scene class (and similar classes).
  **/

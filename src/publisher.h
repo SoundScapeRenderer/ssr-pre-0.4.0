@@ -36,7 +36,7 @@
 #include "source.h"
 #include "ssr_global.h"
 
-typedef uint32_t jack_nframes_t; // from <jack/types.h>
+using jack_nframes_t = uint32_t; // from <jack/types.h>
 
 namespace ssr
 {

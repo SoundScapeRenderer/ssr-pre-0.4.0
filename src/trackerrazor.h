@@ -42,17 +42,17 @@ namespace ssr
 class TrackerRazor : public Tracker
 {
   public:
-    typedef std::unique_ptr<TrackerRazor> ptr_t;
+    using ptr_t = std::unique_ptr<TrackerRazor>;
 
     /// "named constructor"
     static ptr_t create(Publisher& controller, const std::string& ports);
-  
+
     /// destructor
     ~TrackerRazor()
     {
       if (_tracker != nullptr) delete _tracker;
     }
-  
+
   virtual void calibrate() { _az_corr = _current_azimuth + 90.0f; }
 
   private:

@@ -43,7 +43,7 @@ ssr::TrackerRazor::TrackerRazor(Publisher& controller, const std::string& ports)
     throw std::runtime_error("No serial port(s) specified!");
   }
   VERBOSE("Initializing Razor AHRS ...");
-  
+
   std::istringstream iss(ports);
   std::string port;
   while (iss >> port)
@@ -62,7 +62,7 @@ ssr::TrackerRazor::TrackerRazor(Publisher& controller, const std::string& ports)
         VERBOSE("failure! (" << std::string(e.what()) + ")");
         continue;
       }
-      
+
       VERBOSE("success!");
       break; // stop trying
     }

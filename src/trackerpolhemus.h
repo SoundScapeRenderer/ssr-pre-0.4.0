@@ -46,7 +46,7 @@ struct Publisher; // forward declaration
 class TrackerPolhemus : public Tracker
 {
   public:
-    typedef std::unique_ptr<TrackerPolhemus> ptr_t;
+    using ptr_t = std::unique_ptr<TrackerPolhemus>;
 
     virtual ~TrackerPolhemus(); ///< destructor
 
@@ -82,7 +82,7 @@ class TrackerPolhemus : public Tracker
 
     int _tracker_port;
     int _open_serial_port(const char *portname);
-  
+
     volatile bool _stopped; ///< stops the tracking thread
 
     float _az_corr; ///< correction of the azimuth due to calibration

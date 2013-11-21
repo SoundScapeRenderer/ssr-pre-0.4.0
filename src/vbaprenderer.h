@@ -52,7 +52,7 @@ namespace ssr
 class VbapRenderer : public LoudspeakerRenderer<VbapRenderer>
 {
   private:
-    typedef ssr::LoudspeakerRenderer<VbapRenderer> _base;
+    using _base = ssr::LoudspeakerRenderer<VbapRenderer>;
 
   public:
     static const char* name() { return "VBAP-Renderer"; }
@@ -189,7 +189,7 @@ class VbapRenderer::Source : public _base::Source
 
     bool get_output_levels(sample_type* first, sample_type* last) const
     {
-      sample_type* current = first;
+      auto current = first;
 
       for (const auto& out: rtlist_proxy<Output>(parent.get_output_list()))
       {

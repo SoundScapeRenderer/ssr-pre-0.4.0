@@ -47,7 +47,7 @@ namespace ssr
 class WfsRenderer : public SourceToOutput<WfsRenderer, LoudspeakerRenderer>
 {
   private:
-    typedef SourceToOutput<WfsRenderer, ssr::LoudspeakerRenderer> _base;
+    using _base = SourceToOutput<WfsRenderer, ssr::LoudspeakerRenderer>;
 
   public:
     static const char* name() { return "WFS-Renderer"; }
@@ -72,12 +72,12 @@ class WfsRenderer : public SourceToOutput<WfsRenderer, LoudspeakerRenderer>
       // TODO: get pre-filter from reproduction setup!
       // TODO: allow alternative files for different sample rates
 
-      SndfileHandle prefilter = apf::load_sndfile(
+      auto prefilter = apf::load_sndfile(
           this->params.get("prefilter_file", ""), this->sample_rate(), 1);
 
       size_t size = prefilter.frames();
 
-      apf::fixed_vector<sample_type> ir(size);
+      auto ir = apf::fixed_vector<sample_type>(size);
 
       size = prefilter.readf(ir.data(), size);
 
@@ -221,8 +221,7 @@ class WfsRenderer::Source : public _base::Source
     {
       assert(size_t(std::distance(first, last)) == this->sourcechannels.size());
 
-      apf::fixed_vector<SourceChannel>::const_iterator channel
-        = this->sourcechannels.begin();
+      auto channel = this->sourcechannels.begin();
 
       for ( ; first != last; ++first)
       {
@@ -248,13 +247,10 @@ void WfsRenderer::Source::_process()
   else
   {
     _focused = true;
-    rtlist_proxy<Output> out_list = _input.parent.get_output_list();
-    for (rtlist_proxy<Output>::iterator out = out_list.begin()
-        ; out != out_list.end()
-        ; ++out)
+    for (const auto& out: rtlist_proxy<Output>(_input.parent.get_output_list()))
     {
       // subwoofers have to be ignored!
-      if (out->model == Loudspeaker::subwoofer) continue;
+      if (out.model == Loudspeaker::subwoofer) continue;
 
       // TODO: calculate with inner product
 
@@ -262,15 +258,15 @@ void WfsRenderer::Source::_process()
       // and the loudspeaker orientation
 
       // TODO: avoid getting reference 2 times (see select())
-      DirectionalPoint ls = *out;
-      DirectionalPoint ref(out->parent.state.reference_position
-      , out->parent.state.reference_orientation);
+      auto ls = DirectionalPoint(out);
+      auto ref = DirectionalPoint(out.parent.state.reference_position
+          , out.parent.state.reference_orientation);
       ls.transform(ref);
 
-      sample_type a = apf::math::wrap(angle(ls.position - this->position
+      auto a = apf::math::wrap(angle(ls.position - this->position
             , ls.orientation), 2 * apf::math::pi<sample_type>());
 
-      sample_type halfpi = apf::math::pi<sample_type>()/2;
+      auto halfpi = apf::math::pi<sample_type>()/2;
 
       if (a < halfpi || a > 3 * halfpi)
       {
@@ -300,12 +296,12 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
   const float safety_radius = 0.01f; // 1 cm
 
   // TODO: move reference calculation to WfsRenderer::Process?
-  DirectionalPoint ref(_out.parent.state.reference_position
+  auto ref = DirectionalPoint(_out.parent.state.reference_position
       , _out.parent.state.reference_orientation);
 
   // TODO: this is actually wrong!
   // We use it to be compatible with the (also wrong) GUI implementation.
-  DirectionalPoint ref_off = ref;
+  auto ref_off = ref;
   ref_off.transform(DirectionalPoint(
         _out.parent.state.reference_offset_position
         , _out.parent.state.reference_offset_orientation));
@@ -316,8 +312,8 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
   sample_type weighting_factor = 1;
   float delay = 0;
 
-  Loudspeaker ls = _out;
-  Position src_pos = in.source.position;
+  auto ls = Loudspeaker(_out);
+  auto src_pos = in.source.position;
 
   // TODO: shortcut if in.source.weighting_factor == 0
 
@@ -372,8 +368,8 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
 
           // calculate inner product of those two vectors:
           // this = source
-          Position lhs = ls.position - src_pos;
-          Position rhs = ref_off.position - src_pos;
+          auto lhs = ls.position - src_pos;
+          auto rhs = ref_off.position - src_pos;
 
           // TODO: write inner product function in Position class
           if ((lhs.x * rhs.x + lhs.y * rhs.y) < 0.0f)
@@ -533,7 +529,7 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
   _new_factor = in.weighting_factor;
 
   using namespace apf::CombineChannelsResult;
-  type crossfade_mode;
+  auto crossfade_mode = apf::CombineChannelsResult::type();
 
   if (_old_factor == 0 && _new_factor == 0)
   {

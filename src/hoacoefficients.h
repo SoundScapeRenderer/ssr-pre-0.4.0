@@ -58,11 +58,11 @@ const float LaplaceCoeffsBase<float>::laplace_coeffs[][2] = {
 
 /// Coefficients for the IIR filters in NfcHoaRenderer
 template<typename T>
-class HoaCoefficients : public std::vector<apf::SosCoefficients<T> >
+class HoaCoefficients : public std::vector<apf::SosCoefficients<T>>
                       , private internal::LaplaceCoeffsBase<T>
 {
   private:
-    typedef std::vector<apf::SosCoefficients<T> > _base;
+    using _base = std::vector<apf::SosCoefficients<T>>;
 
   public:
     enum source_t { point_source, plane_wave };
@@ -90,10 +90,11 @@ class HoaCoefficients : public std::vector<apf::SosCoefficients<T> >
 
     void reset(float distance, source_t source_type)
     {
-      typedef const T twoT[2];
+      using twoT = const T[2];
 
-      apf::transform_iterator<twoT*, Scaler>
-        iter(this->laplace_coeffs + _coeffs_begin, Scaler(distance, source_type
+      auto iter
+        = apf::make_transform_iterator(this->laplace_coeffs + _coeffs_begin
+            , Scaler(distance, source_type
               , _sample_rate, _array_radius, _speed_of_sound));
 
       std::copy(iter, iter + this->size(), this->begin());
@@ -122,7 +123,7 @@ class HoaCoefficients : public std::vector<apf::SosCoefficients<T> >
     class Scaler
     {
       public:
-        typedef apf::SosCoefficients<T> result_type;
+        using result_type = apf::SosCoefficients<T>;
 
         Scaler(float distance, source_t source_type
             , size_t sample_rate, float array_radius, float speed_of_sound)
@@ -136,7 +137,7 @@ class HoaCoefficients : public std::vector<apf::SosCoefficients<T> >
         {
           T two = 2.0;
 
-          apf::LaplaceCoefficients<T> c;
+          auto c = apf::LaplaceCoefficients<T>();
 
           c.b1 = row[0];
           c.b2 = row[1];

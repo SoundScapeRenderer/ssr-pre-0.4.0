@@ -63,10 +63,6 @@ struct Loudspeaker : DirectionalPoint
 
   // auto-generated copy ctor and assignment operator are OK.
 
-  /// operator needed to sort loudspeakers according to their positional angle
-  static bool sort_operator(const Loudspeaker &one, const Loudspeaker &other)
-              {return one.position.orientation().azimuth < other.position.orientation().azimuth;};
-
   //std::string name;
   //std::string audio_file_name;
   //std::string audio_file_channel;

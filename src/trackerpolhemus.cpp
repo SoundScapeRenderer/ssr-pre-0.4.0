@@ -159,7 +159,7 @@ ssr::TrackerPolhemus::_open_serial_port(const char *portname)
 {
   int port;
   int flags;
-  
+
   // O_NDELAY allows open even with no carrier detect (e.g. needed for Razor)
   if ((port = open(portname, O_RDWR | O_NOCTTY | O_NDELAY)) != -1)
   {
@@ -170,7 +170,7 @@ ssr::TrackerPolhemus::_open_serial_port(const char *portname)
       return port;
     }
   }
-  
+
   // something didn't work
   close(port);
   return -1;

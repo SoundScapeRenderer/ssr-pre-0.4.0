@@ -65,20 +65,20 @@ class RendererBase : public apf::MimoProcessor<Derived
                      , SSR_QUERY_POLICY>
 {
   private:
-    typedef apf::MimoProcessor<Derived, APF_MIMOPROCESSOR_INTERFACE_POLICY
-      , APF_MIMOPROCESSOR_THREAD_POLICY, SSR_QUERY_POLICY> _base;
+    using _base = apf::MimoProcessor<Derived, APF_MIMOPROCESSOR_INTERFACE_POLICY
+      , APF_MIMOPROCESSOR_THREAD_POLICY, SSR_QUERY_POLICY>;
 
   public:
-    typedef typename _base::rtlist_t rtlist_t;
-    typedef typename _base::DefaultInput Input;
-    typedef typename _base::ScopedLock ScopedLock;
-    typedef typename _base::sample_type sample_type;
+    using rtlist_t = typename _base::rtlist_t;
+    using Input = typename _base::DefaultInput;
+    using ScopedLock = typename _base::ScopedLock;
+    using sample_type = typename _base::sample_type;
 
     using _base::_fifo;
 
     class Source;
     // TODO: try to remove this:
-    typedef Source SourceBase;
+    using SourceBase = Source;
     class Output;
 
     struct State
@@ -197,12 +197,6 @@ class RendererBase : public apf::MimoProcessor<Derived
     const sample_type master_volume_correction;  // linear
 
   protected:
-    /// %Renderer exception  
-    struct renderer_error : public std::runtime_error
-    {
-      renderer_error(const std::string& s): std::runtime_error(s) {}
-    };
-
     RendererBase(const apf::parameter_map& p);
 
     // TODO: make private?
@@ -216,7 +210,7 @@ class RendererBase : public apf::MimoProcessor<Derived
   private:
     apf::parameter_map _add_params(const apf::parameter_map& params)
     {
-      apf::parameter_map temp(params);
+      auto temp = params;
       temp.set("name", params.get("name", Derived::name()));
       return temp;
     }
@@ -259,7 +253,7 @@ int RendererBase<Derived>::add_source(const apf::parameter_map& p)
   typename Derived::Input::Params in_params;
   in_params = p;
   in_params.set("id", in_params.get("id", id));
-  typename Derived::Input* in = this->add(in_params);
+  auto in = this->add(in_params);
 
   // WARNING: if Derived::Input throws an exception, the SSR crashes!
 
@@ -310,7 +304,7 @@ void RendererBase<Derived>::rem_source(Source* source)
 
   source->derived().disconnect();
 
-  Input* input = const_cast<Input*>(&source->_input);
+  auto input = const_cast<Input*>(&source->_input);
   _source_list.rem(source);
 
   // TODO: really remove the corresponding Input?
@@ -350,12 +344,12 @@ class RendererBase<Derived>::Source
                   , public apf::has_begin_and_end<typename Input::iterator>
 {
   private:
-    typedef typename _base::template ProcessItem<typename Derived::Source>
-      SourceBase;
+    using SourceBase
+      = typename _base::template ProcessItem<typename Derived::Source>;
 
   public:
-    typedef typename std::iterator_traits<typename Input::iterator>::value_type
-      sample_type;
+    using sample_type
+      = typename std::iterator_traits<typename Input::iterator>::value_type;
 
     friend class RendererBase<Derived>;  // rem_source() needs access to _input
 
@@ -488,12 +482,12 @@ class RendererBase<Derived>::Output : public _base::Output
 template<typename Derived, template<typename> class Base>
 struct SourceToOutput : Base<Derived>
 {
-  typedef typename Base<Derived>::Input Input;
+  using Input = typename Base<Derived>::Input;
 
   struct Source : Base<Derived>::Source
   {
-    typedef typename Base<Derived>::Source::Params Params;
-    typedef apf::fixed_vector<typename Derived::SourceChannel> sourcechannels_t;
+    using Params = typename Base<Derived>::Source::Params;
+    using sourcechannels_t = apf::fixed_vector<typename Derived::SourceChannel>;
 
     template<typename... Args>
     Source(const Params& p, Args&&... args)
@@ -503,7 +497,7 @@ struct SourceToOutput : Base<Derived>
 
     void connect()
     {
-      std::list<typename Derived::SourceChannel*> temp;
+      auto temp = std::list<typename Derived::SourceChannel*>();
       apf::append_pointers(this->sourcechannels, temp);
       this->parent.add_to_sublist(temp, apf::make_cast_proxy<Output>(
             const_cast<rtlist_t&>(this->parent.get_output_list()))
@@ -512,7 +506,7 @@ struct SourceToOutput : Base<Derived>
 
     void disconnect()
     {
-      std::list<typename Derived::SourceChannel*> temp;
+      auto temp = std::list<typename Derived::SourceChannel*>();
       apf::append_pointers(this->sourcechannels, temp);
       this->parent.rem_from_sublist(temp, apf::make_cast_proxy<Output>(
             const_cast<rtlist_t&>(this->parent.get_output_list()))
@@ -522,13 +516,13 @@ struct SourceToOutput : Base<Derived>
     sourcechannels_t sourcechannels;
 
     private:
-      typedef typename Derived::rtlist_t rtlist_t;
+      using rtlist_t = typename Derived::rtlist_t;
   };
 
   struct Output : Base<Derived>::Output
   {
-    typedef typename Base<Derived>::Output::Params Params;
-    typedef std::list<typename Derived::SourceChannel*> sourcechannels_t;
+    using Params = typename Base<Derived>::Output::Params;
+    using sourcechannels_t = std::list<typename Derived::SourceChannel*>;
 
     Output(const Params& p) : Base<Derived>::Output(p) {}
 

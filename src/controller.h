@@ -82,7 +82,7 @@
 #include "apf/math.h"
 #include "apf/stringtools.h"
 
-typedef XMLParser::Node Node; ///< a node of the DOM tree
+using Node = XMLParser::Node; ///< a node of the DOM tree
 
 namespace ssr
 {
@@ -126,7 +126,7 @@ template<typename Renderer>
 class Controller : public Publisher
 {
   public:
-    typedef Loudspeaker::container_t::size_type loudspeaker_id_t;
+    using loudspeaker_id_t = Loudspeaker::container_t::size_type;
 
     /// ctor
     Controller(int argc, char *argv[]);
@@ -211,8 +211,8 @@ class Controller : public Publisher
     void deactivate() { _renderer.deactivate(); }
 
   private:
-    typedef typename Renderer::template rtlist_proxy<typename Renderer::Output>
-      output_list_t;
+    using output_list_t
+      = typename Renderer::template rtlist_proxy<typename Renderer::Output>;
 
     class query_state;
 
@@ -236,7 +236,7 @@ class Controller : public Publisher
 
     Scene _scene;
     /// a list of subscribers
-    typedef std::vector<Subscriber*> subscriber_list_t;
+    using subscriber_list_t = std::vector<Subscriber*>;
     /// list of objects that will be notified on all events
     subscriber_list_t _subscribers;
 #ifdef ENABLE_GUI
@@ -276,11 +276,9 @@ class Controller : public Publisher
     // FIXME: THREAD
     inline void _publish(void (Subscriber::*f)())
     {
-      for (subscriber_list_t::iterator i = _subscribers.begin()
-          ; i != _subscribers.end()
-          ; ++i)
+      for (const auto& subscriber: _subscribers)
       {
-        ((*i)->*f)();
+        (subscriber->*f)();
       }
     }
     /// non-const, 1 argument (by value), return type void
@@ -422,9 +420,8 @@ Controller<Renderer>::Controller(int argc, char* argv[])
   _renderer.get_loudspeakers(loudspeakers);
   _publish(&Subscriber::set_loudspeakers, loudspeakers);
 
-  // memory leak, subscriber is never deleted
-  RenderSubscriber<Renderer> *subscriber
-    = new RenderSubscriber<Renderer>(_renderer);
+  // TODO: memory leak, subscriber is never deleted!
+  auto subscriber = new RenderSubscriber<Renderer>(_renderer);
   _subscribe(subscriber);
 
 #ifdef ENABLE_ECASOUND
@@ -470,34 +467,30 @@ class Controller<Renderer>::query_state
       _state = _renderer.get_transport_state();
       _cpu_load = _renderer.get_cpu_load();
 
-      output_list_t output_list = _renderer.get_output_list();
+      auto output_list = output_list_t(_renderer.get_output_list());
 
       _master_level = typename Renderer::sample_type();
-      for (typename output_list_t::iterator it = output_list.begin()
-          ; it != output_list.end()
-          ; ++it)
+      for (const auto& out: output_list)
       {
-        _master_level = std::max(_master_level, it->get_level());
+        _master_level = std::max(_master_level, out.get_level());
       }
 
       _last_source = 0;
 
-      typedef typename Renderer::template rtlist_proxy<
-        typename Renderer::Source> source_list_t;
-      source_list_t source_list = _renderer.get_source_list();
+      using source_list_t
+        = typename Renderer::template rtlist_proxy<typename Renderer::Source>;
+      auto source_list = source_list_t(_renderer.get_source_list());
 
       if (_source_levels.size() == source_list.size())
       {
-        typename source_levels_t::iterator levels = _source_levels.begin();
+        auto levels = _source_levels.begin();
 
-        for (typename source_list_t::iterator it = source_list.begin()
-            ; it != source_list.end()
-            ; ++it)
+        for (const auto& source: source_list)
         {
-          _last_source = &*it;
-          levels->source = it->get_level();
+          _last_source = &source;
+          levels->source = source.get_level();
 
-          levels->outputs_available = it->get_output_levels(
+          levels->outputs_available = source.get_output_levels(
               &*levels->outputs.begin(), &*levels->outputs.end());
 
           ++levels;
@@ -546,7 +539,7 @@ class Controller<Renderer>::query_state
       std::vector<typename Renderer::sample_type> outputs;
     };
 
-    typedef std::vector<SourceLevel> source_levels_t;
+    using source_levels_t = std::vector<SourceLevel>;
 
     // TODO: quick hack, maybe implement properly some day?
     template<typename MapIterator>
@@ -554,7 +547,7 @@ class Controller<Renderer>::query_state
     {
       assert(size_t(std::distance(first, last)) == _source_levels.size());
 
-      typename source_levels_t::iterator levels = _source_levels.begin();
+      auto levels = _source_levels.begin();
 
       for (; first != last; ++first)
       {
@@ -828,18 +821,9 @@ Controller<Renderer>::subscribe(Subscriber* const subscriber)
 // FIXME: THREAD
 template<typename Renderer>
 void
-Controller<Renderer>::unsubscribe(Subscriber* const subscriber)
+Controller<Renderer>::unsubscribe(Subscriber* subscriber)
 {
-  subscriber_list_t::iterator i;
-  for (i=_subscribers.begin(); i!=_subscribers.end(); i++)
-  {
-    if (*i == subscriber)
-    {
-      _subscribers.erase(i);
-      return;
-    }
-  }
-  std::cerr << "Deletion of unsubscribed Subscriber requested" << std::endl;
+  std::remove(_subscribers.begin(), _subscribers.end(), subscriber);
 }
 
 template<typename Renderer>
@@ -875,7 +859,7 @@ Controller<Renderer>::load_scene(const std::string& scene_file_name)
   else if (file_extension == "asd")
   {
     XMLParser xp; // load XML parser
-    XMLParser::doc_t scene_file = xp.load_file(scene_file_name);
+    auto scene_file = xp.load_file(scene_file_name);
     if (!scene_file)
     {
       ERROR("Unable to load scene setup file '" << scene_file_name << "'!");
@@ -1316,12 +1300,10 @@ Controller<Renderer>::_load_audio_recorder(const std::string& audio_file_name
       + apf::str::A2S(sample_rate), "", client_name, input_prefix));
 
   size_t channel = 1;
-  for (typename output_list_t::iterator it = output_list.begin()
-      ; it != output_list.end()
-      ; ++it, ++channel)
+  for (const auto& out: output_list)
   {
-    _renderer.connect_ports(it->port_name()
-        , client_name + ":" + input_prefix + "_" + apf::str::A2S(channel));
+    _renderer.connect_ports(out.port_name()
+        , client_name + ":" + input_prefix + "_" + apf::str::A2S(channel++));
   }
 }
 #endif
@@ -1835,13 +1817,12 @@ Controller<Renderer>::_add_loudspeakers(Node& node) const
 {
   Loudspeaker::container_t loudspeakers;
   _scene.get_loudspeakers(loudspeakers, false); // get relative positions
-  for (Loudspeaker::container_t::const_iterator i = loudspeakers.begin();
-      i != loudspeakers.end(); ++i)
+  for (const auto& ls: loudspeakers)
   {
     Node loudspeaker_node = node.new_child("loudspeaker");
-    loudspeaker_node.new_attribute("model", apf::str::A2S(i->model));
-    _add_position(loudspeaker_node, i->position);
-    _add_orientation(loudspeaker_node, i->orientation);
+    loudspeaker_node.new_attribute("model", apf::str::A2S(ls.model));
+    _add_position(loudspeaker_node, ls.position);
+    _add_orientation(loudspeaker_node, ls.orientation);
   }
 }
 
@@ -1851,8 +1832,7 @@ Controller<Renderer>::_add_sources(Node& node, const std::string& scene_file_nam
 {
   typename SourceCopy::container_t sources;
   _scene.get_sources(sources);
-  for (typename SourceCopy::container_t::const_iterator i = sources.begin();
-      i != sources.end(); ++i)
+  for (const auto& source: sources)
   {
     Node source_node = node.new_child("source");
     if (scene_file_name != "")
@@ -1861,15 +1841,15 @@ Controller<Renderer>::_add_sources(Node& node, const std::string& scene_file_nam
     }
     else
     {
-      source_node.new_attribute("id", apf::str::A2S(i->id));
+      source_node.new_attribute("id", apf::str::A2S(source.id));
     }
-    source_node.new_attribute("name", apf::str::A2S(i->name));
-    source_node.new_attribute("model", apf::str::A2S(i->model));
-    if (i->audio_file_name != "") // ugly work-around
+    source_node.new_attribute("name", apf::str::A2S(source.name));
+    source_node.new_attribute("model", apf::str::A2S(source.model));
+    if (source.audio_file_name != "") // ugly work-around
     {
       _add_audio_file_name(source_node
-          , posixpathtools::make_path_relative_to_file(i->audio_file_name
-            , scene_file_name), i->audio_file_channel);
+          , posixpathtools::make_path_relative_to_file(source.audio_file_name
+            , scene_file_name), source.audio_file_channel);
     }
 
     if (scene_file_name != "") // ugly quick hack
@@ -1878,30 +1858,30 @@ Controller<Renderer>::_add_sources(Node& node, const std::string& scene_file_nam
     }
     else
     {
-      _add_port_name(source_node, i->port_name);
+      _add_port_name(source_node, source.port_name);
     }
 
-    _add_position(source_node, i->position, i->fixed_position);
-    _add_orientation(source_node, i->orientation);
+    _add_position(source_node, source.position, source.fixed_position);
+    _add_orientation(source_node, source.orientation);
     if (scene_file_name != "") // ugly quick hack
     {
       // don't add port name!
     }
     else
     {
-      source_node.new_attribute("length", apf::str::A2S(i->file_length));
+      source_node.new_attribute("length", apf::str::A2S(source.file_length));
     }
-    source_node.new_attribute("mute", apf::str::A2S(i->mute));
+    source_node.new_attribute("mute", apf::str::A2S(source.mute));
     // save volume in dB!
-    source_node.new_attribute("volume", apf::str::A2S(apf::math::linear2dB(i->gain)));
+    source_node.new_attribute("volume", apf::str::A2S(apf::math::linear2dB(source.gain)));
     // TODO: information about mirror sources
 
-    if (i->properties_file != "")
+    if (source.properties_file != "")
     {
-      source_node.new_attribute("properties_file", i->properties_file);
+      source_node.new_attribute("properties_file", source.properties_file);
     }
 
-    // TODO: save doppler effect setting (i->doppler_effect)
+    // TODO: save doppler effect setting (source.doppler_effect)
   }
 }
 

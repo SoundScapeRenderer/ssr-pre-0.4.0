@@ -43,12 +43,12 @@ class GenericRenderer : public SourceToOutput<GenericRenderer
                                                           , LoudspeakerRenderer>
 {
   private:
-    typedef SourceToOutput<GenericRenderer, ssr::LoudspeakerRenderer> _base;
+    using _base = SourceToOutput<GenericRenderer, ssr::LoudspeakerRenderer>;
 
   public:
     static const char* name() { return "GenericRenderer"; }
 
-    typedef _base::DefaultInput Input;
+    using Input = _base::DefaultInput;
     class Source;
     struct SourceChannel;
     class Output;
@@ -65,8 +65,6 @@ class GenericRenderer : public SourceToOutput<GenericRenderer
     }
 
   private:
-    class _source_initializer;
-
     apf::raised_cosine_fade<sample_type> _fade;
 };
 
@@ -92,17 +90,17 @@ class GenericRenderer::Source : public _base::Source
       , _new_weighting_factor()
       , _old_weighting_factor()
     {
-      typedef apf::fixed_matrix<sample_type> matrix_t;
+      using matrix_t = apf::fixed_matrix<sample_type>;
 
       size_t outputs = this->parent.get_output_list().size();
 
-      SndfileHandle ir_file = apf::load_sndfile(
+      auto ir_file = apf::load_sndfile(
           p.get<std::string>("properties_file"), this->parent.sample_rate()
           , outputs);
 
       size_t size = ir_file.frames();
 
-      matrix_t ir_data(size, outputs);
+      auto ir_data = matrix_t(size, outputs);
 
       // TODO: check return value?
       ir_file.readf(ir_data.data(), size);

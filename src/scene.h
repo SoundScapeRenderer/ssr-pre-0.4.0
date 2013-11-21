@@ -49,9 +49,9 @@ class Scene : public Subscriber
 {
   public:
     /// A map of sources.
-    typedef std::map<id_t, Source> source_map_t;
+    using source_map_t = std::map<id_t, Source>;
     /// A vector of loudspeakers.
-    typedef std::vector<Loudspeaker> loudspeakers_t;
+    using loudspeakers_t = std::vector<Loudspeaker>;
 
     Scene();  ///< ctor
     ~Scene(); ///< dtor
@@ -175,25 +175,24 @@ class Scene : public Subscriber
     /// template argument can be used, like std::list, std::vector, ...
     /// as long as it has the following member functions: .begin(), .end(),
     /// .push_back().
-    template<template<typename, typename> class Container, typename T,
-      typename Allocator>
-      void get_sources(Container<T, Allocator>& container) const
+    template<template<typename, typename...> class Container, typename T,
+    typename... Args>
+    void get_sources(Container<T, Args...>& container) const
     {
       assert(container.empty());
 
       // the following struct container_traits is declared in the private part
       // of the Scene class and defined further down this file.
 
-      if (container_traits<Container<T, Allocator> >::has_reserve)
+      if (container_traits<Container<T, Args...> >::has_reserve)
       {
-        container_traits<Container<T, Allocator> >::reserve(container,
+        container_traits<Container<T, Args...> >::reserve(container,
             _source_map.size());
       }
-      for (source_map_t::const_iterator i = _source_map.begin();
-          i != _source_map.end(); ++i)
+      for (const auto& source: _source_map)
       {
         // type conversion constructor T::T(const pair<id_t,Source>&) needed!
-        container.push_back(T(*i));
+        container.push_back(T(source));
       }
     }
 
@@ -204,9 +203,9 @@ class Scene : public Subscriber
     /// ID of the loudspeaker == its position in the container
     /// container[0] has ID 1, container[1] has ID 2, ...
     template<template<typename, typename> class Container, typename T,
-      typename Allocator>
-      void get_loudspeakers(Container<T, Allocator>& container,
-          bool absolute_position = true) const
+    typename Allocator>
+    void get_loudspeakers(Container<T, Allocator>& container,
+        bool absolute_position = true) const
     {
       assert(container.empty());
 
@@ -264,7 +263,7 @@ class Scene : public Subscriber
     template<typename T, typename PointerToMember> bool _set_source_member(
         id_t id, PointerToMember member, const T& arg)
     {
-      Source* const source_ptr = maptools::get_item(_source_map, id);
+      auto source_ptr = maptools::get_item(_source_map, id);
       if (!source_ptr)
       {
         VERBOSE("Source " << id << " doesn't exist!");
@@ -291,7 +290,7 @@ class Scene : public Subscriber
     // forward declaration of the container traits class
     template<typename Container> struct container_traits; // nested
     // partial specialization:
-    template<typename T>         struct container_traits<std::vector<T> >;
+    template<typename T>         struct container_traits<std::vector<T>>;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -314,7 +313,7 @@ template<typename Container> struct Scene::container_traits
 /// traits class to check if a container has a reserve() member function
 // partial specialization of the above template.
 template<typename T>
-struct Scene::container_traits<std::vector<T> >
+struct Scene::container_traits<std::vector<T>>
 {
   static const bool has_reserve = true;
   template<typename U> static void reserve(std::vector<T>& v, const U& space)

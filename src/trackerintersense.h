@@ -47,19 +47,20 @@ struct Publisher;
 class TrackerInterSense : public Tracker
 {
   public:
-    typedef std::unique_ptr<TrackerInterSense> ptr_t;
+    using ptr_t = std::unique_ptr<TrackerInterSense>;
 
     virtual ~TrackerInterSense(); ///< destructor
 
     /// "named constructor"
-  static ptr_t create(Publisher& controller, const std::string& ports = "",
+    static ptr_t create(Publisher& controller, const std::string& ports = "",
         const unsigned int read_interval = 20);
 
     virtual void calibrate();
 
   private:
     /// constructor
-    TrackerInterSense(Publisher& controller, const std::string& ports, const unsigned int read_interval);
+    TrackerInterSense(Publisher& controller, const std::string& ports
+        , const unsigned int read_interval);
 
     Publisher& _controller;
 

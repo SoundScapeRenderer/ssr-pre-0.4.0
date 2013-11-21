@@ -44,7 +44,7 @@ namespace ssr
 class BinauralRenderer : public SourceToOutput<BinauralRenderer, RendererBase>
 {
   private:
-    typedef SourceToOutput<BinauralRenderer, ssr::RendererBase> _base;
+    using _base = SourceToOutput<BinauralRenderer, ssr::RendererBase>;
 
   public:
     static const char* name() { return "BinauralRenderer"; }
@@ -68,7 +68,7 @@ class BinauralRenderer : public SourceToOutput<BinauralRenderer, RendererBase>
     }
 
   private:
-    typedef apf::fixed_vector<apf::conv::Filter> hrtf_set_t;
+    using hrtf_set_t = apf::fixed_vector<apf::conv::Filter>;
 
     void _load_hrtfs(const std::string& filename, size_t size);
 
@@ -117,7 +117,7 @@ class BinauralRenderer::SourceChannel : public apf::conv::Output
 void
 BinauralRenderer::_load_hrtfs(const std::string& filename, size_t size)
 {
-  SndfileHandle hrir_file = apf::load_sndfile(filename, this->sample_rate(), 0);
+  auto hrir_file = apf::load_sndfile(filename, this->sample_rate(), 0);
 
   const size_t no_of_channels = hrir_file.channels();
 
@@ -135,23 +135,21 @@ BinauralRenderer::_load_hrtfs(const std::string& filename, size_t size)
 
   // Deinterleave channels and transform to FFT domain
 
-  apf::fixed_matrix<float> transpose(size, no_of_channels);
+  auto transpose = apf::fixed_matrix<float>(size, no_of_channels);
 
   size = hrir_file.readf(transpose.data(), size);
 
   _partitions = apf::conv::min_partitions(this->block_size(), size);
 
-  apf::conv::Transform temp(this->block_size());
+  auto temp = apf::conv::Transform(this->block_size());
 
   _hrtfs.reset(
       new hrtf_set_t(no_of_channels, _partitions, temp.partition_size()));
 
   hrtf_set_t::iterator target = _hrtfs->begin();
-  for (apf::fixed_matrix<float>::slices_iterator it = transpose.slices.begin()
-      ; it != transpose.slices.end()
-      ; ++it, ++target)
+  for (const auto& slice: transpose.slices)
   {
-    temp.prepare_filter(it->begin(), it->end(), *target);
+    temp.prepare_filter(slice.begin(), slice.end(), *target++);
   }
 
   // prepare neutral filter (dirac impulse) for interpolation around the head
@@ -163,7 +161,7 @@ BinauralRenderer::_load_hrtfs(const std::string& filename, size_t size)
 
   int index = std::distance(transpose.slices.begin()->begin(), maximum);
 
-  apf::fixed_vector<sample_type> impulse(index + 1);
+  auto impulse = apf::fixed_vector<sample_type>(index + 1);
   impulse.back() = 1;
 
   _neutral_filter.reset(new apf::conv::Filter(this->block_size()
@@ -217,7 +215,7 @@ void BinauralRenderer::load_reproduction_setup()
 
   _load_hrtfs(this->params["hrir_file"], this->params.get("hrir_size", 0));
 
-  Output::Params params;
+  auto params = Output::Params();
 
   const std::string prefix = this->params.get("system_output_prefix", "");
 
@@ -270,9 +268,9 @@ void BinauralRenderer::Source::_process()
 
   this->add_block(_input.begin());
 
-  const Position& ref_pos = _input.parent.state.reference_position
+  auto ref_pos = _input.parent.state.reference_position
     + _input.parent.state.reference_offset_position;
-  const Orientation& ref_ori = _input.parent.state.reference_orientation
+  auto ref_ori = _input.parent.state.reference_orientation
     + _input.parent.state.reference_offset_orientation;
 
   if (this->weighting_factor != 0)
@@ -291,8 +289,7 @@ void BinauralRenderer::Source::_process()
     }
     else
     {
-      float source_distance
-        = (this->position - ref_pos).length();
+      float source_distance = (this->position - ref_pos).length();
 
       if (source_distance < 0.5f)
       {
@@ -316,12 +313,12 @@ void BinauralRenderer::Source::_process()
   float angles = _input.parent._angles;
 
   // calculate relative orientation of sound source
-  Orientation rel_ori = (this->position - ref_pos).orientation() - ref_ori;
+  auto rel_ori = (this->position - ref_pos).orientation() - ref_ori;
   _hrtf_index = size_t(apf::math::wrap(
       rel_ori.azimuth * angles / 360.0f + 0.5f, angles));
 
   using namespace apf::CombineChannelsResult;
-  type crossfade_mode;
+  auto crossfade_mode = apf::CombineChannelsResult::type();
 
   // Check on one channel only, filters are always changed in parallel
   bool queues_empty = this->sourcechannels[0].queues_empty();
@@ -354,7 +351,7 @@ void BinauralRenderer::Source::_process()
 
   for (size_t i = 0; i < 2; ++i)
   {
-    SourceChannel& channel = this->sourcechannels[i];
+    auto& channel = this->sourcechannels[i];
 
     if (crossfade_mode == nothing || crossfade_mode == fade_in)
     {
@@ -370,8 +367,7 @@ void BinauralRenderer::Source::_process()
     if (hrtf_changed)
     {
       // left and right channels are interleaved
-      apf::conv::Filter& hrtf
-        = (*_input.parent._hrtfs)[2 * _hrtf_index + i];
+      auto& hrtf = (*_input.parent._hrtfs)[2 * _hrtf_index + i];
 
       if (_interp_factor == 0)
       {

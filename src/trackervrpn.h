@@ -47,7 +47,7 @@ struct Publisher; // forward declaration
 class TrackerVrpn : public vrpn_Tracker_Remote, public Tracker
 {
   public:
-    typedef std::unique_ptr<TrackerVrpn> ptr_t;
+    using ptr_t = std::unique_ptr<TrackerVrpn>;
 
     virtual ~TrackerVrpn();
 

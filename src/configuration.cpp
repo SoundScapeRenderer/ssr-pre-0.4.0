@@ -114,7 +114,7 @@ ssr::conf_struct ssr::configuration(int& argc, char* argv[])
   conf_struct conf;
 
   // borrowed from ardour sources: cut path from program name
-  const char *exec_name = strrchr(argv[0], '/');
+  auto exec_name = strrchr(argv[0], '/');
   if (exec_name == nullptr) exec_name = argv[0]; else exec_name++;
   conf.exec_name = exec_name;
 

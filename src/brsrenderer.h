@@ -42,12 +42,12 @@ namespace ssr
 class BrsRenderer : public SourceToOutput<BrsRenderer, RendererBase>
 {
   private:
-    typedef SourceToOutput<BrsRenderer, ssr::RendererBase> _base;
+    using _base = SourceToOutput<BrsRenderer, ssr::RendererBase>;
 
   public:
     static const char* name() { return "BrsRenderer"; }
 
-    typedef _base::DefaultInput Input;
+    using Input = _base::DefaultInput;
     class Source;
     struct SourceChannel;
     class Output;
@@ -110,28 +110,26 @@ class BrsRenderer::Source : public _base::Source
 
       size_t size = ir_file.frames();
 
-      typedef apf::fixed_matrix<sample_type> matrix_t;
+      using matrix_t = apf::fixed_matrix<sample_type>;
 
-      matrix_t ir_data(size, no_of_channels);
+      auto ir_data = matrix_t(size, no_of_channels);
 
       // TODO: check return value?
       ir_file.readf(ir_data.data(), size);
 
       size_t block_size = this->parent.block_size();
 
-      apf::conv::Transform temp(block_size);
+      auto temp = apf::conv::Transform(block_size);
 
       size_t partitions = apf::conv::min_partitions(block_size, size);
 
       _brtf_set.reset(new brtf_set_t(no_of_channels
               , partitions, temp.partition_size()));
 
-      brtf_set_t::iterator target = _brtf_set->begin();
-      for (matrix_t::slices_iterator it = ir_data.slices.begin()
-          ; it != ir_data.slices.end()
-          ; ++it, ++target)
+      auto target = _brtf_set->begin();
+      for (const auto& slice: ir_data.slices)
       {
-        temp.prepare_filter(it->begin(), it->end(), *target);
+        temp.prepare_filter(slice.begin(), slice.end(), *target++);
       }
 
       assert(target == _brtf_set->end());
@@ -163,7 +161,7 @@ class BrsRenderer::Source : public _base::Source
           (azi - 90.0f) * float(_angles) / 360.0f + 0.5f, float(_angles)));
 
       using namespace apf::CombineChannelsResult;
-      type crossfade_mode;
+      auto crossfade_mode = apf::CombineChannelsResult::type();
 
       // Check on one channel only, filters are always changed in parallel
       bool queues_empty = this->sourcechannels[0].queues_empty();
@@ -216,7 +214,7 @@ class BrsRenderer::Source : public _base::Source
     }
 
   private:
-    typedef apf::fixed_vector<apf::conv::Filter> brtf_set_t;
+    using brtf_set_t = apf::fixed_vector<apf::conv::Filter>;
     std::unique_ptr<brtf_set_t> _brtf_set;
 
     sample_type _new_weighting_factor, _old_weighting_factor;
@@ -285,7 +283,7 @@ BrsRenderer::load_reproduction_setup()
 
   // TODO: read settings from proper reproduction system
 
-  Output::Params params;
+  auto params = Output::Params();
 
   const std::string prefix = this->params.get("system_output_prefix", "");
 

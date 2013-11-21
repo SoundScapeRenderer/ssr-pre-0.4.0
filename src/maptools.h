@@ -53,7 +53,7 @@ namespace maptools
 template <typename idT, typename dataT>
 const dataT* get_item(const std::map<idT,dataT*>& m, const idT id)
 {
-  typename std::map<idT,dataT*>::const_iterator iter = m.find(id);
+  auto iter = m.find(id);
   if (iter != m.end()) return iter->second;
   else return nullptr;
 }
@@ -62,7 +62,7 @@ const dataT* get_item(const std::map<idT,dataT*>& m, const idT id)
 template <typename idT, typename dataT>
 dataT* get_item(std::map<idT,dataT*>& m, const idT id)
 {
-  typename std::map<idT,dataT*>::iterator iter = m.find(id);
+  auto iter = m.find(id);
   if (iter != m.end()) return iter->second;
   else return nullptr;
 }
@@ -70,7 +70,7 @@ dataT* get_item(std::map<idT,dataT*>& m, const idT id)
 template <typename idT, typename dataT>
 const dataT* get_item(const std::map<idT,dataT>& m, const idT id)
 {
-  typename std::map<idT,dataT>::const_iterator iter = m.find(id);
+  auto iter = m.find(id);
   if (iter != m.end()) return &(iter->second);
   else return nullptr;
 }
@@ -79,7 +79,7 @@ const dataT* get_item(const std::map<idT,dataT>& m, const idT id)
 template <typename idT, typename dataT>
 dataT* get_item(std::map<idT,dataT>& m, const idT id)
 {
-  typename std::map<idT,dataT>::iterator iter = m.find(id);
+  auto iter = m.find(id);
   if (iter != m.end()) return &(iter->second);
   else return nullptr;
 }
@@ -94,7 +94,7 @@ dataT* get_item(std::map<idT,dataT>& m, const idT id)
 template<typename dataT, typename idT>
 bool delete_item(std::map<idT, dataT*>& m, const idT& id)
 {
-  typename std::map<idT, dataT*>::iterator delinquent = m.find(id);
+  auto delinquent = m.find(id);
   if (delinquent == m.end())
   {
     //WARNING("maptools::delete_item: '" << id << "' does not exist!");
@@ -111,11 +111,7 @@ bool delete_item(std::map<idT, dataT*>& m, const idT& id)
 template <typename idT, typename dataT>
 void purge(std::map<idT,dataT*>& delinquent)
 {
-  for (typename std::map<idT,dataT*>::const_iterator i = delinquent.begin();
-      i != delinquent.end(); ++i)
-  {
-    delete i->second;
-  }
+  for (auto& i: delinquent) delete i.second;
   delinquent.clear();
 }
 

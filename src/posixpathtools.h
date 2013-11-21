@@ -66,21 +66,21 @@ namespace posixpathtools
  **/
 inline bool getcwd(std::string& path)
 {
-  typedef std::pair<dev_t, ino_t> file_id;
+  using file_id = std::pair<dev_t, ino_t>;
 
   bool success = false;
   // Keep track of start directory, so can jump back to it later
-  int start_fd = open(".", O_RDONLY);
+  auto start_fd = open(".", O_RDONLY);
   if (start_fd != -1)
   {
     struct stat sb;
     if (!fstat(start_fd, &sb))
     {
-      file_id current_id(sb.st_dev, sb.st_ino);
+      auto current_id = file_id(sb.st_dev, sb.st_ino);
       // Get info for root directory, so we can determine when we hit it
       if (!stat("/", &sb))
       {
-        std::list<std::string> path_components;
+        auto path_components = std::list<std::string>();
         file_id root_id(sb.st_dev, sb.st_ino);
 
         // If they're equal, we've obtained enough info to build the path
@@ -90,10 +90,10 @@ inline bool getcwd(std::string& path)
 
           if (!chdir("..")) //Keep recursing towards root each iteration
           {
-            DIR *dir = opendir(".");
+            auto dir = opendir(".");
             if (dir)
             {
-              dirent *entry;
+              dirent* entry;
               // We loop through each entry trying to find where we came from
               while ((entry = readdir(dir)))
               {
@@ -101,7 +101,7 @@ inline bool getcwd(std::string& path)
                     && strcmp(entry->d_name, "..")
                     && !lstat(entry->d_name, &sb))
                 {
-                  file_id child_id(sb.st_dev, sb.st_ino);
+                  auto child_id = file_id(sb.st_dev, sb.st_ino);
                   // We found where we came from, add its name to the list
                   if (child_id == current_id)
                   {
@@ -174,7 +174,7 @@ std::string untokenize(const T& tokens)
       , std::ostream_iterator<std::string>(oss, "/"));
   // this always adds a trailing slash, which we don't want
 
-  std::string result = oss.str();
+  auto result = oss.str();
 
   if (!result.empty())
   {
@@ -215,7 +215,7 @@ void clean_path(T& tokens)
     tokens.pop_back();
   }
 
-  typename T::reverse_iterator it = tokens.rbegin();
+  auto it = tokens.rbegin();
 
   int levels = 0;
 
@@ -223,7 +223,7 @@ void clean_path(T& tokens)
   {
     // erasing reverse iterators is tricky,
     // see http://www.drdobbs.com/cpp/184401406
-    typename T::iterator fwd_it = it.base();
+    auto fwd_it = it.base();
     --fwd_it;
 
     if (*it == ".")
@@ -408,7 +408,7 @@ inline std::string make_path_relative_to_current_dir(const std::string& path
 {
   if (path != "" && path[0] != '/')
   {
-    std::list<std::string> result;
+    auto result = std::list<std::string>();
 
     tokenize(filename, result);
 
@@ -435,8 +435,8 @@ inline std::string make_path_relative_to_current_dir(const std::string& path
  **/
 inline std::string get_file_extension(const std::string& filename)
 {
-  std::string::size_type last_slash = filename.rfind('/');
-  std::string::size_type last_dot   = filename.rfind('.');
+  auto last_slash = filename.rfind('/');
+  auto last_dot   = filename.rfind('.');
 
   if (// if there is a dot and it is neither the first nor the last character
       last_dot > 0 && last_dot < filename.length() - 1
@@ -458,15 +458,13 @@ inline std::string get_escaped_filename(const std::string& filename)
 {
   std::string escaped_filename;
 
-  for (std::string::const_iterator i = filename.begin()
-      ; i != filename.end()
-      ; ++i)
+  for (const auto ch: filename)
   {
-    if (isspace(*i))
+    if (isspace(ch))
     {
       escaped_filename.append(1, '\\');
     }
-    escaped_filename.append(1, *i);
+    escaped_filename.append(1, ch);
   }
   return escaped_filename;
 }

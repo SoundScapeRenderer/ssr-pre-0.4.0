@@ -43,7 +43,7 @@ struct Source : DirectionalPoint
    * This enum can be extended arbitrarily, but for starters only point source
    * and plane wave will be implemented.
    **/
-  typedef enum
+  using model_t = enum
   {
     unknown = 0, /// unknown source model
     point,       ///< point source
@@ -51,7 +51,7 @@ struct Source : DirectionalPoint
     line,        ///< line source (not implemented!)
     directional,  ///< directional source (not implemented!)
     extended     ///< spatially extended source (not implemented!)
-  } model_t;
+  };
 
   /// ctor.
   /// @param position position

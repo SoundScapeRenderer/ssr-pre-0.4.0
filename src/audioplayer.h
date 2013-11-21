@@ -44,7 +44,7 @@
 class AudioPlayer : apf::NonCopyable
 {
   public:
-    typedef std::unique_ptr<AudioPlayer> ptr_t; ///< unique_ptr to AudioPlayer
+    using ptr_t = std::unique_ptr<AudioPlayer>; ///< unique_ptr to AudioPlayer
 
     class Soundfile; // nested class
 
@@ -60,7 +60,7 @@ class AudioPlayer : apf::NonCopyable
 
   private:
     /// map of Soundfiles, indexed by strings.
-    typedef std::map<std::string, Soundfile*> soundfile_map_t;
+    using soundfile_map_t = std::map<std::string, Soundfile*>;
     /// map to associate an ecasound instance with a filename
     soundfile_map_t _file_map;
 };
@@ -71,7 +71,7 @@ class AudioPlayer : apf::NonCopyable
 class AudioPlayer::Soundfile : apf::NonCopyable
 {
   public:
-    typedef std::unique_ptr<Soundfile> ptr_t; ///< unique_ptr to Soundfile
+    using ptr_t = std::unique_ptr<Soundfile>; ///< unique_ptr to Soundfile
 
     /// exception to be thrown by ctor.
     struct soundfile_error : public std::runtime_error

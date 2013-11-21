@@ -37,7 +37,7 @@ namespace ssr
 {
 
 /// Used as unique identifier for sources, loudspeakers, ...
-typedef unsigned int id_t;
+using id_t = unsigned int;
 
 /** Verbosity level.
  * @arg 0 - Only errors and warnings are shown.

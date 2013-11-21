@@ -66,14 +66,14 @@ ssr::TrackerInterSense::TrackerInterSense(Publisher& controller
   // save current working directory
   std::string current_path;
   posixpathtools::getcwd(current_path);
-  
+
   // if specific serial ports were given: use them
   if (ports != "")
   {
     // switch working directory
     chdir("/tmp");
     VERBOSE("Creating /tmp/isports.ini to configure InterSense tracker ports.");
-  
+
     // create isports.ini
     std::ofstream file;
     file.open("isports.ini", std::ios::trunc);
@@ -87,7 +87,7 @@ ssr::TrackerInterSense::TrackerInterSense(Publisher& controller
         file << "Port" << i++ << " = " << port << std::endl;
       }
       file.close();
-    } 
+    }
     else
     {
       ERROR("Could not create /tmp/isports.ini to configure InterSense tracker ports");

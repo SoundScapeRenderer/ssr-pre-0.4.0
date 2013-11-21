@@ -42,8 +42,8 @@ template<typename Derived>
 class LoudspeakerRenderer : public RendererBase<Derived>
 {
   private:
-    typedef RendererBase<Derived> _base;
-    typedef XMLParser::Node Node;
+    using _base = RendererBase<Derived>;
+    using Node = XMLParser::Node;
 
   public:
     class Output : public _base::Output, public Loudspeaker
@@ -89,15 +89,12 @@ template<typename Derived>
 void
 LoudspeakerRenderer<Derived>::get_loudspeakers(std::vector<Loudspeaker>& l)
 {
-  typedef typename _base::template rtlist_proxy<typename Derived::Output>
-    out_list_t;
-  out_list_t outputs = this->get_output_list();
+  using out_list_t
+    = typename _base::template rtlist_proxy<typename Derived::Output>;
 
-  for (typename out_list_t::iterator i = outputs.begin()
-      ; i != outputs.end()
-      ; ++i)
+  for (const auto& out: out_list_t(this->get_output_list()))
   {
-    l.push_back(Loudspeaker(*i));
+    l.push_back(Loudspeaker(out));
   }
 }
 
@@ -112,7 +109,7 @@ LoudspeakerRenderer<Derived>::load_reproduction_setup()
 
   // read the setup from XML file
   XMLParser xp; // load XML parser
-  XMLParser::doc_t setup_file = xp.load_file(_reproduction_setup);
+  auto setup_file = xp.load_file(_reproduction_setup);
   if (!setup_file)
   {
     throw std::runtime_error("Unable to load reproduction setup file \""
@@ -125,8 +122,7 @@ LoudspeakerRenderer<Derived>::load_reproduction_setup()
         + _reproduction_setup + "\" with schema file \"" + _xml_schema + "\"!");
   }
 
-  XMLParser::xpath_t xpath_result;
-  xpath_result = setup_file->eval_xpath("//reproduction_setup/*");
+  auto xpath_result = setup_file->eval_xpath("//reproduction_setup/*");
 
   // one could use separate xpath expressions like
   // "//reproduction_setup/loudspeaker",
@@ -299,7 +295,7 @@ LoudspeakerRenderer<Derived>::_load_linear_array(const Node& node)
     return;
   }
   const DirectionalPoint first(*first_pos, *first_dir);
-  DirectionalPoint increment; // default ctor. will be overwritten
+  auto increment = DirectionalPoint();
 
   if (second_pos && !last_pos)
   {
@@ -308,7 +304,7 @@ LoudspeakerRenderer<Derived>::_load_linear_array(const Node& node)
     {
       second_dir.reset(new Orientation(*first_dir));
     }
-    const DirectionalPoint second(*second_pos, *second_dir);
+    const auto second = DirectionalPoint(*second_pos, *second_dir);
     increment = second - first;
   }
   else if (last_pos && !second_pos)
@@ -318,7 +314,7 @@ LoudspeakerRenderer<Derived>::_load_linear_array(const Node& node)
     {
       last_dir.reset(new Orientation(*first_dir));
     }
-    const DirectionalPoint last(*last_pos, *last_dir);
+    const auto last = DirectionalPoint(*last_pos, *last_dir);
     increment = (last - first) / (number - 1);
   }
   else
@@ -387,8 +383,8 @@ LoudspeakerRenderer<Derived>::_load_circular_array(const Node& node)
   }
 
   // WARNING: The center is not supposed to have an orientation!
-  DirectionalPoint radius(*first_pos - *center_pos, *first_dir);
-  DirectionalPoint center(*center_pos, Orientation());
+  auto radius = DirectionalPoint(*first_pos - *center_pos, *first_dir);
+  auto center = DirectionalPoint(*center_pos, Orientation());
 
   float angle_increment = 360.0f / number; // full circle
   // division by zero not possible, as number >= 2 (see above)
@@ -410,7 +406,7 @@ LoudspeakerRenderer<Derived>::_load_circular_array(const Node& node)
 
     // TODO: get loudspeaker type!
 
-    DirectionalPoint point = radius;
+    auto point = radius;
     point.rotate(i * angle_increment);
     point += center;
     typename Output::Params params;

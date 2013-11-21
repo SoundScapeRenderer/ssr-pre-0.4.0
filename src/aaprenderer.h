@@ -39,7 +39,7 @@ namespace ssr
 class AapRenderer : public SourceToOutput<AapRenderer, LoudspeakerRenderer>
 {
   private:
-    typedef SourceToOutput<AapRenderer, ssr::LoudspeakerRenderer> _base;
+    using _base = SourceToOutput<AapRenderer, ssr::LoudspeakerRenderer>;
 
   public:
     static const char* name() { return "AAP-Renderer"; }
@@ -89,7 +89,7 @@ class AapRenderer::SourceChannel
 
     const Source& source;
 
-    typedef decltype(source.begin()) iterator;
+    using iterator = decltype(source.begin());
 
     iterator begin() const { return source.begin(); }
     iterator end() const { return source.end(); }

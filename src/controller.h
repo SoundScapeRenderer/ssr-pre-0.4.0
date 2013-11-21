@@ -266,66 +266,18 @@ class Controller : public Publisher
 
     // TODO: write _unsubscribe() ?
 
-    /// @name publishing functions
-    /// Several overloaded versions for different combinations of arguments.
+    /// Publishing function.
     /// The first argument is a pointer to a member function of the Subscriber
-    /// class.
-    //@{
-    /// non-const, 0 arguments, return type void
-    //
+    /// class, the rest are arguments to said member function.
     // FIXME: THREAD
-    inline void _publish(void (Subscriber::*f)())
+    template<typename R, typename... FuncArgs, typename... Args>
+    inline void _publish(R (Subscriber::*f)(FuncArgs...), Args&&... args)
     {
-      for (const auto& subscriber: _subscribers)
+      for (auto& subscriber: _subscribers)
       {
-        (subscriber->*f)();
+        (subscriber->*f)(std::forward<Args>(args)...);  // ignore return value
       }
     }
-    /// non-const, 1 argument (by value), return type void
-    template<typename A> inline void _publish(void (Subscriber::*f)(A), A a)
-    {
-      for (subscriber_list_t::iterator i = _subscribers.begin()
-          ; i != _subscribers.end()
-          ; ++i)
-      {
-        ((*i)->*f)(a);
-      }
-    }
-    /// non-const, 1 argument (by const reference), return type void
-    template<typename A> inline void _publish(void (Subscriber::*f)(const A&)
-        , const A& a)
-    {
-      for (subscriber_list_t::iterator i = _subscribers.begin()
-          ; i != _subscribers.end()
-          ; ++i)
-      {
-        ((*i)->*f)(a);
-      }
-    }
-    /// non-const, 2 arguments (1st by value, 2nd by const reference),
-    /// any return type (ignored)
-    template<typename R, typename A1, typename A2> inline void _publish(
-        R (Subscriber::*f)(A1, const A2&), A1 a1, const A2& a2)
-    {
-      for (subscriber_list_t::iterator i = _subscribers.begin()
-          ; i != _subscribers.end()
-          ; ++i)
-      {
-        ((*i)->*f)(a1, a2);
-      }
-    }
-    /// non-const, 3 arguments (all by value), any return type (ignored)
-    template<typename R, typename A1, typename A2, typename A3>
-    inline void _publish(R (Subscriber::*f)(A1, A2, A3), A1 a1, A2 a2, A3 a3)
-    {
-      for (subscriber_list_t::iterator i = _subscribers.begin()
-          ; i != _subscribers.end()
-          ; ++i)
-      {
-        ((*i)->*f)(a1, a2, a3);
-      }
-    }
-    //@}
 
     /// helper struct for a source including its source id
     struct SourceCopy : public Source

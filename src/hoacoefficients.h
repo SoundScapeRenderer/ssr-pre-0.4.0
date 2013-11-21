@@ -90,8 +90,6 @@ class HoaCoefficients : public std::vector<apf::SosCoefficients<T>>
 
     void reset(float distance, source_t source_type)
     {
-      using twoT = const T[2];
-
       auto iter
         = apf::make_transform_iterator(this->laplace_coeffs + _coeffs_begin
             , Scaler(distance, source_type

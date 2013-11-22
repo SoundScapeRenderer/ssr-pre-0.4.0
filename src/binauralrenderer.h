@@ -143,10 +143,9 @@ BinauralRenderer::_load_hrtfs(const std::string& filename, size_t size)
 
   auto temp = apf::conv::Transform(this->block_size());
 
-  _hrtfs.reset(
-      new hrtf_set_t(no_of_channels, _partitions, temp.partition_size()));
+  _hrtfs.reset(new hrtf_set_t(no_of_channels, this->block_size(), _partitions));
 
-  hrtf_set_t::iterator target = _hrtfs->begin();
+  auto target = _hrtfs->begin();
   for (const auto& slice: transpose.slices)
   {
     temp.prepare_filter(slice.begin(), slice.end(), *target++);

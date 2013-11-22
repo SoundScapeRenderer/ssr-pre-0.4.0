@@ -286,7 +286,7 @@ AapRenderer::RenderFunction::select(SourceChannel& in)
 
   in.stored_weight = weighting_factor;
 
-  auto old_weight = in.stored_weight.get_old();
+  auto old_weight = in.stored_weight.old();
 
   using namespace apf::CombineChannelsResult;
 

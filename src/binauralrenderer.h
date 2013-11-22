@@ -243,9 +243,9 @@ class BinauralRenderer::Source : public apf::conv::Input, public _base::Source
       // TODO: assert that p.parent != 0?
       : apf::conv::Input(p.parent->block_size(), p.parent->_partitions)
       , _base::Source(p, 2, *this)
-      , _hrtf_index(-1)
-      , _interp_factor(-1)
-      , _weight(0)
+      , _hrtf_index(size_t(-1))
+      , _interp_factor(-1.0f)
+      , _weight(0.0f)
     {}
 
     APF_PROCESS(Source, _base::Source)
@@ -254,17 +254,15 @@ class BinauralRenderer::Source : public apf::conv::Input, public _base::Source
     }
 
   private:
-    size_t _hrtf_index, _old_hrtf_index;
-    float _interp_factor, _old_interp_factor;
-    float _weight, _old_weight;
+    apf::BlockParameter<size_t> _hrtf_index;
+    apf::BlockParameter<float> _interp_factor;
+    apf::BlockParameter<float> _weight;
 };
 
 void BinauralRenderer::Source::_process()
 {
-  _old_weight = _weight;
-  _old_hrtf_index = _hrtf_index;
-  _old_interp_factor = _interp_factor;
-  _interp_factor = 0.0f;
+  float interp_factor = 0.0f;
+  float weight = 0.0f;
 
   this->add_block(_input.begin());
 
@@ -275,16 +273,16 @@ void BinauralRenderer::Source::_process()
 
   if (this->weighting_factor != 0)
   {
-    _weight = 1;
+    weight = 1;
 
     if (this->model == ::Source::plane)
     {
       // no distance attenuation for plane waves 
       // 1/r:
-      _weight *= 0.5f / _input.parent.state.amplitude_reference_distance;
+      weight *= 0.5f / _input.parent.state.amplitude_reference_distance;
 
       // 1/sqrt(r):
-      //_weight *= 0.25f / sqrt(
+      //weight *= 0.25f / sqrt(
       //    _input.parent.state.amplitude_reference_distance());
     }
     else
@@ -293,22 +291,21 @@ void BinauralRenderer::Source::_process()
 
       if (source_distance < 0.5f)
       {
-        _interp_factor = 1.0f - 2 * source_distance;
+        interp_factor = 1.0f - 2 * source_distance;
       }
 
       // no volume increase for sources closer than 0.5m
       source_distance = std::max(source_distance, 0.5f);
 
-      _weight *= 0.5f / source_distance; // 1/r
-      // _weight *= 0.25f / sqrt(source_distance); // 1/sqrt(r)
+      weight *= 0.5f / source_distance; // 1/r
+      // weight *= 0.25f / sqrt(source_distance); // 1/sqrt(r)
     }
 
-    _weight *= this->weighting_factor;
+    weight *= this->weighting_factor;
   }
-  else
-  {
-    _weight = 0;
-  }
+
+  _interp_factor = interp_factor;  // Assign (once!) to BlockParameter
+  _weight = weight;  // ... same here
 
   float angles = _input.parent._angles;
 
@@ -323,16 +320,13 @@ void BinauralRenderer::Source::_process()
   // Check on one channel only, filters are always changed in parallel
   bool queues_empty = this->sourcechannels[0].queues_empty();
 
-  bool hrtf_changed = _hrtf_index != _old_hrtf_index
-      || _interp_factor != _old_interp_factor;
+  bool hrtf_changed = _hrtf_index.changed() || _interp_factor.changed();
 
-  if (_weight == 0 && _old_weight == 0)
+  if (_weight.both() == 0)
   {
     crossfade_mode = nothing;
   }
-  else if (queues_empty
-      && _weight == _old_weight
-      && !hrtf_changed)
+  else if (queues_empty && !_weight.changed() && !hrtf_changed)
   {
     crossfade_mode = constant;
   }
@@ -340,7 +334,7 @@ void BinauralRenderer::Source::_process()
   {
     crossfade_mode = fade_out;
   }
-  else if (_old_weight == 0)
+  else if (_weight.old() == 0)
   {
     crossfade_mode = fade_in;
   }
@@ -359,7 +353,7 @@ void BinauralRenderer::Source::_process()
     }
     else
     {
-      channel.convolve_and_more(_old_weight);
+      channel.convolve_and_more(_weight.old());
     }
 
     if (!queues_empty) channel.rotate_queues();
@@ -389,6 +383,10 @@ void BinauralRenderer::Source::_process()
     channel.crossfade_mode = crossfade_mode;
     channel.weight = _weight;
   }
+
+  assert(_hrtf_index.exactly_one_assignment());
+  assert(_interp_factor.exactly_one_assignment());
+  assert(_weight.exactly_one_assignment());
 }
 
 }  // namespace ssr

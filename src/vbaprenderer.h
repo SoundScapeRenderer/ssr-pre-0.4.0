@@ -185,6 +185,9 @@ class VbapRenderer::Source : public _base::Source
       weights.second.weight *= this->weighting_factor;
 
       this->loudspeaker_weights = weights;
+
+      assert(this->loudspeaker_weights.first.exactly_one_assignment());
+      assert(this->loudspeaker_weights.second.exactly_one_assignment());
     }
 
     bool get_output_levels(sample_type* first, sample_type* last) const
@@ -322,8 +325,8 @@ VbapRenderer::RenderFunction::select(const Source& in)
     return weight;
   };
 
-  auto old_weight = get_weight(ls.first.get_old(), ls.second.get_old());
-  auto new_weight = get_weight(ls.first.get(), ls.second.get());
+  auto old_weight = get_weight(ls.first.old(), ls.second.old());
+  auto new_weight = get_weight(ls.first, ls.second);
 
   using namespace apf::CombineChannelsResult;
 

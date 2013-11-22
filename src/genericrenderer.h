@@ -87,8 +87,7 @@ class GenericRenderer::Source : public _base::Source
   public:
     explicit Source(const Params& p)
       : _base::Source(p)
-      , _new_weighting_factor()
-      , _old_weighting_factor()
+      , _weighting_factor()
     {
       using matrix_t = apf::fixed_matrix<sample_type>;
 
@@ -122,13 +121,14 @@ class GenericRenderer::Source : public _base::Source
 
     APF_PROCESS(Source, _base::Source)
     {
-      _old_weighting_factor = _new_weighting_factor;
-      _new_weighting_factor = this->weighting_factor;
+      _weighting_factor = this->weighting_factor;
 
       _convolver->add_block(_input.begin());
+
+      assert(_weighting_factor.exactly_one_assignment());
     }
 
-    sample_type _new_weighting_factor, _old_weighting_factor;
+    apf::BlockParameter<sample_type> _weighting_factor;
 
     std::unique_ptr<apf::conv::Input> _convolver;
 };
@@ -143,7 +143,7 @@ GenericRenderer::SourceChannel::SourceChannel(const Source& s
 
 void GenericRenderer::SourceChannel::update()
 {
-  this->convolve(this->source._new_weighting_factor);
+  this->convolve(this->source._weighting_factor);
 }
 
 void GenericRenderer::SourceChannel::convolve(sample_type weight)
@@ -162,20 +162,19 @@ class GenericRenderer::RenderFunction
     {
       _in = & in;
 
-      sample_type old_factor = in.source._old_weighting_factor;
-      sample_type new_factor = in.source._new_weighting_factor;
+      const auto& factor = in.source._weighting_factor;
 
       using namespace apf::CombineChannelsResult;
 
-      if (old_factor == 0 && new_factor == 0) return nothing;
+      if (factor.both() == 0) return nothing;
 
-      if (old_factor == 0) return fade_in;
+      if (factor.old() == 0) return fade_in;
 
-      in.convolve(old_factor);
+      in.convolve(factor.old());
 
-      if (new_factor == 0) return fade_out;
+      if (factor == 0) return fade_out;
 
-      if (old_factor == new_factor) return constant;
+      if (!factor.changed()) return constant;
 
       return change;
     }

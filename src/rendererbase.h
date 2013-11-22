@@ -377,7 +377,6 @@ class RendererBase<Derived>::Source
       , mute(*p.fifo, false)
       , model(*p.fifo, ::Source::point)
       , weighting_factor()
-      , old_weighting_factor()
       , _input(*(p.input ? p.input : throw std::logic_error(
               "Bug (RendererBase::Source): input == NULL!")))
       , _pre_fader_level()
@@ -388,8 +387,6 @@ class RendererBase<Derived>::Source
     {
       this->_begin = _input.begin();
       this->_end = _input.end();
-
-      this->old_weighting_factor = this->weighting_factor;
 
       if (!_input.parent.state.processing || this->mute)
       {
@@ -405,6 +402,8 @@ class RendererBase<Derived>::Source
       }
 
       _level_helper(_input.parent);
+
+      assert(this->weighting_factor.exactly_one_assignment());
     }
 
     sample_type get_level() const { return _level; }
@@ -423,7 +422,7 @@ class RendererBase<Derived>::Source
     apf::SharedData<bool> mute;
     apf::SharedData< ::Source::model_t> model;
 
-    sample_type weighting_factor, old_weighting_factor;
+    apf::BlockParameter<sample_type> weighting_factor;
 
   protected:
     const Input& _input;

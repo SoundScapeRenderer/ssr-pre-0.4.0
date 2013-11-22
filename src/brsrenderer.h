@@ -89,10 +89,8 @@ class BrsRenderer::Source : public _base::Source
   public:
     Source(const Params& p)
       : _base::Source(p)
-      , _new_weighting_factor(-1)
-      , _old_weighting_factor(-1)
-      , _brtf_index(-1)
-      , _old_brtf_index(-1)
+      , _weighting_factor(-1.0f)
+      , _brtf_index(size_t(-1))
     {
       SndfileHandle ir_file
         = apf::load_sndfile(p.get<std::string>("properties_file")
@@ -145,10 +143,7 @@ class BrsRenderer::Source : public _base::Source
     {
       _convolver_input->add_block(_input.begin());
 
-      _old_weighting_factor = _new_weighting_factor;
-      _new_weighting_factor = this->weighting_factor;
-
-      _old_brtf_index = _brtf_index;
+      _weighting_factor = this->weighting_factor;
 
       float azi = this->parent.state.reference_orientation.get().azimuth;
 
@@ -166,21 +161,21 @@ class BrsRenderer::Source : public _base::Source
       // Check on one channel only, filters are always changed in parallel
       bool queues_empty = this->sourcechannels[0].queues_empty();
 
-      if (_new_weighting_factor == 0 && _old_weighting_factor == 0)
+      if (_weighting_factor.both() == 0)
       {
         crossfade_mode = nothing;
       }
       else if (queues_empty
-          && _new_weighting_factor == _old_weighting_factor
-          && _brtf_index == _old_brtf_index)
+          && !_weighting_factor.changed()
+          && !_brtf_index.changed())
       {
         crossfade_mode = constant;
       }
-      else if (_old_weighting_factor == 0)
+      else if (_weighting_factor.old() == 0)
       {
         crossfade_mode = fade_in;
       }
-      else if (_new_weighting_factor == 0)
+      else if (_weighting_factor == 0)
       {
         crossfade_mode = fade_out;
       }
@@ -197,28 +192,30 @@ class BrsRenderer::Source : public _base::Source
         }
         else
         {
-          this->sourcechannels[i].convolve_and_more(_old_weighting_factor);
+          this->sourcechannels[i].convolve_and_more(_weighting_factor.old());
         }
 
         if (!queues_empty) this->sourcechannels[i].rotate_queues();
 
-        if (_brtf_index != _old_brtf_index)
+        if (_brtf_index.changed())
         {
           // left and right channels are interleaved
           this->sourcechannels[i].set_filter((*_brtf_set)[2 * _brtf_index + i]);
         }
 
         this->sourcechannels[i].crossfade_mode = crossfade_mode;
-        this->sourcechannels[i].new_weighting_factor = _new_weighting_factor;
+        this->sourcechannels[i].new_weighting_factor = _weighting_factor;
       }
+      assert(_brtf_index.exactly_one_assignment());
+      assert(_weighting_factor.exactly_one_assignment());
     }
 
   private:
     using brtf_set_t = apf::fixed_vector<apf::conv::Filter>;
     std::unique_ptr<brtf_set_t> _brtf_set;
 
-    sample_type _new_weighting_factor, _old_weighting_factor;
-    size_t _brtf_index, _old_brtf_index;
+    apf::BlockParameter<sample_type> _weighting_factor;
+    apf::BlockParameter<size_t> _brtf_index;
 
     std::unique_ptr<apf::conv::Input> _convolver_input;
 

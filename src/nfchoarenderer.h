@@ -103,10 +103,6 @@ class NfcHoaRenderer::Source : public _base::Source
 
     APF_PROCESS(Source, _base::Source)
     {
-      this->old_distance = this->distance;
-      this->old_angle = this->angle;
-      this->old_source_model = this->source_model;
-
       // NOTE: reference offset is not taken into account!
 
       // distance is only used for point sources (but is updated anyway)
@@ -128,8 +124,9 @@ class NfcHoaRenderer::Source : public _base::Source
           // TODO: proper calculation of attenuation factor, this is temporary!
           {
             float distance_limit = 0.25f;
-            this->weighting_factor *= std::sqrt(
-                distance_limit / std::max(this->distance, distance_limit));
+            this->weighting_factor
+              *= std::sqrt(distance_limit
+                  / std::max(this->distance.get(), distance_limit));
           }
           break;
         case ::Source::plane:
@@ -146,11 +143,15 @@ class NfcHoaRenderer::Source : public _base::Source
       // TODO: calculate delay
 
       // TODO: write delayed signal to a buffer?
+
+      assert(this->distance.exactly_one_assignment());
+      assert(this->angle.exactly_one_assignment());
+      assert(this->source_model.exactly_one_assignment());
     }
 
-    float distance, old_distance;
-    float angle, old_angle;
-    coeff_t::source_t source_model, old_source_model;
+    apf::BlockParameter<float> distance;
+    apf::BlockParameter<float> angle;
+    apf::BlockParameter<coeff_t::source_t> source_model;
 
   private:
     // Pointers to Mode objects for (dis-)connecting
@@ -200,8 +201,7 @@ void NfcHoaRenderer::Mode::_process()
   // IIR filtering is not done in RenderFunction because workload would be
   // distributed very un-evenly between threads!
 
-  if (this->source.distance == this->source.old_distance
-      && this->source.source_model == this->source.old_source_model)
+  if (!this->source.distance.changed() && !this->source.source_model.changed())
   {
     // process filter (entire block)
     _filter.execute(this->source.begin(), this->source.end()
@@ -212,7 +212,7 @@ void NfcHoaRenderer::Mode::_process()
     _old_coefficients.swap(_coefficients);
 
     // Avoid focused sources (for now ...):
-    float distance = std::max(this->source.distance
+    float distance = std::max(this->source.distance.get()
         , this->source.parent.array_radius);
 
     // scale filter coefficients
@@ -258,7 +258,7 @@ void NfcHoaRenderer::Mode::_process()
   this->old_rotation1 = this->rotation1;
   this->old_rotation2 = this->rotation2;
 
-  if (this->source.angle != this->source.old_angle)
+  if (this->source.angle.changed())
   {
     this->rotation1
       = std::cos(-_mode_number * sample_type(this->source.angle));
@@ -269,21 +269,20 @@ void NfcHoaRenderer::Mode::_process()
 
   using namespace apf::CombineChannelsResult;
 
-  if (this->source.weighting_factor == 0
-      && this->source.old_weighting_factor == 0)
+  if (this->source.weighting_factor.both() == 0)
   {
     this->interpolation_mode = nothing;
   }
-  else if (this->source.weighting_factor == this->source.old_weighting_factor
-      && this->source.angle == this->source.old_angle
-      && this->source.distance == this->source.old_distance
-      && this->source.source_model == this->source.old_source_model)
+  else if (this->source.weighting_factor.changed()
+        || this->source.angle.changed()
+        || this->source.distance.changed()
+        || this->source.source_model.changed())
   {
-    this->interpolation_mode = constant;
+    this->interpolation_mode = change;
   }
   else
   {
-    this->interpolation_mode = change;
+    this->interpolation_mode = constant;
   }
 }
 
@@ -331,7 +330,7 @@ class NfcHoaRenderer::ModePair : public ProcessItem<ModePair>
 NfcHoaRenderer::Source::Source(const Params& p)
   : _base::Source(p)
   // Set impossible values to force update in first cycle:
-  , distance(-1)
+  , distance(-1.0f)
   , angle(std::numeric_limits<float>::infinity())
   , source_model(coeff_t::source_t(-1))
 {}
@@ -352,9 +351,9 @@ class NfcHoaRenderer::RenderFunction
       if (in.interpolation_mode == apf::CombineChannelsResult::change)
       {
         sample_type block_size = in.size();
-        _interpolator1.set(in.old_rotation1 * in.source.old_weighting_factor
+        _interpolator1.set(in.old_rotation1 * in.source.weighting_factor.old()
             , in.rotation1 * in.source.weighting_factor, block_size);
-        _interpolator2.set(in.old_rotation2 * in.source.old_weighting_factor
+        _interpolator2.set(in.old_rotation2 * in.source.weighting_factor.old()
             , in.rotation2 * in.source.weighting_factor, block_size);
       }
       else if (in.interpolation_mode == apf::CombineChannelsResult::constant)

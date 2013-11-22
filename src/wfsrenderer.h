@@ -130,16 +130,16 @@ class WfsRenderer::SourceChannel : public apf::has_begin_and_end<
   public:
     SourceChannel(const Source& s)
       : crossfade_mode(0)
-      , old_weighting_factor(0)
-      , weighting_factor(0)
+      , weighting_factor(0.0f)
+      , delay(0)
       , source(s)
     {}
 
     void update();
 
     int crossfade_mode;
-    sample_type old_weighting_factor, weighting_factor;
-    float delay, old_delay;
+    apf::BlockParameter<sample_type> weighting_factor;
+    apf::BlockParameter<int> delay;
 
     const Source& source;
 
@@ -306,11 +306,8 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
         _out.parent.state.reference_offset_position
         , _out.parent.state.reference_offset_orientation));
 
-  in.old_weighting_factor = in.weighting_factor;
-  in.old_delay = in.delay;
-
   sample_type weighting_factor = 1;
-  float delay = 0;
+  float float_delay = 0;
 
   auto ls = Loudspeaker(_out);
   auto src_pos = in.source.position;
@@ -331,26 +328,26 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
       {
         // the delay is calculated to be correct on the reference position
         // delay can be negative!
-        delay = (src_pos - ref_off.position).length()
+        float_delay = (src_pos - ref_off.position).length()
           - reference_distance;
 
-        if (fabs(delay) < safety_radius)
+        if (std::abs(float_delay) < safety_radius)
         {
-          weighting_factor = 1.0f / sqrt(safety_radius);
+          weighting_factor = 1.0f / std::sqrt(safety_radius);
         }
         else
         {
-          weighting_factor = 1.0f / sqrt(fabs(delay));
+          weighting_factor = 1.0f / std::sqrt(std::abs(float_delay));
         }
         break; // step out of switch
       }
 
-      delay = (ls.position - src_pos).length();
-      assert(delay >= 0);
+      float_delay = (ls.position - src_pos).length();
+      assert(float_delay >= 0);
 
       float denominator;
-      if (delay < safety_radius) denominator = sqrt(safety_radius);
-      else denominator = sqrt(delay);
+      if (float_delay < safety_radius) denominator = std::sqrt(safety_radius);
+      else denominator = std::sqrt(float_delay);
 
       // TODO: does this really do the right thing?
       weighting_factor = cos(angle(ls.position - src_pos,
@@ -376,7 +373,7 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
           {
             // if the inner product is less than zero, the source is more or
             // less between the loudspeaker and the reference
-            delay = -delay;
+            float_delay = -float_delay;
             weighting_factor = -weighting_factor;
 
 #if defined(WEIGHTING_OLD)
@@ -433,7 +430,8 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
         weighting_factor = 1.0f; // TODO: is this correct?
         // the delay is calculated to be correct on the reference position
         // delay can be negative!
-        delay = DirectionalPoint(in.source.position, in.source.orientation)
+        float_delay
+          = DirectionalPoint(in.source.position, in.source.orientation)
           .plane_to_point_distance(ref_off.position) - reference_distance;
         break; // step out of switch
       }
@@ -449,10 +447,10 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
         break;
       }
 
-      delay = DirectionalPoint(in.source.position, in.source.orientation)
+      float_delay = DirectionalPoint(in.source.position, in.source.orientation)
         .plane_to_point_distance(ls.position);
 
-      if (delay < 0.0)
+      if (float_delay < 0.0)
       {
         // "focused" plane wave
       }
@@ -476,7 +474,7 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
     // 1/r:
     weighting_factor *= 0.5f / ampl_ref;
     // 1/sqrt(r)
-    //weighting_factor *= 0.25f / sqrt(ampl_ref);
+    //weighting_factor *= 0.25f / std::sqrt(ampl_ref);
   }
   else
   {
@@ -488,7 +486,7 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
     source_distance = std::max(source_distance, 0.5f);
 
     weighting_factor *= 0.5f / source_distance; // 1/r
-    // weighting_factor *= 0.25f / sqrt(source_distance); // 1/sqrt(r)
+    // weighting_factor *= 0.25f / std::sqrt(source_distance); // 1/sqrt(r)
 #elif defined(WEIGHTING_DELFT)
 #endif
   }
@@ -502,15 +500,15 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
   assert(weighting_factor >= 0.0f);
 
   // delay in seconds
-  delay *= c_inverse;
+  float_delay *= c_inverse;
   // delay in samples
-  delay *= _out.parent.sample_rate();
+  float_delay *= _out.parent.sample_rate();
 
   // TODO: check for negative delay and print an error if > initial_delay
 
   // TODO: do proper rounding
   // TODO: enable interpolated reading from delay line.
-  int int_delay = static_cast<int>(delay + 0.5f);
+  int int_delay = static_cast<int>(float_delay + 0.5f);
 
   if (in.source.delayline.delay_is_valid(int_delay))
   {
@@ -525,7 +523,10 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
     in.weighting_factor = 0;
   }
 
-  _old_factor = in.old_weighting_factor;
+  assert(in.weighting_factor.exactly_one_assignment());
+  assert(in.delay.exactly_one_assignment());
+
+  _old_factor = in.weighting_factor.old();
   _new_factor = in.weighting_factor;
 
   using namespace apf::CombineChannelsResult;
@@ -535,7 +536,7 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
   {
     crossfade_mode = nothing;
   }
-  else if (_old_factor == _new_factor && in.old_delay == in.delay)
+  else if (_old_factor == _new_factor && !in.delay.changed())
   {
     crossfade_mode = constant;
   }
@@ -558,7 +559,7 @@ WfsRenderer::RenderFunction::select(SourceChannel& in)
   }
   else
   {
-    in._begin = in.source.delayline.get_read_circulator(in.old_delay);
+    in._begin = in.source.delayline.get_read_circulator(in.delay.old());
     in._end = in._begin + _out.parent.block_size();
   }
 

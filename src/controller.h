@@ -308,7 +308,7 @@ class Controller : public Publisher
     bool _loop; ///< part of a quick-hack. should be removed some time.
 
     std::unique_ptr<typename Renderer::template ScopedThread<
-      typename Renderer::QueryThread> > _query_thread;
+      typename Renderer::QueryThread>> _query_thread;
 };
 
 template<typename Renderer>

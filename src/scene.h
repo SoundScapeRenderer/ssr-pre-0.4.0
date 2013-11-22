@@ -184,9 +184,9 @@ class Scene : public Subscriber
       // the following struct container_traits is declared in the private part
       // of the Scene class and defined further down this file.
 
-      if (container_traits<Container<T, Args...> >::has_reserve)
+      if (container_traits<Container<T, Args...>>::has_reserve)
       {
-        container_traits<Container<T, Args...> >::reserve(container,
+        container_traits<Container<T, Args...>>::reserve(container,
             _source_map.size());
       }
       for (const auto& source: _source_map)
@@ -209,9 +209,9 @@ class Scene : public Subscriber
     {
       assert(container.empty());
 
-      if (container_traits<Container<T, Allocator> >::has_reserve)
+      if (container_traits<Container<T, Allocator>>::has_reserve)
       {
-        container_traits<Container<T, Allocator> >::reserve(container,
+        container_traits<Container<T, Allocator>>::reserve(container,
             _loudspeakers.size());
       }
 

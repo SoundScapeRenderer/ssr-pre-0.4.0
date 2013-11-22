@@ -270,7 +270,7 @@ class BrsRenderer::Output : public _base::Output
   private:
     apf::CombineChannelsCrossfadeCopy<apf::cast_proxy<SourceChannel
       , sourcechannels_t>, buffer_type
-      , apf::raised_cosine_fade<sample_type> > _combiner;
+      , apf::raised_cosine_fade<sample_type>> _combiner;
 };
 
 void

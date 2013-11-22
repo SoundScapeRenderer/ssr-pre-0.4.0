@@ -198,7 +198,7 @@ class WfsRenderer::Output : public _base::Output
   private:
     apf::CombineChannelsCrossfade<apf::cast_proxy<SourceChannel
       , sourcechannels_t>, buffer_type
-      , apf::raised_cosine_fade<sample_type> > _combiner;
+      , apf::raised_cosine_fade<sample_type>> _combiner;
 };
 
 class WfsRenderer::Source : public _base::Source

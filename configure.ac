@@ -449,14 +449,13 @@ AC_DEFUN([BOOST_LIBS_CHECK],
 [
   # try to find the given Boost library
   AC_MSG_CHECKING([for boost_$1 library])
-  for dir in /{usr,opt}/{local/,}lib{,64}; do
+  for dir in $BOOST_LIB_DIR /{usr,opt}/{local/,}lib{,64}; do
     for ext in so a dylib; do
       # check for "-mt" version first
       for lib in $dir/libboost_$1*-mt*.$ext $dir/libboost_$1*.$ext; do
         AS_IF([test -f $lib],
         [
           BOOST_TEMP=$(echo $lib | sed -e "s|.*/lib\(.*\)\.$ext|-l\1|")
-          dnl TODO: add -L options with $dir?
 
           # the first match is taken
           break 3
@@ -471,7 +470,7 @@ AC_DEFUN([BOOST_LIBS_CHECK],
     $3
   ],
   [
-    AC_MSG_RESULT([not found!])
+    AC_MSG_RESULT([not found! (Use BOOST_LIB_DIR to specify a directory.)])
     have_ip_interface=no
     $4
   ])
@@ -494,6 +493,8 @@ ENABLE_FORCED([ip-interface], [network (TCP/IP) interface],
 
   # now check with possibly redefined CPPFLAGS
   AC_CHECK_HEADER([boost/asio.hpp], , [have_ip_interface=no])
+
+  AS_IF([test -n "${BOOST_LIB_DIR+x}"], [LDFLAGS="$LDFLAGS -L$BOOST_LIB_DIR"])
 
   # try to find the Boost.System library
   BOOST_LIBS_CHECK([system], [BOOST_SYSTEM_LIBS], , [have_ip_interface=no])
@@ -725,6 +726,8 @@ echo
 echo DEBUGGING_FLAGS: $DEBUGGING_FLAGS
 echo
 echo LIBS: $LIBS
+echo
+echo LDFLAGS: $LDFLAGS
 echo
 echo
 echo

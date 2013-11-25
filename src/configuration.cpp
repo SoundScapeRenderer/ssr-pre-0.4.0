@@ -163,17 +163,7 @@ ssr::conf_struct ssr::configuration(int& argc, char* argv[])
   // for AAP renderer
   conf.renderer_params.set("ambisonics_order", 0); // "0" means use maximum that makes sense
   conf.renderer_params.set("in_phase", false);
-#if defined(ENABLE_POLHEMUS)
-  conf.tracker = "polhemus";
-#elif defined(ENABLE_VRPN)
-  conf.tracker = "vrpn";
-#elif defined(ENABLE_INTERSENSE)
-  conf.tracker = "intersense";
-#elif defined(ENABLE_RAZOR)
-  conf.tracker = "razor";
-#else
   conf.tracker = "";
-#endif
 
   // USB ports have to be checked first!
   conf.tracker_ports = "/dev/ttyUSB0 /dev/ttyUSB1 /dev/ttyS0 /dev/tty.usbserial-00001004 /dev/tty.usbserial-00002006";
@@ -267,11 +257,10 @@ ssr::conf_struct ssr::configuration(int& argc, char* argv[])
 "\n"
 "    --tracker-port=PORT\n"
 "                       A serial port can be specified, e.g. /dev/ttyS1\n"
-"-T, --no-tracker       Don't start tracker\n"
 #else
 "-t, --tracker          Start tracker (not enabled at compile time!)\n"
-"-T, --no-tracker       Don't start tracker (default)\n"
 #endif
+"-T, --no-tracker       Don't start tracker (default)\n"
 "\n"
 "-h, --help             Show this very help information. "
                                                      "You just typed that!\n"

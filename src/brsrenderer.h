@@ -121,8 +121,7 @@ class BrsRenderer::Source : public _base::Source
 
       size_t partitions = apf::conv::min_partitions(block_size, size);
 
-      _brtf_set.reset(new brtf_set_t(no_of_channels
-              , partitions, temp.partition_size()));
+      _brtf_set.reset(new brtf_set_t(no_of_channels, block_size, partitions));
 
       auto target = _brtf_set->begin();
       for (const auto& slice: ir_data.slices)

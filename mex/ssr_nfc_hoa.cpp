@@ -337,7 +337,7 @@ void source(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
       ssr::NfcHoaRenderer::SourceBase* source = engine->get_source(i + 1);
       // TODO: check if source == nullptr
-      source->position(Position(coordinates[i*2], coordinates[i*2+1]));
+      source->position = Position(coordinates[i*2], coordinates[i*2+1]);
     }
   }
   else if (command == "orientation")
@@ -372,7 +372,7 @@ void source(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     {
       ssr::NfcHoaRenderer::SourceBase* source = engine->get_source(i + 1);
       // TODO: check if source == nullptr
-      source->orientation(Orientation(angles[i]));  // degree
+      source->orientation = Orientation(angles[i]);  // degree
     }
   }
   else if (command == "model")
@@ -394,7 +394,7 @@ void source(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
         mexPrintf("Model string '%s':", model_str.c_str());
         mexErrMsgTxt("Couldn't convert source model string!");
       }
-      engine->get_source(i + 1)->model(model);
+      engine->get_source(i + 1)->model = model;
     }
   }
   else

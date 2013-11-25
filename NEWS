@@ -5,9 +5,10 @@ User-visible changes in the SoundScape Renderer. Recent changes on top.
  - the signal processing core of the SSR is now a separate thing and part of the
    "Audio Processing Framework" (APF, http://audioprocessingframework.github.io)
 
- - multi-threading support
+ - multi-threading support and other performance improvements
 
  - brand new Near-Field-Corrected Higher-Order-Ambisonics (NFC-HOA) renderer
+   (which is still experimental and might have quite a few bugs)
 
  - WAV, FLAC and OGG playback is now possible via ecasound & libsndfile
 
@@ -18,10 +19,12 @@ User-visible changes in the SoundScape Renderer. Recent changes on top.
 
  - compatibility with the "clang" compiler
 
- - experimental draft for Puredata Externals and Matlab MEX files
+ - experimental draft for Matlab MEX files (using the NFC-HOA renderer)
 
  - VRPN tracker support (thanks to Rouven von der Burg, Daniel Schwingenheuer
    and Johannes Arend!)
+
+ - many bugfixes and improvements (but most probably also new bugs)
 
 0.3.4 a.k.a. "Pianoforte" (13 November 2012)
 

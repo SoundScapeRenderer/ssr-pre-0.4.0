@@ -100,3 +100,9 @@ clean:
 .PHONY: all octave matlab clean
 
 .DELETE_ON_ERROR:
+
+DEPENDENCIES = ssr_nfc_hoa
+
+# TODO: include *.o files from $SOURCES to $DEPENDENCIES
+
+include ../apf/misc/Makefile.dependencies

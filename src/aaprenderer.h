@@ -225,12 +225,11 @@ AapRenderer::RenderFunction::select(SourceChannel& in)
   if (_out.model == Loudspeaker::normal)
   {
     // WARNING: The reference offset is currently broken!
-    // To make it work, we have to fiddle a bit.
 
     float alpha_0  = deg2rad((_out.position).orientation().azimuth);
     float theta_pw = deg2rad(((in.source.position -
             _out.parent.state.reference_position).orientation()
-          - _out.parent.state.reference_orientation).azimuth + 90.0f);
+          - _out.parent.state.reference_orientation).azimuth);
 
     // TODO: wrap angles?
 

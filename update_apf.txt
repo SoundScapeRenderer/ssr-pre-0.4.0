@@ -2,9 +2,11 @@ How to update the Audio Processing Framework (APF) code.
 
 Prerequisites: 'git subtree' (included in git >= 1.7.11, but only in "contrib")
 
+WARNING: all of this should be done on the master branch!
+
 # adding a remote:
 
-git remote add -f apf https://username@github.com/AudioProcessingFramework/apf.git
+git remote add -f apf https://github.com/AudioProcessingFramework/apf.git
 
 # repository setup (only the very first time):
 
@@ -12,10 +14,7 @@ git subtree add --prefix=apf --squash apf/master
 
 # pulling:
 
-git remote update
-# or
 git fetch apf
-
 git subtree merge --prefix=apf --squash apf/master
 
 # pushing:

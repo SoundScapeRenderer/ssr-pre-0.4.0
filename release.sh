@@ -13,6 +13,11 @@ run_command()
 # (in case it was started from somewhere else)
 cd $(dirname $0)
 
+if [ "$(git symbolic-ref --short HEAD)" != master ]
+then
+  echo \"$0\" should be called on the master branch!; exit 42;
+fi
+
 # first of all, make "tabula rasa"
 run_command ./cleanse.sh
 

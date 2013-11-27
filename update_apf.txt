@@ -12,10 +12,6 @@ git subtree add --prefix=apf --squash apf/master
 
 # pulling:
 
-git subtree pull --prefix=apf --squash apf/master
-
-# pulling (alternative):
-
 git remote update
 # or
 git fetch apf

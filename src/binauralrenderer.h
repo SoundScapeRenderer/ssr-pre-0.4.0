@@ -319,13 +319,13 @@ void BinauralRenderer::Source::_process()
       float source_distance
         = (this->position() - ref_pos).length();
 
-      if (source_distance < 0.5f)
+      if (source_distance < 0.2f)
       {
-        _interp_factor = 1.0f - 2 * source_distance;
+        _interp_factor = 1.0f - 5 * source_distance;
       }
 
-      // no volume increase for sources closer than 0.5m
-      source_distance = std::max(source_distance, 0.5f);
+      // no volume increase for sources closer than 0.2m
+      source_distance = std::max(source_distance, 0.2f);
 
       _weight *= 0.5f / source_distance; // 1/r
       // _weight *= 0.25f / sqrt(source_distance); // 1/sqrt(r)
